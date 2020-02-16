@@ -1,6 +1,8 @@
 package redirect
 
 import (
+	"fmt"
+
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/plugin"
 
@@ -51,7 +53,7 @@ func parseRedirectCore(c *caddy.Controller) (*Redirect, error) {
 
 	files := c.RemainingArgs()
 	if len(files) == 0 {
-		return nil, c.ArgErr()
+		return nil, fmt.Errorf("FILE... directive cannot be empty")
 	}
 	log.Infof("files: %v", files)
 

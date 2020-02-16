@@ -19,6 +19,10 @@ type Redirect struct {
 	Next plugin.Handler
 }
 
+func NewRedirect() *Redirect {
+	return &Redirect{}
+}
+
 func (re *Redirect) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
 	log.Infof("ServeDNS called...")
 	return 0, nil

@@ -6,6 +6,7 @@ package redirect
 
 import (
 	"context"
+	"time"
 
 	"github.com/coredns/coredns/plugin"
 	clog "github.com/coredns/coredns/plugin/pkg/log"
@@ -19,6 +20,8 @@ type Redirect struct {
 	Next plugin.Handler
 
 	files []string
+
+	reload time.Duration
 }
 
 func NewRedirect() *Redirect {

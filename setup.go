@@ -1,8 +1,10 @@
 package redirect
 
 import (
-	"fmt"
 	"os"
+	"path/filepath"
+	"strconv"
+	"time"
 
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/plugin"
@@ -50,23 +52,63 @@ func ParseRedirect(c *caddy.Controller) (*Redirect, error) {
 }
 
 func ParseRedirect2(c *caddy.Controller) (*Redirect, error) {
+	config := dnsserver.GetConfig(c)
 	re := NewRedirect()
 
-	files := c.RemainingArgs()
-	if len(files) == 0 {
-		return nil, fmt.Errorf("FILE... directive cannot be empty")
+	paths := c.RemainingArgs()
+	if len(paths) == 0 {
+		return nil, c.ArgErr()
 	}
-	for _, file := range files {
-		info, err := os.Stat(file)
+	for _, path := range paths {
+		if !filepath.IsAbs(path) && config.Root != "" {
+			path = filepath.Join(config.Root, path)
+		}
+
+		s, err := os.Stat(path)
 		if err != nil {
-			return nil, fmt.Errorf("file: %s error: %v", file, err)
-		}
-		if !info.Mode().IsRegular() {
-			return nil, fmt.Errorf("file %s isn't regular file", file)
+			if os.IsNotExist(err) {
+				log.Warningf("File %s doesn't exist", path)
+			} else {
+				return nil, err
+			}
+		} else if s != nil && !s.Mode().IsRegular() {
+			log.Warningf("File %s isn't a regular file")
 		}
 	}
-	re.files = files
+	re.files = paths
+
+	for c.NextBlock() {
+		if err := ParseBlock(c, re); err != nil {
+			return nil, err
+		}
+	}
 
 	return re, nil
+}
+
+func ParseBlock(c *caddy.Controller, re *Redirect) error {
+	switch c.Val() {
+	case "reload":
+		args := c.RemainingArgs()
+		if len(args) != 1 {
+			return c.ArgErr()
+		}
+		arg := args[0]
+		if _, e := strconv.Atoi(arg); e == nil {
+			// Append second time unit
+			arg += "s"
+		}
+		d, err := time.ParseDuration(arg)
+		if err != nil {
+			return err
+		}
+		if d < 0 {
+			return c.Errf("negative time duration: %s", args[0])
+		}
+		re.reload = d
+	default:
+		return c.Errf("unknown directive: %s", c.Val())
+	}
+	return nil
 }
 

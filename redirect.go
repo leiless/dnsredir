@@ -19,7 +19,7 @@ var log = clog.NewWithPlugin(pluginName)
 type Redirect struct {
 	Next plugin.Handler
 
-	files []string
+	paths []string
 
 	reload time.Duration
 }

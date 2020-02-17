@@ -75,7 +75,8 @@ func ParseRedirect2(c *caddy.Controller) (*Redirect, error) {
 			log.Warningf("File %s isn't a regular file")
 		}
 	}
-	re.files = paths
+	re.paths = paths
+	log.Debugf("Files: %v", paths)
 
 	for c.NextBlock() {
 		if err := ParseBlock(c, re); err != nil {
@@ -95,7 +96,7 @@ func ParseBlock(c *caddy.Controller, re *Redirect) error {
 		}
 		arg := args[0]
 		if _, e := strconv.Atoi(arg); e == nil {
-			// Append second time unit
+			log.Warningf("Missing time unit, assume it's second")
 			arg += "s"
 		}
 		d, err := time.ParseDuration(arg)
@@ -106,6 +107,7 @@ func ParseBlock(c *caddy.Controller, re *Redirect) error {
 			return c.Errf("negative time duration: %s", args[0])
 		}
 		re.reload = d
+		log.Debugf("Reload time duration: %v", d)
 	default:
 		return c.Errf("unknown directive: %s", c.Val())
 	}

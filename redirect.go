@@ -17,6 +17,8 @@ var log = clog.NewWithPlugin(pluginName)
 
 type Redirect struct {
 	Next plugin.Handler
+
+	files []string
 }
 
 func NewRedirect() *Redirect {

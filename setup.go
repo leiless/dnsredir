@@ -9,10 +9,10 @@ import (
 	"github.com/caddyserver/caddy"
 )
 
-func init() { plugin.Register(pluginName, setup) }
+func init() { plugin.Register(pluginName, Setup) }
 
-func setup(c *caddy.Controller) error {
-	re, err := parseRedirect(c)
+func Setup(c *caddy.Controller) error {
+	re, err := ParseRedirect(c)
 	if err != nil {
 		return PluginError(err)
 	}
@@ -25,7 +25,7 @@ func setup(c *caddy.Controller) error {
 	return nil
 }
 
-func parseRedirect(c *caddy.Controller) (*Redirect, error) {
+func ParseRedirect(c *caddy.Controller) (*Redirect, error) {
 	var (
 		re *Redirect
 		err error
@@ -39,7 +39,7 @@ func parseRedirect(c *caddy.Controller) (*Redirect, error) {
 		}
 		once = true
 
-		re, err = parseRedirectCore(c)
+		re, err = ParseRedirect2(c)
 		if err != nil {
 			return nil, err
 		}
@@ -48,7 +48,7 @@ func parseRedirect(c *caddy.Controller) (*Redirect, error) {
 	return re, nil
 }
 
-func parseRedirectCore(c *caddy.Controller) (*Redirect, error) {
+func ParseRedirect2(c *caddy.Controller) (*Redirect, error) {
 	re := NewRedirect()
 
 	files := c.RemainingArgs()

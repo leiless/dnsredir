@@ -22,11 +22,13 @@ func PathsToFileitems(paths []string) []Fileitem {
 	return files
 }
 
+var EmptyStruct = struct{}{}
+
 type Namelist struct {
 	sync.RWMutex
 
 	// Domain name set for lookups
-	names map[string][]string
+	names map[string]struct{}
 
 	// List of name files
 	files []Fileitem
@@ -72,8 +74,9 @@ func (n *Namelist) parseNamelistCore(fi *Fileitem) {
 	n.Unlock()
 }
 
-func (n *Namelist) parse(r io.Reader) map[string][]string {
-	names := make(map[string][]string)
+func (n *Namelist) parse(r io.Reader) map[string]struct{} {
+	names := make(map[string]struct{})
+	names["test"] = EmptyStruct
 
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {

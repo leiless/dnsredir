@@ -6,8 +6,6 @@ package redirect
 
 import (
 	"context"
-	"time"
-
 	"github.com/coredns/coredns/plugin"
 	clog "github.com/coredns/coredns/plugin/pkg/log"
 
@@ -19,13 +17,13 @@ var log = clog.NewWithPlugin(pluginName)
 type Redirect struct {
 	Next plugin.Handler
 
-	paths []string
-
-	reload time.Duration
+	*Namelist
 }
 
 func NewRedirect() *Redirect {
-	return &Redirect{}
+	return &Redirect{
+		Namelist: &Namelist{},
+	}
 }
 
 func (re *Redirect) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {

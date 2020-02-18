@@ -20,6 +20,11 @@ func Setup(c *caddy.Controller) error {
 		return PluginError(err)
 	}
 
+	c.OnStartup(func() error {
+		re.parseNamelist()
+		return nil
+	})
+
 	dnsserver.GetConfig(c).AddPlugin(func(next plugin.Handler) plugin.Handler {
 		re.Next = next
 		return re
@@ -75,7 +80,7 @@ func ParseRedirect2(c *caddy.Controller) (*Redirect, error) {
 			log.Warningf("File %s isn't a regular file")
 		}
 	}
-	re.paths = paths
+	re.files = PathsToFileitems(paths)
 	log.Debugf("Files: %v", paths)
 
 	for c.NextBlock() {
@@ -96,7 +101,7 @@ func ParseBlock(c *caddy.Controller, re *Redirect) error {
 		}
 		arg := args[0]
 		if _, e := strconv.Atoi(arg); e == nil {
-			log.Warningf("Missing time unit, assume it's second")
+			log.Warningf("reload %s missing time unit, assume it's second", arg)
 			arg += "s"
 		}
 		d, err := time.ParseDuration(arg)

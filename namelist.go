@@ -8,38 +8,50 @@ import (
 	"time"
 )
 
-type Fileitem struct {
+type stringSet map[string]struct{}
+
+/**
+ * @return	true if `str' already in set previously
+ *			false otherwise
+ */
+func (set *stringSet) Add(str string) bool {
+	_, found := (*set)[str]
+	(*set)[str] = struct{}{}
+	return found
+}
+
+type Nameitem struct {
+	// Domain name set for lookups
+	names stringSet
+
 	path string
 	mtime time.Time
 	size int64
 }
 
-func PathsToFileitems(paths []string) []Fileitem {
-	files := make([]Fileitem, len(paths))
+func PathsToNameitems(paths []string) []Nameitem {
+	items := make([]Nameitem, len(paths))
 	for i, path := range paths {
-		files[i].path = path
+		items[i].path = path
 	}
-	return files
+	return items
 }
-
-var EmptyStruct = struct{}{}
 
 type Namelist struct {
 	sync.RWMutex
 
-	// Domain name set for lookups
-	names map[string]struct{}
+	// List of name items
+	items []Nameitem
 
-	// List of name files
-	files []Fileitem
-
-	// Time between two reload of the name file
-	// All file files shared the same reload duration
+	// Time between two reload of a name item
+	// All name items shared the same reload duration
 	reload time.Duration
 }
 
-func (n *Namelist) parseNamelistCore(fi *Fileitem) {
-	file, err := os.Open(fi.path)
+func (n *Namelist) parseNamelistCore(i int) {
+	item := &n.items[i]
+
+	file, err := os.Open(item.path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			// File not exist already reported at setup stage
@@ -54,8 +66,8 @@ func (n *Namelist) parseNamelistCore(fi *Fileitem) {
 	stat, err := file.Stat()
 	if err == nil {
 		n.RLock()
-		mtime := fi.mtime
-		size := fi.size
+		mtime := item.mtime
+		size := item.size
 		n.RUnlock()
 
 		if stat.ModTime() == mtime && stat.Size() == size {
@@ -70,13 +82,15 @@ func (n *Namelist) parseNamelistCore(fi *Fileitem) {
 	names := n.parse(file)
 
 	n.Lock()
-	n.names = names
+	item.names = names
+	item.mtime = stat.ModTime()
+	item.size = stat.Size()
 	n.Unlock()
 }
 
-func (n *Namelist) parse(r io.Reader) map[string]struct{} {
-	names := make(map[string]struct{})
-	names["test"] = EmptyStruct
+func (n *Namelist) parse(r io.Reader) stringSet {
+	names := make(stringSet)
+	names.Add("foobar")
 
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
@@ -87,8 +101,12 @@ func (n *Namelist) parse(r io.Reader) map[string]struct{} {
 }
 
 func (n *Namelist) parseNamelist() {
-	for _, file := range n.files {
-		n.parseNamelistCore(&file)
+	for i := range n.items {
+		n.parseNamelistCore(i)
+	}
+
+	for _, item := range n.items {
+		log.Debugf(">>> %v", item)
 	}
 }
 

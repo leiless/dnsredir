@@ -3,7 +3,6 @@ package redirect
 import (
 	"bufio"
 	"bytes"
-	"github.com/miekg/dns"
 	"io"
 	"net"
 	"os"
@@ -95,16 +94,17 @@ func (n *Namelist) parseNamelistCore(i int) {
 func (n *Namelist) parse(r io.Reader) stringSet {
 	names := make(stringSet)
 
+	lines := 0
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
+		lines++
 		line := scanner.Bytes()
 		if i := bytes.Index(line, []byte{'#'}); i >= 0 {
 			line = line[0:i]
 		}
 
-		domain := string(line)
-		if _, ok := dns.IsDomainName(domain); ok {
-			log.Debugf("%s is domain name", domain)
+		domain := strings.ToLower(string(line))
+		if IsDomainName(domain) {
 			// To reduce memory, we don't use full qualified name
 			names.Add(strings.TrimSuffix(domain, "."))
 			continue
@@ -123,17 +123,19 @@ func (n *Namelist) parse(r io.Reader) stringSet {
 			continue
 		}
 
-		domain = string(f[1])
-		if _, ok := dns.IsDomainName(domain); !ok {
+		domain = strings.ToLower(string(f[1]))
+		if !IsDomainName(domain) {
+			log.Warningf("%v isn't domain...", domain)
 			continue
 		}
 		if net.ParseIP(string(f[2])) == nil {
 			continue
 		}
 
-		log.Debugf("%s is domain name", domain)
-		_ = names.Add(strings.TrimSuffix(domain, "."))
+		names.Add(strings.TrimSuffix(domain, "."))
 	}
+
+	log.Debugf("Name added: %v / %v", len(names), lines)
 
 	return names
 }

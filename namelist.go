@@ -36,7 +36,7 @@ type Nameitem struct {
 	size int64
 }
 
-func PathsToNameitems(paths []string) []Nameitem {
+func NewNameitemsWithPaths(paths []string) []Nameitem {
 	items := make([]Nameitem, len(paths))
 	for i, path := range paths {
 		items[i].path = path

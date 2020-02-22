@@ -107,7 +107,7 @@ func ParseRedirect2(c *caddy.Controller) (*Redirect, error) {
 			log.Warningf("File %s isn't a regular file")
 		}
 	}
-	re.items = PathsToNameitems(paths)
+	re.items = NewNameitemsWithPaths(paths)
 	log.Debugf("Files: %v", paths)
 
 	for c.NextBlock() {

@@ -20,17 +20,19 @@ func Close(c io.Closer) {
 	}
 }
 
+func RemoveTrailingDot(s string) string {
+	if n := len(s); n > 0 && s[n-1] == '.' {
+		return s[:n-1]
+	}
+	return s
+}
+
 /**
  * Rough check if `s' is a domain name
  * XXX: it won't honor valid TLD and Punycode
  */
 func IsDomainName(s string) bool {
-	s = strings.ToLower(s)
-	if n := len(s); n > 0 && s[n - 1] == '.' {
-		// Remove trailing dot if it's full qualified(assuming)
-		s = s[:n-1]
-	}
-
+	s = RemoveTrailingDot(strings.ToLower(s))
 	f := strings.FieldsFunc(s, func(r rune) bool {
 		return r == '.'
 	})

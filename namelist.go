@@ -24,6 +24,8 @@ func (set *stringSet) Add(str string) bool {
 }
 
 type Nameitem struct {
+	sync.RWMutex
+
 	// Domain name set for lookups
 	names stringSet
 
@@ -41,9 +43,6 @@ func PathsToNameitems(paths []string) []Nameitem {
 }
 
 type Namelist struct {
-	// TODO: this RWMutex can be put into Nameitem
-	sync.RWMutex
-
 	// List of name items
 	items []Nameitem
 
@@ -69,10 +68,10 @@ func (n *Namelist) parseNamelistCore(i int) {
 
 	stat, err := file.Stat()
 	if err == nil {
-		n.RLock()
+		item.RLock()
 		mtime := item.mtime
 		size := item.size
-		n.RUnlock()
+		item.RUnlock()
 
 		if stat.ModTime() == mtime && stat.Size() == size {
 			return
@@ -85,15 +84,16 @@ func (n *Namelist) parseNamelistCore(i int) {
 	log.Debugf("Parsing " + file.Name())
 	names := n.parse(file)
 
-	n.Lock()
+	item.Lock()
 	item.names = names
 	item.mtime = stat.ModTime()
 	item.size = stat.Size()
-	n.Unlock()
+	item.Unlock()
 }
 
 func (n *Namelist) parseNamelist() {
 	for i := range n.items {
+		// Q: Use goroutine for concurrent update?
 		n.parseNamelistCore(i)
 	}
 

@@ -14,7 +14,7 @@ import (
 type stringSet map[string]struct{}
 
 /**
- * @return	true if `str' already in set previously
+ * @return	true if `str' already in set previously(MT-unsafe)
  *			false otherwise
  */
 func (set *stringSet) Add(str string) bool {
@@ -41,6 +41,7 @@ func PathsToNameitems(paths []string) []Nameitem {
 }
 
 type Namelist struct {
+	// TODO: this RWMutex can be put into Nameitem
 	sync.RWMutex
 
 	// List of name items
@@ -91,6 +92,16 @@ func (n *Namelist) parseNamelistCore(i int) {
 	n.Unlock()
 }
 
+func (n *Namelist) parseNamelist() {
+	for i := range n.items {
+		n.parseNamelistCore(i)
+	}
+
+	for _, item := range n.items {
+		log.Debugf(">>> %v", item)
+	}
+}
+
 func (n *Namelist) parse(r io.Reader) stringSet {
 	names := make(stringSet)
 
@@ -138,15 +149,5 @@ func (n *Namelist) parse(r io.Reader) stringSet {
 	log.Debugf("Name added: %v / %v", len(names), lines)
 
 	return names
-}
-
-func (n *Namelist) parseNamelist() {
-	for i := range n.items {
-		n.parseNamelistCore(i)
-	}
-
-	for _, item := range n.items {
-		log.Debugf(">>> %v", item)
-	}
 }
 

@@ -29,6 +29,8 @@ type Nameitem struct {
 	// Domain name set for lookups
 	names stringSet
 
+	// TODO: add a stringSet for TLDs?
+
 	path string
 	mtime time.Time
 	size int64
@@ -96,10 +98,6 @@ func (n *Namelist) parseNamelist() {
 		// Q: Use goroutine for concurrent update?
 		n.parseNamelistCore(i)
 	}
-
-	for _, item := range n.items {
-		log.Debugf(">>> %v", item)
-	}
 }
 
 func (n *Namelist) parse(r io.Reader) stringSet {
@@ -136,10 +134,11 @@ func (n *Namelist) parse(r io.Reader) stringSet {
 
 		domain = strings.ToLower(string(f[1]))
 		if !IsDomainName(domain) {
-			log.Warningf("%v isn't domain...", domain)
+			log.Warningf("'%v' isn't a domain name", domain)
 			continue
 		}
 		if net.ParseIP(string(f[2])) == nil {
+			log.Warningf("'%s' isn't an IP address", string(f[2]))
 			continue
 		}
 

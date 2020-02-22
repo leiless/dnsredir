@@ -37,7 +37,8 @@ func IsDomainName(s string) bool {
 		return r == '.'
 	})
 
-	if len(f) < 2 {
+	// len(f) == 1 means a TLD
+	if len(f) == 0 {
 		return false
 	}
 

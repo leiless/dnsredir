@@ -14,14 +14,41 @@ import (
 
 func init() { plugin.Register(pluginName, Setup) }
 
+func periodicNamelistUpdate(re *Redirect) chan bool {
+	updateChan := make(chan bool)
+
+	if re.reload != 0 {
+		 go func() {
+			ticker := time.NewTicker(re.reload)
+			for {
+				select {
+				case <-updateChan:
+					return
+				case <-ticker.C:
+					re.parseNamelist()
+				}
+			}
+		 }()
+	}
+
+	return updateChan
+}
+
 func Setup(c *caddy.Controller) error {
 	re, err := ParseRedirect(c)
 	if err != nil {
 		return PluginError(err)
 	}
 
+	updateChan := periodicNamelistUpdate(re)
+
 	c.OnStartup(func() error {
 		re.parseNamelist()
+		return nil
+	})
+
+	c.OnShutdown(func() error {
+		close(updateChan)
 		return nil
 	})
 

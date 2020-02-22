@@ -11,6 +11,7 @@ import (
 	"github.com/coredns/coredns/plugin/whoami"
 	"github.com/coredns/coredns/request"
 	"github.com/miekg/dns"
+	"time"
 )
 
 var log = clog.NewWithPlugin(pluginName)
@@ -23,7 +24,9 @@ type Redirect struct {
 
 func NewRedirect() *Redirect {
 	return &Redirect{
-		Namelist: &Namelist{},
+		Namelist: &Namelist{
+			reload: 5 * time.Second,
+		},
 	}
 }
 

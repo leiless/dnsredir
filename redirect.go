@@ -8,6 +8,7 @@ import (
 	"context"
 	"github.com/coredns/coredns/plugin"
 	clog "github.com/coredns/coredns/plugin/pkg/log"
+	"github.com/coredns/coredns/plugin/whoami"
 	"github.com/coredns/coredns/request"
 	"github.com/miekg/dns"
 )
@@ -36,7 +37,7 @@ func (re *Redirect) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.M
 	}
 
 	log.Debugf("%v in namelist", name)
-	return 0, nil
+	return whoami.Whoami{}.ServeDNS(ctx, w, r)
 }
 
 func (re *Redirect) Name() string { return pluginName }

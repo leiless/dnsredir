@@ -3,6 +3,7 @@ package redirect
 import (
 	"bufio"
 	"bytes"
+	"github.com/coredns/coredns/plugin"
 	"io"
 	"net"
 	"os"
@@ -10,25 +11,42 @@ import (
 	"time"
 )
 
-type stringSet map[string]struct{}
+type domainSet map[string]struct{}
 
-/**
- * @return	true if `str' already in set previously(MT-unsafe)
- *			false otherwise
- */
-func (set *stringSet) Add(str string) bool {
-	_, found := (*set)[str]
-	(*set)[str] = struct{}{}
-	return found
+// Return true if name added successfully, false otherwise
+func (set *domainSet) Add(str string) bool {
+	// To reduce memory, we don't use full qualified name
+	if name, ok := stringToDomain(str); ok {
+		(*set)[name] = struct{}{}
+		return true
+	}
+	return false
+}
+
+// Assume name is lower cased and without trailing dot
+func (set *domainSet) Match(child string) bool {
+	// Fast lookup for a full match
+	if _, ok := (*set)[child]; ok {
+		return true
+	}
+
+	// Fallback to iterate the whole set
+	for parent := range *set {
+		if plugin.Name(parent).Matches(child) {
+			return true
+		}
+	}
+
+	return false
 }
 
 type Nameitem struct {
 	sync.RWMutex
 
 	// Domain name set for lookups
-	names stringSet
+	names domainSet
 
-	// TODO: add a stringSet for TLDs?
+	// TODO: add a domainSet for TLDs?
 
 	path string
 	mtime time.Time
@@ -127,8 +145,8 @@ func (n *Namelist) parseNamelistCore(i int) {
 	item.Unlock()
 }
 
-func (n *Namelist) parse(r io.Reader) stringSet {
-	names := make(stringSet)
+func (n *Namelist) parse(r io.Reader) domainSet {
+	names := make(domainSet)
 
 	totalLines := 0
 	scanner := bufio.NewScanner(r)
@@ -139,9 +157,7 @@ func (n *Namelist) parse(r io.Reader) stringSet {
 			line = line[0:i]
 		}
 
-		if domain, ok := stringToDomain(string(line)); ok {
-			// To reduce memory, we don't use full qualified name
-			names.Add(domain)
+		if names.Add(string(line)) {
 			continue
 		}
 
@@ -163,9 +179,7 @@ func (n *Namelist) parse(r io.Reader) stringSet {
 			continue
 		}
 
-		if domain, ok := stringToDomain(string(f[1])); ok {
-			names.Add(domain)
-		} else {
+		if !names.Add(string(f[1])) {
 			log.Warningf("'%v' isn't a domain name", string(f[1]))
 		}
 	}

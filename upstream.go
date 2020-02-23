@@ -7,7 +7,6 @@ package redirect
 import (
 	"github.com/caddyserver/caddy"
 	"github.com/coredns/coredns/core/dnsserver"
-	"github.com/coredns/coredns/plugin"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -16,7 +15,7 @@ import (
 
 type reloadableUpstream struct {
 	*Namelist
-	ignored stringSet
+	ignored domainSet
 
 	// TODO:
 	// Health check
@@ -26,10 +25,6 @@ type reloadableUpstream struct {
 // reloadableUpstream implements Upstream interface
 
 // Check if given name in upstream name list
-// Lookup divided into three steps
-// 	1. Ignored lookup
-//	2. Fast lookup
-//	3. Full lookup
 func (u *reloadableUpstream) Match(name string) bool {
 	child, ok := stringToDomain(name)
 	if !ok {
@@ -38,31 +33,15 @@ func (u *reloadableUpstream) Match(name string) bool {
 	}
 
 	// The ignored domain map should be relatively small
-	for parent := range u.ignored {
-		if plugin.Name(parent).Matches(child) {
-			log.Debugf("'%v' is ignored", child)
-			return false
-		}
+	if u.ignored.Match(child) {
+		return false
 	}
 
-	// Fast lookup for a full match
 	for _, item := range u.items {
 		item.RLock()
-		if _, ok := item.names[child]; ok {
+		if item.names.Match(child) {
 			item.RUnlock()
 			return true
-		}
-		item.RUnlock()
-	}
-
-	// Fallback to iterate the whole namelist
-	for _, item := range u.items {
-		item.RLock()
-		for parent := range item.names {
-			if plugin.Name(parent).Matches(child) {
-				item.RUnlock()
-				return true
-			}
 		}
 		item.RUnlock()
 	}
@@ -170,11 +149,9 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		if len(ignored) == 0 {
 			return c.ArgErr()
 		}
-		u.ignored = make(stringSet)
+		u.ignored = make(domainSet)
 		for _, name := range ignored {
-			if domain, ok := stringToDomain(name); ok {
-				u.ignored.Add(domain)
-			} else {
+			if !u.ignored.Add(name) {
 				log.Warningf("'%v' isn't a domain name", name)
 			}
 		}

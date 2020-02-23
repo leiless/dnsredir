@@ -20,6 +20,8 @@ type Redirect struct {
 	Next plugin.Handler
 
 	*Namelist
+
+	ignored stringSet
 }
 
 func NewRedirect() *Redirect {
@@ -46,13 +48,27 @@ func (re *Redirect) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.M
 func (re *Redirect) Name() string { return pluginName }
 
 // Check if given name in Redirect namelist
-// Lookup divided into two steps
-//	1. Fast lookup
-//	2. Full lookup
+// Lookup divided into three steps
+// 	1. Ignored lookup
+//	2. Fast lookup
+//	3. Full lookup
 func (re *Redirect) match(name string) bool {
 	// TODO: Add a metric value in Prometheus to determine average lookup time
 
-	child := RemoveTrailingDot(name)
+	child, ok := stringToDomain(name)
+	if !ok {
+		// TODO: Tell user to report this error if it's a valid domain?
+		log.Warningf("'%v' isn't a valid domain name?", name)
+		return false
+	}
+
+	// The ignored domain map should be relatively small
+	for parent := range re.ignored {
+		if plugin.Name(parent).Matches(child) {
+			log.Debugf("'%v' is ignored", child)
+			return false
+		}
+	}
 
 	// Fast lookup for a full match
 	for _, item := range re.items {

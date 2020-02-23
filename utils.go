@@ -20,19 +20,11 @@ func Close(c io.Closer) {
 	}
 }
 
-func RemoveTrailingDot(s string) string {
-	if n := len(s); n > 0 && s[n-1] == '.' {
-		return s[:n-1]
-	}
-	return s
-}
-
 /**
  * Rough check if `s' is a domain name
  * XXX: it won't honor valid TLD and Punycode
  */
-func IsDomainName(s string) bool {
-	s = RemoveTrailingDot(strings.ToLower(s))
+func isDomainName(s string) bool {
 	f := strings.FieldsFunc(s, func(r rune) bool {
 		return r == '.'
 	})
@@ -60,5 +52,23 @@ func IsDomainName(s string) bool {
 	}
 
 	return true
+}
+
+func removeTrailingDot(s string) string {
+	if n := len(s); n > 0 && s[n-1] == '.' {
+		return s[:n-1]
+	}
+	return s
+}
+
+// Try to convert a string to a domain name
+// Returned string is lower cased and without trailing dot
+// Empty string is returned if it's not a domain name
+func stringToDomain(s string) (string, bool) {
+	s = removeTrailingDot(strings.ToLower(s))
+	if isDomainName(s) {
+		return s, true
+	}
+	return "", false
 }
 

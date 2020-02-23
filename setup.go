@@ -108,7 +108,7 @@ func ParseRedirect2(c *caddy.Controller) (*Redirect, error) {
 		}
 	}
 	re.items = NewNameitemsWithPaths(paths)
-	log.Debugf("Files: %v", paths)
+	log.Infof("Files: %v", paths)
 
 	for c.NextBlock() {
 		if err := ParseBlock(c, re); err != nil {
@@ -139,7 +139,21 @@ func ParseBlock(c *caddy.Controller, re *Redirect) error {
 			return c.Errf("negative time duration: %s", args[0])
 		}
 		re.reload = d
-		log.Debugf("Reload time duration: %v", d)
+		log.Infof("Reload time duration: %v", d)
+	case "except":
+		ignored := c.RemainingArgs()
+		if len(ignored) == 0 {
+			return c.ArgErr()
+		}
+		re.ignored = make(stringSet)
+		for _, name := range ignored {
+			if domain, ok := stringToDomain(name); ok {
+				re.ignored.Add(domain)
+			} else {
+				log.Warningf("'%v' isn't a domain name", name)
+			}
+		}
+		log.Infof("ignored: %v", re.ignored)
 	default:
 		return c.Errf("unknown directive: %s", c.Val())
 	}

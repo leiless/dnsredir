@@ -6,7 +6,6 @@ import (
 	"io"
 	"net"
 	"os"
-	"strings"
 	"sync"
 	"time"
 )
@@ -103,19 +102,18 @@ func (n *Namelist) parseNamelist() {
 func (n *Namelist) parse(r io.Reader) stringSet {
 	names := make(stringSet)
 
-	lines := 0
+	totalLines := 0
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
-		lines++
+		totalLines++
 		line := scanner.Bytes()
 		if i := bytes.Index(line, []byte{'#'}); i >= 0 {
 			line = line[0:i]
 		}
 
-		domain := strings.ToLower(string(line))
-		if IsDomainName(domain) {
+		if domain, ok := stringToDomain(string(line)); ok {
 			// To reduce memory, we don't use full qualified name
-			names.Add(strings.TrimSuffix(domain, "."))
+			names.Add(domain)
 			continue
 		}
 
@@ -132,20 +130,19 @@ func (n *Namelist) parse(r io.Reader) stringSet {
 			continue
 		}
 
-		domain = strings.ToLower(string(f[1]))
-		if !IsDomainName(domain) {
-			log.Warningf("'%v' isn't a domain name", domain)
-			continue
-		}
 		if net.ParseIP(string(f[2])) == nil {
 			log.Warningf("'%s' isn't an IP address", string(f[2]))
 			continue
 		}
 
-		names.Add(strings.TrimSuffix(domain, "."))
+		if domain, ok := stringToDomain(string(f[1])); ok {
+			names.Add(domain)
+		} else {
+			log.Warningf("'%v' isn't a domain name", string(f[1]))
+		}
 	}
 
-	log.Debugf("Name added: %v / %v", len(names), lines)
+	log.Debugf("Name added: %v / %v", len(names), totalLines)
 
 	return names
 }

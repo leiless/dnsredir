@@ -50,6 +50,41 @@ type Namelist struct {
 	// Time between two reload of a name item
 	// All name items shared the same reload duration
 	reload time.Duration
+
+	stopUpdateChan chan struct{}
+}
+
+// MT-Unsafe
+func (n *Namelist) periodicUpdate() {
+	if n.stopUpdateChan != nil {
+		panic("This function should be called once and don't make() the update channel manually")
+	}
+
+	n.stopUpdateChan = make(chan struct{})
+
+	// Kick off initial name list content population
+	n.parseNamelist()
+
+	if n.reload != 0 {
+		go func() {
+			ticker := time.NewTicker(n.reload)
+			for {
+				select {
+				case <-n.stopUpdateChan:
+					return
+				case <-ticker.C:
+					n.parseNamelist()
+				}
+			}
+		}()
+	}
+}
+
+func (n *Namelist) parseNamelist() {
+	for i := range n.items {
+		// Q: Use goroutine for concurrent update?
+		n.parseNamelistCore(i)
+	}
 }
 
 func (n *Namelist) parseNamelistCore(i int) {
@@ -90,13 +125,6 @@ func (n *Namelist) parseNamelistCore(i int) {
 	item.mtime = stat.ModTime()
 	item.size = stat.Size()
 	item.Unlock()
-}
-
-func (n *Namelist) parseNamelist() {
-	for i := range n.items {
-		// Q: Use goroutine for concurrent update?
-		n.parseNamelistCore(i)
-	}
 }
 
 func (n *Namelist) parse(r io.Reader) stringSet {

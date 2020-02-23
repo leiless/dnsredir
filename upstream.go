@@ -7,6 +7,7 @@ package redirect
 import (
 	"github.com/caddyserver/caddy"
 	"github.com/coredns/coredns/core/dnsserver"
+	"github.com/coredns/coredns/plugin"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -20,6 +21,71 @@ type reloadableUpstream struct {
 	// TODO:
 	// Health check
 	// Exchanger
+}
+
+// reloadableUpstream implements Upstream interface
+
+// Check if given name in upstream name list
+// Lookup divided into three steps
+// 	1. Ignored lookup
+//	2. Fast lookup
+//	3. Full lookup
+func (u *reloadableUpstream) Match(name string) bool {
+	child, ok := stringToDomain(name)
+	if !ok {
+		log.Warningf("Skip invalid domain '%v', report to Github repo if it's an error.", name)
+		return false
+	}
+
+	// The ignored domain map should be relatively small
+	for parent := range u.ignored {
+		if plugin.Name(parent).Matches(child) {
+			log.Debugf("'%v' is ignored", child)
+			return false
+		}
+	}
+
+	// Fast lookup for a full match
+	for _, item := range u.items {
+		item.RLock()
+		if _, ok := item.names[child]; ok {
+			item.RUnlock()
+			return true
+		}
+		item.RUnlock()
+	}
+
+	// Fallback to iterate the whole namelist
+	for _, item := range u.items {
+		item.RLock()
+		for parent := range item.names {
+			if plugin.Name(parent).Matches(child) {
+				item.RUnlock()
+				return true
+			}
+		}
+		item.RUnlock()
+	}
+
+	return false
+}
+
+func (u *reloadableUpstream) Select() interface{} {
+	return "TODO"
+}
+
+func (u *reloadableUpstream) Exchanger() interface{} {
+	return "TODO"
+}
+
+func (u *reloadableUpstream) Start() error {
+	u.periodicUpdate()
+	return nil
+}
+
+func (u *reloadableUpstream) Stop() error {
+	close(u.stopUpdateChan)
+	return nil
 }
 
 // Parses Caddy config input and return a list of reloadable upstream for this plugin

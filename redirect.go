@@ -19,9 +19,24 @@ var log = clog.NewWithPlugin(pluginName)
 type Redirect struct {
 	Next plugin.Handler
 
-	*Namelist
+	Upstreams *[]Upstream
 
+	*Namelist
 	ignored stringSet
+}
+
+// Upstream manages a pool of proxy upstream hosts
+// see: github.com/coredns/proxy#proxy.go
+type Upstream interface {
+	// Check if given domain name should be routed to this upstream zone
+	Match(name string) bool
+	// Select an upstream host to be routed to, nil if no available host
+	Select() interface{}
+	// Exchanger returns the exchanger to be used for this upstream
+	Exchanger() interface{}
+
+	Start() error
+	Stop() error
 }
 
 func NewRedirect() *Redirect {

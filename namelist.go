@@ -72,6 +72,19 @@ type Namelist struct {
 	stopUpdateChan chan struct{}
 }
 
+// Assume name is lower cased and without trailing dot
+func (n *Namelist) Match(child string) bool {
+	for _, item := range n.items {
+		item.RLock()
+		if item.names.Match(child) {
+			item.RUnlock()
+			return true
+		}
+		item.RUnlock()
+	}
+	return false
+}
+
 // MT-Unsafe
 func (n *Namelist) periodicUpdate() {
 	if n.stopUpdateChan != nil {

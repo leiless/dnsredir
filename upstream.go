@@ -37,13 +37,8 @@ func (u *reloadableUpstream) Match(name string) bool {
 		return false
 	}
 
-	for _, item := range u.items {
-		item.RLock()
-		if item.names.Match(child) {
-			item.RUnlock()
-			return true
-		}
-		item.RUnlock()
+	if u.Namelist.Match(child) {
+		return true
 	}
 
 	return false

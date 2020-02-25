@@ -1,7 +1,9 @@
 package redirect
 
 import (
-	"sync"
+	"crypto/tls"
+	"github.com/coredns/coredns/plugin/pkg/up"
+	"github.com/miekg/dns"
 	"sync/atomic"
 	"time"
 )
@@ -12,10 +14,49 @@ type UpstreamHostDownFunc func(*UpstreamHost) bool
 
 // UpstreamHost represents a single upstream DNS server
 type UpstreamHost struct {
-	host string					// IP:PORT
-	fails uint32				// Fail count
+	host string						// IP:PORT
+	fails uint32					// Fail count
 	downFunc UpstreamHostDownFunc	// This function should be side-effect save
+
 	// TODO: options
+	c *dns.Client
+	probe *up.Probe
+}
+
+func (uh *UpstreamHost) SetTLSConfig(config *tls.Config) {
+	uh.c.Net = "tcp-tls"
+	uh.c.TLSConfig = config
+}
+
+// For health check we send to . IN NS +norec message to the upstream.
+// Dial timeouts and empty replies are considered fails
+// 	basically anything else constitutes a healthy upstream.
+// Check is used as the up.Func in the up.Probe.
+func (uh *UpstreamHost) Check() error {
+	err := uh.send()
+	if err != nil {
+		atomic.AddUint32(&uh.fails, 1)
+		return err
+	}
+	// Reset failure counter once health check success
+	atomic.StoreUint32(&uh.fails, 0)
+	return nil
+}
+
+func (uh *UpstreamHost) send() error {
+	ping := &dns.Msg{}
+	ping.SetQuestion(".", dns.TypeNS)
+
+	msg, _, err := uh.c.Exchange(ping, uh.host)
+	// If we got a header, we're alright, basically only care about I/O errors 'n stuff.
+	if err != nil && msg != nil {
+		// Silly check, something sane came back.
+		if msg.Response || msg.Opcode == dns.OpcodeQuery {
+			err = nil
+		}
+	}
+
+	return err
 }
 
 // UpstreamHostPool is an array of upstream DNS servers
@@ -34,7 +75,7 @@ func (uh *UpstreamHost) Down() bool {
 }
 
 type HealthCheck struct {
-	wg sync.WaitGroup		// Wait until all running goroutines to stop
+	//wg sync.WaitGroup		// Wait until all running goroutines to stop
 	stopChan chan struct{}	// Signal health check worker to stop
 
 	hosts UpstreamHostPool
@@ -43,5 +84,47 @@ type HealthCheck struct {
 	failTimeout time.Duration	// Single health check timeout
 	maxFails uint32				// Maximum fail count considered as down
 	checkInterval time.Duration	// Health check interval
+}
+
+func (hc *HealthCheck) Start() {
+	hc.stopChan = make(chan struct{})
+
+	if hc.checkInterval != 0 {
+		for _, host := range hc.hosts {
+			host.probe.Start(hc.checkInterval)
+		}
+
+		go hc.healthCheckWorker()
+	}
+}
+
+func (hc *HealthCheck) Stop() {
+	close(hc.stopChan)
+	for _, host := range hc.hosts {
+		host.probe.Stop()
+	}
+}
+
+func (hc *HealthCheck) healthCheck() {
+	for _, host := range hc.hosts {
+		host.probe.Do(func() error {
+			return host.Check()
+		})
+	}
+}
+
+func (hc *HealthCheck) healthCheckWorker() {
+	// Kick off initial health check immediately
+	hc.healthCheck()
+
+	ticker := time.NewTimer(hc.checkInterval)
+	for {
+		select {
+		case <-ticker.C:
+			hc.healthCheck()
+		case <-hc.stopChan:
+			return
+		}
+	}
 }
 

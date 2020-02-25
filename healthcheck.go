@@ -14,7 +14,7 @@ type UpstreamHostDownFunc func(*UpstreamHost) bool
 type UpstreamHost struct {
 	host string					// IP:PORT
 	fails uint32				// Fail count
-	downFunc UpstreamHostDownFunc
+	downFunc UpstreamHostDownFunc	// This function should be side-effect save
 	// TODO: options
 }
 

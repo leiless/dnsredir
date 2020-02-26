@@ -2,8 +2,8 @@ package redirect
 
 import (
 	"crypto/tls"
-	"github.com/coredns/coredns/plugin/pkg/up"
 	"github.com/miekg/dns"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -20,7 +20,6 @@ type UpstreamHost struct {
 
 	// TODO: options
 	c *dns.Client
-	probe *up.Probe
 }
 
 func (uh *UpstreamHost) SetTLSConfig(config *tls.Config) {
@@ -75,7 +74,7 @@ func (uh *UpstreamHost) Down() bool {
 }
 
 type HealthCheck struct {
-	//wg sync.WaitGroup		// Wait until all running goroutines to stop
+	wg sync.WaitGroup		// Wait until all running goroutines to stop
 	stopChan chan struct{}	// Signal health check worker to stop
 
 	hosts UpstreamHostPool
@@ -88,28 +87,23 @@ type HealthCheck struct {
 
 func (hc *HealthCheck) Start() {
 	hc.stopChan = make(chan struct{})
-
 	if hc.checkInterval != 0 {
-		for _, host := range hc.hosts {
-			host.probe.Start(hc.checkInterval)
-		}
-
-		go hc.healthCheckWorker()
+		hc.wg.Add(1)
+		go func() {
+			defer hc.wg.Done()
+			hc.healthCheckWorker()
+		}()
 	}
 }
 
 func (hc *HealthCheck) Stop() {
 	close(hc.stopChan)
-	for _, host := range hc.hosts {
-		host.probe.Stop()
-	}
+	hc.wg.Wait()
 }
 
 func (hc *HealthCheck) healthCheck() {
 	for _, host := range hc.hosts {
-		host.probe.Do(func() error {
-			return host.Check()
-		})
+		go host.Check()
 	}
 }
 

@@ -31,15 +31,13 @@ func (uh *UpstreamHost) SetTLSConfig(config *tls.Config) {
 // Dial timeouts and empty replies are considered fails
 // 	basically anything else constitutes a healthy upstream.
 // Check is used as the up.Func in the up.Probe.
-func (uh *UpstreamHost) Check() error {
-	err := uh.send()
-	if err != nil {
+func (uh *UpstreamHost) Check() {
+	if uh.send() != nil {
 		atomic.AddUint32(&uh.fails, 1)
-		return err
+	} else {
+		// Reset failure counter once health check success
+		atomic.StoreUint32(&uh.fails, 0)
 	}
-	// Reset failure counter once health check success
-	atomic.StoreUint32(&uh.fails, 0)
-	return nil
 }
 
 func (uh *UpstreamHost) send() error {

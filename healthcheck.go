@@ -31,14 +31,21 @@ func (uh *UpstreamHost) SetTLSConfig(config *tls.Config) {
 // Dial timeouts and empty replies are considered fails
 // 	basically anything else constitutes a healthy upstream.
 // Check is used as the up.Func in the up.Probe.
-func (uh *UpstreamHost) Check() {
+func (uh *UpstreamHost) Check() error {
+	proto := "udp"
+	if uh.c.Net != "" {
+		proto = uh.c.Net
+	}
+
 	if err, rtt := uh.send(); err != nil {
 		atomic.AddUint32(&uh.fails, 1)
-		log.Warningf("DNS @%v +%v dead?  err: %v", uh.host, uh.c.Net, err)
+		log.Warningf("DNS @%v +%v dead?  err: %v", uh.host, proto, err)
+		return err
 	} else {
 		// Reset failure counter once health check success
 		atomic.StoreUint32(&uh.fails, 0)
-		log.Infof("DNS @%v +%v ok  rtt: %v", uh.host, uh.c.Net, rtt)
+		log.Infof("DNS @%v +%v ok  rtt: %v", uh.host, proto, rtt)
+		return nil
 	}
 }
 
@@ -52,8 +59,12 @@ func (uh *UpstreamHost) send() (error, time.Duration) {
 	if err != nil && msg != nil {
 		// Silly check, something sane came back.
 		if msg.Response || msg.Opcode == dns.OpcodeQuery {
+			proto := "udp"
+			if uh.c.Net != "" {
+				proto = uh.c.Net
+			}
 			log.Warningf("Correct DNS @%v +%v malformed response  err: %v msg: %v",
-							uh.host, uh.c.Net, err, msg)
+							uh.host, proto, err, msg)
 			err = nil
 		}
 	}

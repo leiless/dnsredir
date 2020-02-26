@@ -103,7 +103,7 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 				return nil, err
 			}
 		} else if s != nil && !s.Mode().IsRegular() {
-			log.Warningf("File %s isn't a regular file")
+			log.Warningf("File %s isn't a regular file", path)
 		}
 	}
 	u.items = NewNameitemsWithPaths(paths)

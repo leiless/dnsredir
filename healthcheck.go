@@ -19,7 +19,7 @@ type UpstreamHost struct {
 	downFunc UpstreamHostDownFunc	// This function should be side-effect save
 
 	// TODO: options
-	c *dns.Client
+	c *dns.Client					// DNS client used for health check
 }
 
 func (uh *UpstreamHost) SetTLSConfig(config *tls.Config) {
@@ -32,28 +32,33 @@ func (uh *UpstreamHost) SetTLSConfig(config *tls.Config) {
 // 	basically anything else constitutes a healthy upstream.
 // Check is used as the up.Func in the up.Probe.
 func (uh *UpstreamHost) Check() {
-	if uh.send() != nil {
+	if err, rtt := uh.send(); err != nil {
 		atomic.AddUint32(&uh.fails, 1)
+		log.Warningf("DNS @%v +%v dead?  err: %v", uh.host, uh.c.Net, err)
 	} else {
 		// Reset failure counter once health check success
 		atomic.StoreUint32(&uh.fails, 0)
+		log.Infof("DNS @%v +%v ok  rtt: %v", uh.host, uh.c.Net, rtt)
 	}
 }
 
-func (uh *UpstreamHost) send() error {
+func (uh *UpstreamHost) send() (error, time.Duration) {
 	ping := &dns.Msg{}
 	ping.SetQuestion(".", dns.TypeNS)
 
-	msg, _, err := uh.c.Exchange(ping, uh.host)
+	// rtt stands for Round Trip Time
+	msg, rtt, err := uh.c.Exchange(ping, uh.host)
 	// If we got a header, we're alright, basically only care about I/O errors 'n stuff.
 	if err != nil && msg != nil {
 		// Silly check, something sane came back.
 		if msg.Response || msg.Opcode == dns.OpcodeQuery {
+			log.Warningf("Correct DNS @%v +%v malformed response  err: %v msg: %v",
+							uh.host, uh.c.Net, err, msg)
 			err = nil
 		}
 	}
 
-	return err
+	return err, rtt
 }
 
 // UpstreamHostPool is an array of upstream DNS servers

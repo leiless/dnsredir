@@ -93,6 +93,7 @@ type HealthCheck struct {
 
 	hosts UpstreamHostPool
 	policy Policy
+	spray Policy
 
 	failTimeout time.Duration	// Single health check timeout
 	maxFails uint32				// Maximum fail count considered as down
@@ -134,5 +135,53 @@ func (hc *HealthCheck) healthCheckWorker() {
 			return
 		}
 	}
+}
+
+// Select an upstream host based on the policy and the health check result
+// Taken from proxy/healthcheck/healthcheck.go with modification
+func (hc *HealthCheck) Select() *UpstreamHost {
+	pool := hc.hosts
+	if len(pool) == 1 {
+		if pool[0].Down() && hc.spray == nil {
+			return nil
+		}
+		return pool[0]
+	}
+
+	allDown := true
+	for _, host := range pool {
+		if !host.Down() {
+			allDown = false
+			break
+		}
+	}
+	if allDown {
+		if hc.spray == nil {
+			return nil
+		}
+		return hc.spray.Select(pool)
+	}
+
+	if hc.policy == nil {
+		// Default policy is random
+		h := (&Random{}).Select(pool)
+		if h != nil {
+			return h
+		}
+		if hc.spray == nil {
+			return nil
+		}
+		return hc.spray.Select(pool)
+	}
+
+	h := hc.policy.Select(pool)
+	if h != nil {
+		return h
+	}
+
+	if hc.spray == nil {
+		return nil
+	}
+	return hc.spray.Select(pool)
 }
 

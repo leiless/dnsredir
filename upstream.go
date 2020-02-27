@@ -5,8 +5,11 @@
 package redirect
 
 import (
+	"context"
 	"github.com/caddyserver/caddy"
 	"github.com/coredns/coredns/core/dnsserver"
+	"github.com/coredns/coredns/request"
+	"github.com/miekg/dns"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -16,10 +19,7 @@ import (
 type reloadableUpstream struct {
 	*Namelist
 	ignored domainSet
-
-	// TODO:
-	// Health check
-	// Exchanger
+	*HealthCheck
 }
 
 // reloadableUpstream implements Upstream interface
@@ -44,12 +44,9 @@ func (u *reloadableUpstream) Match(name string) bool {
 	return false
 }
 
-func (u *reloadableUpstream) Select() interface{} {
-	return "TODO"
-}
-
-func (u *reloadableUpstream) Exchanger() interface{} {
-	return "TODO"
+func (u *reloadableUpstream) Exchange(ctx context.Context, state request.Request) (*dns.Msg, error) {
+	// TODO
+	return nil, nil
 }
 
 func (u *reloadableUpstream) Start() error {

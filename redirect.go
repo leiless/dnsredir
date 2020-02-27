@@ -27,9 +27,12 @@ type Upstream interface {
 	// Check if given domain name should be routed to this upstream zone
 	Match(name string) bool
 	// Select an upstream host to be routed to, nil if no available host
-	Select() interface{}
+	Select() *UpstreamHost
+
 	// Exchanger returns the exchanger to be used for this upstream
-	Exchanger() interface{}
+	//Exchanger() interface{}
+	// Send question to upstream host and await for response
+	Exchange(ctx context.Context, state request.Request) (*dns.Msg, error)
 
 	Start() error
 	Stop() error

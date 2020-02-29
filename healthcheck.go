@@ -1,7 +1,9 @@
 package redirect
 
 import (
+	"context"
 	"crypto/tls"
+	"github.com/coredns/coredns/request"
 	"github.com/miekg/dns"
 	"sync"
 	"sync/atomic"
@@ -21,7 +23,6 @@ type UpstreamHost struct {
 	fails uint32					// Fail count
 	downFunc UpstreamHostDownFunc	// This function should be side-effect save
 
-	// TODO: options
 	c *dns.Client					// DNS client used for health check
 	// TODO: Options puts here
 }
@@ -29,6 +30,12 @@ type UpstreamHost struct {
 func (uh *UpstreamHost) SetTLSConfig(config *tls.Config) {
 	uh.c.Net = "tcp-tls"
 	uh.c.TLSConfig = config
+}
+
+func (uh *UpstreamHost) Exchange(ctx context.Context, state request.Request) (*dns.Msg, error) {
+	// TODO
+	log.Debugf("UpstreamHost.Exchange() called...")
+	return nil, errNoHealthy
 }
 
 // For health check we send to . IN NS +norec message to the upstream.

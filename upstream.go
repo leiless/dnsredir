@@ -5,11 +5,9 @@
 package redirect
 
 import (
-	"context"
 	"github.com/caddyserver/caddy"
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/plugin/pkg/parse"
-	"github.com/coredns/coredns/request"
 	"github.com/miekg/dns"
 	"os"
 	"path/filepath"
@@ -45,18 +43,15 @@ func (u *reloadableUpstream) Match(name string) bool {
 	return false
 }
 
-func (u *reloadableUpstream) Exchange(ctx context.Context, state request.Request) (*dns.Msg, error) {
-	// TODO
-	return nil, nil
-}
-
 func (u *reloadableUpstream) Start() error {
 	u.periodicUpdate()
+	u.HealthCheck.Start()
 	return nil
 }
 
 func (u *reloadableUpstream) Stop() error {
 	close(u.stopUpdateChan)
+	u.HealthCheck.Stop()
 	return nil
 }
 
@@ -64,6 +59,7 @@ func (u *reloadableUpstream) Stop() error {
 func NewReloadableUpstreams(c *caddy.Controller) ([]Upstream, error) {
 	var ups []Upstream
 
+	// TODO: bad input: just "redirect"
 	for c.Next() {
 		u, err := newReloadableUpstream(c)
 		if err != nil {
@@ -181,6 +177,7 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		u.checkInterval = dur
 		log.Infof("%v: %v", dir, u.checkInterval)
 	case "to":
+		// TODO: to is a mandatory sub-directive
 		if err := parseTo(c, u); err != nil {
 			return err
 		}

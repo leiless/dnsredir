@@ -171,7 +171,7 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		if err != nil {
 			return err
 		}
-		u.maxFails = n
+		u.maxFails = uint32(n)
 		log.Infof("%v: %v", dir, n)
 	case "health_check":
 		dur, err := parseDuration(c)
@@ -181,7 +181,9 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		u.checkInterval = dur
 		log.Infof("%v: %v", dir, u.checkInterval)
 	case "to":
-		parseTo(c)
+		if err := parseTo(c, u); err != nil {
+			return err
+		}
 	default:
 		return c.Errf("unknown sub-directive: %v", dir)
 	}
@@ -233,28 +235,41 @@ func parseDuration(c *caddy.Controller) (time.Duration, error) {
 	return duration, nil
 }
 
-func parseTo(c *caddy.Controller) ([]string, error) {
+func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 	//dir := c.Val()
 	args := c.RemainingArgs()
 	if len(args) == 0 {
-		return nil, c.ArgErr()
+		return c.ArgErr()
 	}
 
 	toHosts, err := parse.HostPortOrFile(args...)
 	if err != nil {
-		return nil, err
-	}
-	for i, host := range toHosts {
-		//log.Infof("Host#%v: %v", i, host)
-		trans, addr := parse.Transport(host)
-		log.Infof("%v> Transport: %v \t Address: %v", i, trans, addr)
+		return err
 	}
 
-	return nil, nil
+	for i, host := range toHosts {
+		trans, addr := parse.Transport(host)
+		log.Infof("%v> Transport: %v \t Address: %v", i, trans, addr)
+
+		uh := &UpstreamHost{
+			addr: addr,
+			downFunc: checkDownFunc(u),
+			c: &dns.Client{
+				Net: trans,
+				Timeout: defaultHcTimeout,
+			},
+		}
+		u.hosts = append(u.hosts, uh)
+
+		log.Infof("Upstream: %v", uh)
+	}
+
+	return nil
 }
 
 const (
 	defaultMaxFails = 3
-	defaultReloadDuration = 5 * time.Second
+	defaultReloadDuration = 2 * time.Second
+	defaultHcTimeout = 1500 * time.Millisecond
 )
 

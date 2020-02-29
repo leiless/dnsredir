@@ -23,6 +23,7 @@ type UpstreamHost struct {
 
 	// TODO: options
 	c *dns.Client					// DNS client used for health check
+	// TODO: Options puts here
 }
 
 func (uh *UpstreamHost) SetTLSConfig(config *tls.Config) {
@@ -101,7 +102,7 @@ type HealthCheck struct {
 	// [PENDING]
 	//failTimeout time.Duration	// Single health check timeout
 
-	maxFails int32				// Maximum fail count considered as down
+	maxFails uint32				// Maximum fail count considered as down
 	checkInterval time.Duration	// Health check interval
 }
 

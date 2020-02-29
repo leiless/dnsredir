@@ -40,6 +40,7 @@ func TestSend(t *testing.T) {
 		{"1.0.0.1:53", udpProto, 1 * s, false, ""},
 		{"1.1.1.1:53", defaultProto, 1 * s, false, ""},
 		{"1.1.1.1:53", tcpProto, 1 * s, false, ""},
+		{"1.0.0.1:853", tcpTlsProto, 1 * s, false, ""},
 		{"1.1.1.1:853", tcpTlsProto, 1 * s, false, ""},
 		{"9.9.9.9:853", tcpTlsProto, 500 * ms, false, ""},
 		{"223.5.5.5:853", tcpTlsProto, 500 * ms, false, ""},

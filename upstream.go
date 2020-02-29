@@ -128,14 +128,14 @@ func parseFilePaths(c *caddy.Controller, u *reloadableUpstream) error {
 }
 
 func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
-	switch c.Val() {
+	switch dir := c.Val(); dir {
 	case "reload":
 		dur, err := parseDuration(c)
 		if err != nil {
 			return err
 		}
 		u.reload = dur
-		log.Infof("reload: %v", dur)
+		log.Infof("%v: %v", dir, u.reload)
 	case "except":
 		args := c.RemainingArgs()
 		if len(args) == 0 {
@@ -147,13 +147,13 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 				log.Warningf("'%v' isn't a domain name", name)
 			}
 		}
-		log.Infof("ignored: %v", u.ignored)
+		log.Infof("%v: %v", dir, u.ignored)
 	case "spray":
 		if len(c.RemainingArgs()) != 0 {
 			return c.ArgErr()
 		}
 		u.spray = &Spray{}
-		log.Infof("Spray enabled")
+		log.Infof("%v: enabled", dir)
 	case "policy":
 		arr := c.RemainingArgs()
 		if len(arr) != 1 {
@@ -164,22 +164,23 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 			return c.Errf("unsupported policy %v", arr[0])
 		}
 		u.policy = policy
+		log.Infof("%v: %v", dir, arr[0])
 	case "max_fails":
 		n, err := parseInt32(c)
 		if err != nil {
 			return err
 		}
 		u.maxFails = n
-		log.Infof("max_fails: %v", n)
+		log.Infof("%v: %v", dir, n)
 	case "health_check":
 		dur, err := parseDuration(c)
 		if err != nil {
 			return err
 		}
 		u.checkInterval = dur
-		log.Infof("health_check: %v", u.checkInterval)
+		log.Infof("%v: %v", dir, u.checkInterval)
 	default:
-		return c.Errf("unknown sub-directive: %s", c.Val())
+		return c.Errf("unknown sub-directive: %v", dir)
 	}
 	return nil
 }
@@ -191,14 +192,17 @@ func parseInt32(c *caddy.Controller) (int32, error) {
 	if len(args) != 1 {
 		return 0, c.ArgErr()
 	}
+
 	n, err := strconv.Atoi(args[0])
 	if err != nil {
 		return 0, err
 	}
+
 	// In case of n is 64-bit
 	if n < 0 || n > 0x7fffffff {
 		return 0, c.Errf("%v: value %v of out of non-negative int32 range", dir, n)
 	}
+
 	return int32(n), nil
 }
 
@@ -211,7 +215,7 @@ func parseDuration(c *caddy.Controller) (time.Duration, error) {
 
 	arg := args[0]
 	if _, err := strconv.Atoi(arg); err == nil {
-		log.Warningf("%v %s missing time unit, assume it's second", dir, arg)
+		log.Warningf("%v: %s missing time unit, assume it's second", dir, arg)
 		arg += "s"
 	}
 
@@ -221,7 +225,7 @@ func parseDuration(c *caddy.Controller) (time.Duration, error) {
 	}
 
 	if duration < 0 {
-		return 0, c.Errf("negative time duration: %s", arg)
+		return 0, c.Errf("%v: negative time duration %s", arg)
 	}
 	return duration, nil
 }

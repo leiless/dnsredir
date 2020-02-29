@@ -96,8 +96,10 @@ type HealthCheck struct {
 	policy Policy
 	spray Policy
 
-	failTimeout time.Duration	// Single health check timeout
-	maxFails uint32				// Maximum fail count considered as down
+	// [PENDING]
+	//failTimeout time.Duration	// Single health check timeout
+
+	maxFails int32				// Maximum fail count considered as down
 	checkInterval time.Duration	// Health check interval
 }
 

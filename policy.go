@@ -9,30 +9,13 @@ import (
 	"sync/atomic"
 )
 
-/*
-var (
-	// SupportedPolicies is the collection of policies registered
-	SupportedPolicies = make(map[string]func() Policy)
-)
-
-// RegisterPolicy adds a custom policy to the proxy.
-func RegisterPolicy(name string, policy func() Policy) {
-	SupportedPolicies[name] = policy
+// SupportedPolicies is the collection of policies registered
+var SupportedPolicies = map[string]Policy{
+	"random": &Random{},
+	"round_robin": &RoundRobin{},
+	"sequential": &Sequential{},
+	"spray": &Spray{},
 }
-
-// Policy decides how a host will be selected from a pool. When all hosts are unhealthy, it is assumed the
-// healthchecking failed. In this case each policy will *randomly* return a host from the pool to prevent
-// no traffic to go through at all.
-type Policy interface {
-	Select(pool UpstreamHostPool) *UpstreamHost
-}
-
-func init() {
-	RegisterPolicy("random", func() Policy { return &Random{} })
-	RegisterPolicy("round_robin", func() Policy { return &RoundRobin{} })
-	RegisterPolicy("sequential", func() Policy { return &Sequential{} })
-}
-*/
 
 // Policy decides how a host will be selected from a pool.
 // When all hosts are unhealthy, it is assumed the health checking failed.

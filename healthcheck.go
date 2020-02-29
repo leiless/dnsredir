@@ -139,7 +139,7 @@ func (hc *HealthCheck) healthCheckWorker() {
 	// Kick off initial health check immediately
 	hc.healthCheck()
 
-	ticker := time.NewTimer(hc.checkInterval)
+	ticker := time.NewTicker(hc.checkInterval)
 	for {
 		select {
 		case <-ticker.C:

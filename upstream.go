@@ -252,7 +252,9 @@ func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 			addr: addr,
 			downFunc: checkDownFunc(u),
 			c: &dns.Client{
-				Net: trans,
+				//Net: trans,
+				// TODO: Honor options
+				Net: "udp",
 				Timeout: defaultHcTimeout,
 			},
 		}

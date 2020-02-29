@@ -16,7 +16,7 @@ type UpstreamHostDownFunc func(*UpstreamHost) bool
 type UpstreamHost struct {
 	// [PENDING]
 	//protocol string					// DNS protocol, i.e. "udp", "tcp", "tcp-tls"
-	host string						// IP:PORT
+	addr string						// IP:PORT
 
 	fails uint32					// Fail count
 	downFunc UpstreamHostDownFunc	// This function should be side-effect save
@@ -42,12 +42,12 @@ func (uh *UpstreamHost) Check() error {
 
 	if err, rtt := uh.send(); err != nil {
 		atomic.AddUint32(&uh.fails, 1)
-		log.Warningf("DNS @%v +%v dead?  err: %v", uh.host, proto, err)
+		log.Warningf("DNS @%v +%v dead?  err: %v", uh.addr, proto, err)
 		return err
 	} else {
 		// Reset failure counter once health check success
 		atomic.StoreUint32(&uh.fails, 0)
-		log.Infof("DNS @%v +%v ok  rtt: %v", uh.host, proto, rtt)
+		log.Infof("DNS @%v +%v ok  rtt: %v", uh.addr, proto, rtt)
 		return nil
 	}
 }
@@ -57,7 +57,7 @@ func (uh *UpstreamHost) send() (error, time.Duration) {
 	ping.SetQuestion(".", dns.TypeNS)
 
 	// rtt stands for Round Trip Time
-	msg, rtt, err := uh.c.Exchange(ping, uh.host)
+	msg, rtt, err := uh.c.Exchange(ping, uh.addr)
 	// If we got a header, we're alright, basically only care about I/O errors 'n stuff.
 	if err != nil && msg != nil {
 		// Silly check, something sane came back.
@@ -67,7 +67,7 @@ func (uh *UpstreamHost) send() (error, time.Duration) {
 				proto = uh.c.Net
 			}
 			log.Warningf("Correct DNS @%v +%v malformed response  err: %v msg: %v",
-							uh.host, proto, err, msg)
+							uh.addr, proto, err, msg)
 			err = nil
 		}
 	}
@@ -83,7 +83,7 @@ type UpstreamHostPool []*UpstreamHost
 // 	to some default criteria if necessary.
 func (uh *UpstreamHost) Down() bool {
 	if uh.downFunc == nil {
-		log.Warningf("Upstream host %v have no downFunc, fallback to default", uh.host)
+		log.Warningf("Upstream host %v have no downFunc, fallback to default", uh.addr)
 		fails := atomic.LoadUint32(&uh.fails)
 		return fails > 0
 	}

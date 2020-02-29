@@ -98,7 +98,7 @@ type Spray struct{}
 func (s *Spray) Select(pool UpstreamHostPool) *UpstreamHost {
 	i := rand.Int() % len(pool)
 	randHost := pool[i]
-	log.Warningf("All hosts reported as down, spraying to target: %s", randHost.host)
+	log.Warningf("All hosts reported as down, spraying to target: %s", randHost.addr)
 	return randHost
 }
 

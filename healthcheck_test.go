@@ -18,7 +18,7 @@ const (
 
 func TestSend(t *testing.T) {
 	tests := []struct {
-		host string
+		addr string
 		proto string
 		timeout time.Duration
 		shouldErr bool
@@ -56,7 +56,7 @@ func TestSend(t *testing.T) {
 
 	for i, test := range tests {
 		uh := &UpstreamHost{
-			host: test.host,
+			addr: test.addr,
 			c: &dns.Client{
 				Net: test.proto,
 				Timeout: test.timeout,

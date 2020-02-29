@@ -8,6 +8,7 @@ import (
 	"context"
 	"github.com/caddyserver/caddy"
 	"github.com/coredns/coredns/core/dnsserver"
+	"github.com/coredns/coredns/plugin/pkg/parse"
 	"github.com/coredns/coredns/request"
 	"github.com/miekg/dns"
 	"os"
@@ -179,6 +180,8 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		}
 		u.checkInterval = dur
 		log.Infof("%v: %v", dir, u.checkInterval)
+	case "to":
+		parseTo(c)
 	default:
 		return c.Errf("unknown sub-directive: %v", dir)
 	}
@@ -228,6 +231,26 @@ func parseDuration(c *caddy.Controller) (time.Duration, error) {
 		return 0, c.Errf("%v: negative time duration %s", arg)
 	}
 	return duration, nil
+}
+
+func parseTo(c *caddy.Controller) ([]string, error) {
+	//dir := c.Val()
+	args := c.RemainingArgs()
+	if len(args) == 0 {
+		return nil, c.ArgErr()
+	}
+
+	toHosts, err := parse.HostPortOrFile(args...)
+	if err != nil {
+		return nil, err
+	}
+	for i, host := range toHosts {
+		//log.Infof("Host#%v: %v", i, host)
+		trans, addr := parse.Transport(host)
+		log.Infof("%v> Transport: %v \t Address: %v", i, trans, addr)
+	}
+
+	return nil, nil
 }
 
 const (

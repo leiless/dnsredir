@@ -14,8 +14,10 @@ type UpstreamHostDownFunc func(*UpstreamHost) bool
 
 // UpstreamHost represents a single upstream DNS server
 type UpstreamHost struct {
-	protocol string					// DNS protocol, i.e. "udp", "tcp", "tcp-tls"
+	// [PENDING]
+	//protocol string					// DNS protocol, i.e. "udp", "tcp", "tcp-tls"
 	host string						// IP:PORT
+
 	fails uint32					// Fail count
 	downFunc UpstreamHostDownFunc	// This function should be side-effect save
 

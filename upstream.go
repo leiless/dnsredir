@@ -10,6 +10,7 @@ import (
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/plugin/pkg/parse"
 	pkgtls "github.com/coredns/coredns/plugin/pkg/tls"
+	"github.com/coredns/coredns/plugin/pkg/transport"
 	"github.com/miekg/dns"
 	"os"
 	"path/filepath"
@@ -75,6 +76,20 @@ func NewReloadableUpstreams(c *caddy.Controller) ([]Upstream, error) {
 	return ups, nil
 }
 
+// TODO: return a bool to indicate whether it's known protocol
+func transToProto(proto string, tp *Transport) string {
+	if tp.tlsConfig != nil || proto == transport.TLS {
+		return "tcp-tls"
+	}
+	if tp.forceTcp {
+		return "tcp"
+	}
+	if tp.preferUdp || proto == transport.DNS {
+		return "udp"
+	}
+	return proto	// Fallback
+}
+
 func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 	u := &reloadableUpstream{
 		Namelist: &Namelist{
@@ -102,6 +117,23 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 	if u.hosts == nil {
 		return nil, c.Errf("missing mandatory property: %q", "to")
 	}
+	for _, host := range u.hosts {
+		trans, addr := parse.Transport(host.addr)
+		host.addr = addr
+
+		host.transport = new(Transport)
+		// Deep copy
+		*host.transport = *u.transport
+		if trans != transport.TLS {
+			host.transport.tlsConfig = nil
+		}
+
+		host.c = &dns.Client{
+			Net: transToProto(trans, host.transport),
+			Timeout: defaultHcTimeout,
+		}
+	}
+
 	return u, nil
 }
 
@@ -314,14 +346,8 @@ func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 		log.Infof("%v> Transport: %v \t Address: %v", i, trans, addr)
 
 		uh := &UpstreamHost{
-			addr: addr,
+			addr: host,		// Not an error, addr will be splitted later
 			downFunc: checkDownFunc(u),
-			c: &dns.Client{
-				//Net: trans,
-				// TODO: Honor options
-				Net: "udp",
-				Timeout: defaultHcTimeout,
-			},
 		}
 		u.hosts = append(u.hosts, uh)
 

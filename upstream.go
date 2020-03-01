@@ -93,6 +93,9 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 		}
 	}
 
+	if u.hosts == nil {
+		return nil, c.Errf("missing mandatory property: %q", "to")
+	}
 	return u, nil
 }
 
@@ -184,10 +187,6 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		}
 	default:
 		return c.Errf("unknown property: %v", dir)
-	}
-
-	if u.hosts == nil {
-		return c.Errf("missing mandatory property: %q", "to")
 	}
 	return nil
 }

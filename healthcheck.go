@@ -10,6 +10,16 @@ import (
 	"time"
 )
 
+// Transport settings
+// Inspired from coredns/plugin/forward/persistent.go
+// addr isn't sealed into this struct since it's a high-level item
+type Transport struct {
+	forceTcp  	bool				// forceTcp takes precedence over preferUdp
+	preferUdp 	bool
+	expire		time.Duration		// [sic] Expire (cached) connections after this time
+	tlsConfig	*tls.Config
+}
+
 // UpstreamHostDownFunc can be used to customize how Down behaves
 // see: proxy/healthcheck/healthcheck.go
 type UpstreamHostDownFunc func(*UpstreamHost) bool
@@ -24,7 +34,11 @@ type UpstreamHost struct {
 	downFunc UpstreamHostDownFunc	// This function should be side-effect save
 
 	c *dns.Client					// DNS client used for health check
-	// TODO: Options puts here
+
+	// Transport settings related to this upstream host
+	// Currently, it's the same as HealthCheck.transport since Caddy doesn't over nested blocks
+	// XXX: We may support per-upstream specific transport once Caddy supported nesting blocks in future
+	transport *Transport
 }
 
 func (uh *UpstreamHost) SetTLSConfig(config *tls.Config) {
@@ -111,6 +125,9 @@ type HealthCheck struct {
 
 	maxFails uint32				// Maximum fail count considered as down
 	checkInterval time.Duration	// Health check interval
+
+	// A global transport since Caddy doesn't support over nested blocks
+	transport *Transport
 }
 
 func (hc *HealthCheck) Start() {

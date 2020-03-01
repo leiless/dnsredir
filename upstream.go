@@ -5,9 +5,11 @@
 package redirect
 
 import (
+	"crypto/tls"
 	"github.com/caddyserver/caddy"
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/plugin/pkg/parse"
+	pkgtls "github.com/coredns/coredns/plugin/pkg/tls"
 	"github.com/miekg/dns"
 	"os"
 	"path/filepath"
@@ -80,6 +82,10 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 		},
 		HealthCheck: &HealthCheck{
 			maxFails: defaultMaxFails,
+			checkInterval: defaultHcInterval,
+			transport: &Transport{
+				tlsConfig: new(tls.Config),
+			},
 		},
 	}
 
@@ -185,6 +191,57 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		if err := parseTo(c, u); err != nil {
 			return err
 		}
+	case "force_tcp":
+		if c.NextArg() {
+			return c.ArgErr()
+		}
+		u.transport.forceTcp = true
+		// Reset prefer_udp since force_tcp takes precedence
+		if u.transport.preferUdp {
+			log.Warningf("%v: prefer_udp invalidated", dir)
+			u.transport.preferUdp = false
+		}
+		log.Infof("%v: enabled", dir)
+	case "prefer_udp":
+		if c.NextArg() {
+			return c.ArgErr()
+		}
+		if u.transport.forceTcp == false {
+			// Ditto.
+			u.transport.preferUdp = true
+			log.Infof("%v: enabled", dir)
+		} else {
+			log.Warningf("%v: skip since force_tcp already turned on", dir)
+		}
+	case "expire":
+		dur, err := parseDuration(c)
+		if err != nil {
+			return err
+		}
+		u.transport.expire = dur
+		log.Infof("%v: %v", dir, dur)
+	case "tls":
+		args := c.RemainingArgs()
+		if len(args) > 3 {
+			return c.ArgErr()
+		}
+		tlsConfig, err := pkgtls.NewTLSConfigFromArgs(args...)
+		if err != nil {
+			return err
+		}
+		u.transport.tlsConfig = tlsConfig
+		log.Infof("%v: %v", dir, args)
+	case "tls_servername":
+		args := c.RemainingArgs()
+		if len(args) != 1 {
+			return c.ArgErr()
+		}
+		domain, ok := stringToDomain(args[0])
+		if !ok {
+			return c.Errf("%v: %v isn't a valid domain name", dir, args[0])
+		}
+		u.transport.tlsConfig.ServerName = domain
+		log.Infof("%v: %v", dir, domain)
 	default:
 		return c.Errf("unknown property: %v", dir)
 	}
@@ -212,6 +269,7 @@ func parseInt32(c *caddy.Controller) (int32, error) {
 	return int32(n), nil
 }
 
+// Return a non-negative time.Duration and an error(if any)
 func parseDuration(c *caddy.Controller) (time.Duration, error) {
 	dir := c.Val()
 	args := c.RemainingArgs()
@@ -276,6 +334,7 @@ func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 const (
 	defaultMaxFails = 3
 	defaultReloadDuration = 2 * time.Second
+	defaultHcInterval = 2000 * time.Millisecond
 	defaultHcTimeout = 1500 * time.Millisecond
 )
 

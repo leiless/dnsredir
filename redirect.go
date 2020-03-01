@@ -109,14 +109,14 @@ func (r *Redirect) Name() string { return pluginName }
 
 func (r *Redirect) match(name string) Upstream {
 	if r.Upstreams == nil {
-		log.Warningf("redirect have no upstream hosts at all")
-		return nil
+		panic("Why Redirect.Upstreams is nil?!")
 	}
 
 	// TODO: Add a metric value in Prometheus to determine average lookup time
 
 	for _, up := range *r.Upstreams {
 		// TODO: perform longest prefix match?
+		// For maximum performance, we search the first matched item and return directly
 		if up.Match(name) {
 			return up
 		}

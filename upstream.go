@@ -59,7 +59,6 @@ func (u *reloadableUpstream) Stop() error {
 func NewReloadableUpstreams(c *caddy.Controller) ([]Upstream, error) {
 	var ups []Upstream
 
-	// TODO: bad input: just "redirect"
 	for c.Next() {
 		u, err := newReloadableUpstream(c)
 		if err != nil {
@@ -68,6 +67,9 @@ func NewReloadableUpstreams(c *caddy.Controller) ([]Upstream, error) {
 		ups = append(ups, u)
 	}
 
+	if ups == nil {
+		panic("Why upstream hosts is nil? it shouldn't happen.")
+	}
 	return ups, nil
 }
 
@@ -177,12 +179,15 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		u.checkInterval = dur
 		log.Infof("%v: %v", dir, u.checkInterval)
 	case "to":
-		// TODO: to is a mandatory sub-directive
 		if err := parseTo(c, u); err != nil {
 			return err
 		}
 	default:
-		return c.Errf("unknown sub-directive: %v", dir)
+		return c.Errf("unknown property: %v", dir)
+	}
+
+	if u.hosts == nil {
+		return c.Errf("missing mandatory property: %q", "to")
 	}
 	return nil
 }
@@ -233,7 +238,7 @@ func parseDuration(c *caddy.Controller) (time.Duration, error) {
 }
 
 func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
-	//dir := c.Val()
+	dir := c.Val()
 	args := c.RemainingArgs()
 	if len(args) == 0 {
 		return c.ArgErr()
@@ -242,6 +247,9 @@ func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 	toHosts, err := parse.HostPortOrFile(args...)
 	if err != nil {
 		return err
+	}
+	if len(toHosts) == 0 {
+		return c.Errf("%q parsed from file(s), yet no entry was found", dir)
 	}
 
 	for i, host := range toHosts {

@@ -46,7 +46,7 @@ type Nameitem struct {
 	// Domain name set for lookups
 	names domainSet
 
-	// TODO: add a domainSet for TLDs?
+	// TODO: [optimization] add a domainSet for TLDs?
 
 	path string
 	mtime time.Time

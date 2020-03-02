@@ -90,6 +90,11 @@ func transToProto(proto string, tp *Transport) string {
 	return proto	// Fallback
 }
 
+// XXX: Currently have no support over DoH and gRPC
+func isKnownTrans(trans string) bool {
+	return trans == transport.DNS || trans == transport.TLS
+}
+
 func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 	u := &reloadableUpstream{
 		Namelist: &Namelist{
@@ -119,10 +124,13 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 	}
 	for _, host := range u.hosts {
 		trans, addr := parse.Transport(host.addr)
+		if !isKnownTrans(trans) {
+			return nil, c.Errf("%q protocol isn't supported currently", trans)
+		}
 		host.addr = addr
 
 		host.transport = new(Transport)
-		// Deep copy
+		// Inherit from global settings
 		*host.transport = *u.transport
 		if trans != transport.TLS {
 			host.transport.tlsConfig = nil

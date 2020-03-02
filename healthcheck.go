@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"github.com/coredns/coredns/request"
 	"github.com/miekg/dns"
+	"net"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -19,6 +20,8 @@ type Transport struct {
 	expire		time.Duration		// [sic] Expire (cached) connections after this time
 	tlsConfig	*tls.Config
 }
+
+// TODO: Transport get conn from transport settings
 
 // UpstreamHostDownFunc can be used to customize how Down behaves
 // see: proxy/healthcheck/healthcheck.go
@@ -47,9 +50,37 @@ func (uh *UpstreamHost) SetTLSConfig(config *tls.Config) {
 }
 
 func (uh *UpstreamHost) Exchange(ctx context.Context, state request.Request) (*dns.Msg, error) {
-	// TODO
-	log.Debugf("UpstreamHost.Exchange() called...")
-	return nil, errNoHealthy
+	proto := state.Proto()
+	if uh.transport.forceTcp {
+		proto = "tcp"
+	}
+
+	conn, err := net.DialTimeout(proto, uh.addr, 1 * time.Second)
+	if err != nil {
+		return nil, err
+	}
+	defer Close(conn)
+
+	m := state.Req
+	udpsize := uint16(dns.MinMsgSize)
+	opt := m.IsEdns0()
+	// If EDNS0 is used use that for size.
+	if opt != nil && udpsize < opt.UDPSize() {
+		udpsize = opt.UDPSize()
+	}
+
+	dnsConn := &dns.Conn{Conn: conn, UDPSize: udpsize}
+
+	writeDeadline := time.Now().Add(defaultTimeout)
+	_ = dnsConn.SetWriteDeadline(writeDeadline)
+	if err := dnsConn.WriteMsg(m); err != nil {
+		log.Debugf("Failed to send message: %v", err)
+		return nil, err
+	}
+
+	readDeadline := time.Now().Add(defaultTimeout)
+	_ = conn.SetReadDeadline(readDeadline)
+	return dnsConn.ReadMsg()
 }
 
 // For health check we send to . IN NS +norec message to the upstream.
@@ -62,14 +93,14 @@ func (uh *UpstreamHost) Check() error {
 		proto = uh.c.Net
 	}
 
-	if err, rtt := uh.send(); err != nil {
+	if err, _ := uh.send(); err != nil {
 		atomic.AddUint32(&uh.fails, 1)
 		log.Warningf("DNS @%v +%v dead?  err: %v", uh.addr, proto, err)
 		return err
 	} else {
 		// Reset failure counter once health check success
 		atomic.StoreUint32(&uh.fails, 0)
-		log.Infof("DNS @%v +%v ok  rtt: %v", uh.addr, proto, rtt)
+		//log.Infof("DNS @%v +%v ok  rtt: %v", uh.addr, proto, rtt)
 		return nil
 	}
 }

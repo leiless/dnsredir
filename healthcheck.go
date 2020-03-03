@@ -21,8 +21,6 @@ type Transport struct {
 	tlsConfig	*tls.Config
 }
 
-// TODO: Transport get conn from transport settings
-
 // UpstreamHostDownFunc can be used to customize how Down behaves
 // see: proxy/healthcheck/healthcheck.go
 type UpstreamHostDownFunc func(*UpstreamHost) bool
@@ -49,13 +47,25 @@ func (uh *UpstreamHost) SetTLSConfig(config *tls.Config) {
 	uh.c.TLSConfig = config
 }
 
-func (uh *UpstreamHost) Exchange(ctx context.Context, state request.Request) (*dns.Msg, error) {
-	proto := state.Proto()
-	if uh.transport.forceTcp {
+func (uh *UpstreamHost) Dial(proto string) (net.Conn, error) {
+	switch {
+	case uh.transport.tlsConfig != nil:
+		proto = "tcp-tls"
+	case uh.transport.forceTcp:
 		proto = "tcp"
+	case uh.transport.preferUdp:
+		proto = "udp"
 	}
 
-	conn, err := net.DialTimeout(proto, uh.addr, 1 * time.Second)
+	timeout := 1 * time.Second
+	if proto == "tcp-tls" {
+		return dns.DialTimeoutWithTLS(proto, uh.addr, uh.transport.tlsConfig, timeout)
+	}
+	return net.DialTimeout(proto, uh.addr, timeout)
+}
+
+func (uh *UpstreamHost) Exchange(ctx context.Context, state request.Request) (*dns.Msg, error) {
+	conn, err := uh.Dial(state.Proto())
 	if err != nil {
 		return nil, err
 	}

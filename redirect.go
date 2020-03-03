@@ -130,5 +130,5 @@ var (
 )
 
 //const defaultTimeout = 5 * time.Second
-const defaultTimeout = 500 * time.Millisecond
+const defaultTimeout = 2000 * time.Millisecond
 

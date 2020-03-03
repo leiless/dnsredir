@@ -8,6 +8,15 @@ import (
 
 const pluginName = "redirect"
 
+func Unused(args ...interface{}) {
+	// Dummy loop
+	for i := range args {
+		if i == 0 {
+			break
+		}
+	}
+}
+
 func PluginError(err error) error {
 	return plugin.Error(pluginName, err)
 }

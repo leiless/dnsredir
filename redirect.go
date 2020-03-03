@@ -94,6 +94,7 @@ func (r *Redirect) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 			_ = w.WriteMsg(reply)
 			return 0, nil
 		}
+		log.Warningf("Exchange() failed  error: %v", upstreamErr)
 	}
 
 	if upstreamErr == nil {

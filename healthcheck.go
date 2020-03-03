@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"github.com/coredns/coredns/request"
 	"github.com/miekg/dns"
-	"net"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -47,7 +46,7 @@ func (uh *UpstreamHost) SetTLSConfig(config *tls.Config) {
 	uh.c.TLSConfig = config
 }
 
-func (uh *UpstreamHost) Dial(proto string) (net.Conn, error) {
+func (uh *UpstreamHost) Dial(proto string) (*dns.Conn, error) {
 	switch {
 	case uh.transport.tlsConfig != nil:
 		proto = "tcp-tls"
@@ -61,36 +60,30 @@ func (uh *UpstreamHost) Dial(proto string) (net.Conn, error) {
 	if proto == "tcp-tls" {
 		return dns.DialTimeoutWithTLS(proto, uh.addr, uh.transport.tlsConfig, timeout)
 	}
-	return net.DialTimeout(proto, uh.addr, timeout)
+	return dns.DialTimeout(proto, uh.addr, timeout)
 }
 
 func (uh *UpstreamHost) Exchange(ctx context.Context, state request.Request) (*dns.Msg, error) {
+	Unused(ctx)
+
 	conn, err := uh.Dial(state.Proto())
 	if err != nil {
 		return nil, err
 	}
 	defer Close(conn)
 
-	m := state.Req
-	udpsize := uint16(dns.MinMsgSize)
-	opt := m.IsEdns0()
-	// If EDNS0 is used use that for size.
-	if opt != nil && udpsize < opt.UDPSize() {
-		udpsize = opt.UDPSize()
+	conn.UDPSize = uint16(state.Size())
+	if conn.UDPSize < dns.MinMsgSize {
+		conn.UDPSize = dns.MinMsgSize
 	}
 
-	dnsConn := &dns.Conn{Conn: conn, UDPSize: udpsize}
-
-	writeDeadline := time.Now().Add(defaultTimeout)
-	_ = dnsConn.SetWriteDeadline(writeDeadline)
-	if err := dnsConn.WriteMsg(m); err != nil {
-		log.Debugf("Failed to send message: %v", err)
+	_ = conn.SetWriteDeadline(time.Now().Add(defaultTimeout))
+	if err := conn.WriteMsg(state.Req); err != nil {
 		return nil, err
 	}
 
-	readDeadline := time.Now().Add(defaultTimeout)
-	_ = conn.SetReadDeadline(readDeadline)
-	return dnsConn.ReadMsg()
+	_ = conn.SetReadDeadline(time.Now().Add(defaultTimeout))
+	return conn.ReadMsg()
 }
 
 // For health check we send to . IN NS +norec message to the upstream.

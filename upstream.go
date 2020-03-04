@@ -75,17 +75,17 @@ func NewReloadableUpstreams(c *caddy.Controller) ([]Upstream, error) {
 	return ups, nil
 }
 
+// see: healthcheck.go/UpstreamHost.Dial()
 func transToProto(proto string, tp *Transport) string {
-	if tp.tlsConfig != nil || proto == transport.TLS {
-		return "tcp-tls"
+	switch {
+	case tp.tlsConfig != nil:
+		proto = "tcp-tls"
+	case tp.forceTcp:
+		proto = "tcp"
+	case tp.preferUdp || proto == transport.DNS:
+		proto = "udp"
 	}
-	if tp.forceTcp {
-		return "tcp"
-	}
-	if tp.preferUdp || proto == transport.DNS {
-		return "udp"
-	}
-	return proto	// Fallback
+	return proto
 }
 
 // XXX: Currently have no support over DoH and gRPC

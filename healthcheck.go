@@ -41,12 +41,7 @@ type UpstreamHost struct {
 	transport *Transport
 }
 
-func (uh *UpstreamHost) SetTLSConfig(config *tls.Config) {
-	uh.c.Net = "tcp-tls"
-	uh.c.TLSConfig = config
-	uh.transport.tlsConfig = config
-}
-
+// see: upstream.go/transToProto()
 func (uh *UpstreamHost) Dial(proto string) (*dns.Conn, error) {
 	switch {
 	case uh.transport.tlsConfig != nil:

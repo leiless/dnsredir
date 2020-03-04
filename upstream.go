@@ -34,13 +34,15 @@ func (u *reloadableUpstream) Match(name string) bool {
 		return false
 	}
 
-	// The ignored domain map should be relatively small
+	if !u.Namelist.Match(child) {
+		return false
+	}
+
 	if u.ignored.Match(child) {
 		log.Debugf("Skip %v since it's ignored", child)
 		return false
 	}
-
-	return u.Namelist.Match(child)
+	return true
 }
 
 func (u *reloadableUpstream) Start() error {

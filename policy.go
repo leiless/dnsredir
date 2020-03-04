@@ -30,6 +30,8 @@ type Policy interface {
 // Random is a policy that selects up hosts from a pool at random.
 type Random struct{}
 
+func (r *Random) String() string { return "random" }
+
 // Select selects an up host at random from the specified pool.
 func (r *Random) Select(pool UpstreamHostPool) *UpstreamHost {
 	// Instead of just generating a random index
@@ -58,6 +60,8 @@ type RoundRobin struct {
 	robin uint32
 }
 
+func (r *RoundRobin) String() string { return "round_robin" }
+
 // Select selects an up host from the pool using a round robin ordering scheme.
 func (r *RoundRobin) Select(pool UpstreamHostPool) *UpstreamHost {
 	poolLen := uint32(len(pool))
@@ -77,6 +81,8 @@ func (r *RoundRobin) Select(pool UpstreamHostPool) *UpstreamHost {
 // Sequential is a policy that selects always the first healthy host in the list order.
 type Sequential struct{}
 
+func (s *Sequential) String() string { return "sequential" }
+
 // Select always the first that is not Down, nil if all hosts are down
 func (s *Sequential) Select(pool UpstreamHostPool) *UpstreamHost {
 	for i := 0; i < len(pool); i++ {
@@ -93,6 +99,8 @@ func (s *Sequential) Select(pool UpstreamHostPool) *UpstreamHost {
 // This should be used as a last ditch attempt to get
 //	a host when all hosts are reporting unhealthy.
 type Spray struct{}
+
+func (s *Spray) String() string { return "spray" }
 
 // Select selects an up host at random from the specified pool.
 func (s *Spray) Select(pool UpstreamHostPool) *UpstreamHost {

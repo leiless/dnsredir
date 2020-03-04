@@ -3,7 +3,7 @@ package redirect
 import "sync/atomic"
 
 // Default downFunc used in redirect plugin
-// Taken from proxy/down.go
+// Taken from https://github.com/coredns/proxy/proxy/down.go
 var checkDownFunc = func(u *reloadableUpstream) UpstreamHostDownFunc {
 	return func(uh *UpstreamHost) bool {
 		fails := atomic.LoadUint32(&uh.fails)

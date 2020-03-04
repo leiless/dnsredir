@@ -44,6 +44,7 @@ type UpstreamHost struct {
 func (uh *UpstreamHost) SetTLSConfig(config *tls.Config) {
 	uh.c.Net = "tcp-tls"
 	uh.c.TLSConfig = config
+	uh.transport.tlsConfig = config
 }
 
 func (uh *UpstreamHost) Dial(proto string) (*dns.Conn, error) {
@@ -89,7 +90,6 @@ func (uh *UpstreamHost) Exchange(ctx context.Context, state request.Request) (*d
 // For health check we send to . IN NS +norec message to the upstream.
 // Dial timeouts and empty replies are considered fails
 // 	basically anything else constitutes a healthy upstream.
-// Check is used as the up.Func in the up.Probe.
 func (uh *UpstreamHost) Check() error {
 	proto := "udp"
 	if uh.c.Net != "" {

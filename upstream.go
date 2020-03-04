@@ -267,10 +267,11 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		if err != nil {
 			return err
 		}
+		// Merge server name if tls_servername set previously
+		tlsConfig.ServerName = u.transport.tlsConfig.ServerName
 		u.transport.tlsConfig = tlsConfig
 		log.Infof("%v: %v", dir, args)
 	case "tls_servername":
-		// This option should put after tls option(if any) in Corefile
 		args := c.RemainingArgs()
 		if len(args) != 1 {
 			return c.ArgErr()

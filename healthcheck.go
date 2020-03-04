@@ -143,7 +143,12 @@ func (uh *UpstreamHost) Down() bool {
 		fails := atomic.LoadUint32(&uh.fails)
 		return fails > 0
 	}
-	return uh.downFunc(uh)
+
+	down := uh.downFunc(uh)
+	if down {
+		log.Debugf("%v marked as down...", uh.addr)
+	}
+	return down
 }
 
 type HealthCheck struct {

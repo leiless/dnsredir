@@ -36,14 +36,11 @@ func (u *reloadableUpstream) Match(name string) bool {
 
 	// The ignored domain map should be relatively small
 	if u.ignored.Match(child) {
+		log.Debugf("Skip %v since it's ignored", child)
 		return false
 	}
 
-	if u.Namelist.Match(child) {
-		return true
-	}
-
-	return false
+	return u.Namelist.Match(child)
 }
 
 func (u *reloadableUpstream) Start() error {
@@ -76,7 +73,6 @@ func NewReloadableUpstreams(c *caddy.Controller) ([]Upstream, error) {
 	return ups, nil
 }
 
-// TODO: return a bool to indicate whether it's known protocol
 func transToProto(proto string, tp *Transport) string {
 	if tp.tlsConfig != nil || proto == transport.TLS {
 		return "tcp-tls"
@@ -157,14 +153,14 @@ func parseFilePaths(c *caddy.Controller, u *reloadableUpstream) error {
 			path = filepath.Join(config.Root, path)
 		}
 
-		s, err := os.Stat(path)
+		st, err := os.Stat(path)
 		if err != nil {
 			if os.IsNotExist(err) {
 				log.Warningf("File %s doesn't exist", path)
 			} else {
 				return err
 			}
-		} else if s != nil && !s.Mode().IsRegular() {
+		} else if st != nil && !st.Mode().IsRegular() {
 			log.Warningf("File %s isn't a regular file", path)
 		}
 	}
@@ -209,7 +205,7 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		}
 		policy, ok := SupportedPolicies[arr[0]]
 		if !ok {
-			return c.Errf("unsupported policy %v", arr[0])
+			return c.Errf("unsupported policy %q", arr[0])
 		}
 		u.policy = policy
 		log.Infof("%v: %v", dir, arr[0])
@@ -238,8 +234,8 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		u.transport.forceTcp = true
 		// Reset prefer_udp since force_tcp takes precedence
 		if u.transport.preferUdp {
-			log.Warningf("%v: prefer_udp invalidated", dir)
 			u.transport.preferUdp = false
+			log.Warningf("%v: prefer_udp invalidated", dir)
 		}
 		log.Infof("%v: enabled", dir)
 	case "prefer_udp":
@@ -251,7 +247,7 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 			u.transport.preferUdp = true
 			log.Infof("%v: enabled", dir)
 		} else {
-			log.Warningf("%v: skip since force_tcp already turned on", dir)
+			log.Warningf("%v: force_tcp already turned on", dir)
 		}
 	case "expire":
 		dur, err := parseDuration(c)
@@ -272,22 +268,24 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		u.transport.tlsConfig = tlsConfig
 		log.Infof("%v: %v", dir, args)
 	case "tls_servername":
+		// This option should put after tls option(if any) in Corefile
 		args := c.RemainingArgs()
 		if len(args) != 1 {
 			return c.ArgErr()
 		}
 		domain, ok := stringToDomain(args[0])
 		if !ok {
-			return c.Errf("%v: %v isn't a valid domain name", dir, args[0])
+			return c.Errf("%v: %q isn't a valid domain name", dir, args[0])
 		}
 		u.transport.tlsConfig.ServerName = domain
 		log.Infof("%v: %v", dir, domain)
 	default:
-		return c.Errf("unknown property: %v", dir)
+		return c.Errf("unknown property: %q", dir)
 	}
 	return nil
 }
 
+// Return a non-negative int32
 // see: https://golang.org/pkg/builtin/#int
 func parseInt32(c *caddy.Controller) (int32, error) {
 	dir := c.Val()
@@ -351,10 +349,10 @@ func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 
 	for i, host := range toHosts {
 		trans, addr := parse.Transport(host)
-		log.Infof("%v> Transport: %v \t Address: %v", i, trans, addr)
+		log.Infof("#%v: Transport: %v \t Address: %v", i, trans, addr)
 
 		uh := &UpstreamHost{
-			addr: host,		// Not an error, addr will be splitted later
+			addr: host,		// Not an error, addr will be separated later
 			downFunc: checkDownFunc(u),
 		}
 		u.hosts = append(u.hosts, uh)

@@ -8,11 +8,13 @@ import (
 
 const pluginName = "dnsredir"
 
-func Unused(args ...interface{}) {
-	// Dummy loop
-	for i := range args {
-		if i == 0 {
-			break
+func Unused(arg0 interface{}, args ...interface{}) {
+	// Just consume all arguments
+	if arg0 == nil {
+		for i := range args {
+			if i == 0 {
+				break
+			}
 		}
 	}
 }

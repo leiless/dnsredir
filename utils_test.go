@@ -13,9 +13,9 @@ func TestUnused(t *testing.T) {
 
 func TestStringToDomain(t *testing.T) {
 	tests := []struct {
-		input string
-		should_ok bool
-		expected_output string
+		input          string
+		shouldOk       bool
+		expectedOutput string
 	}{
 		{"", false, ""},
 		{".", false, ""},
@@ -61,8 +61,8 @@ func TestStringToDomain(t *testing.T) {
 		{"SDsadjkDSAsdaSDJASdasd1311839123-021CD123u1900-21j3i231oi1sW-dt9", false, ""},
 	}
 	for i, c := range tests {
-		if domain, ok := stringToDomain(c.input); ok != c.should_ok || domain != c.expected_output {
-			t.Errorf("Test case#%v failed, %v %q vs %v %q", i, ok, domain, c.should_ok, c.expected_output)
+		if domain, ok := stringToDomain(c.input); ok != c.shouldOk || domain != c.expectedOutput {
+			t.Errorf("Test case#%v failed, %v %q vs %v %q", i, ok, domain, c.shouldOk, c.expectedOutput)
 		}
 	}
 }

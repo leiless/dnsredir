@@ -2,7 +2,7 @@
  * Taken from proxy/healthcheck/policy.go with modification
  */
 
-package redirect
+package dnsredir
 
 import (
 	"math/rand"

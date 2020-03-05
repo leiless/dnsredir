@@ -1,4 +1,4 @@
-package redirect
+package dnsredir
 
 import (
 	"github.com/coredns/coredns/plugin"
@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-const pluginName = "redirect"
+const pluginName = "dnsredir"
 
 func Unused(args ...interface{}) {
 	// Dummy loop

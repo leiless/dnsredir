@@ -2,7 +2,7 @@
  * Created Feb 23, 2020
  */
 
-package redirect
+package dnsredir
 
 import (
 	"crypto/tls"

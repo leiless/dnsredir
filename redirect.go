@@ -2,7 +2,7 @@
  * Created Feb 16, 2020
  */
 
-package redirect
+package dnsredir
 
 import (
 	"context"
@@ -102,7 +102,7 @@ func (r *Redirect) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 	}
 	return dns.RcodeServerFailure, upstreamErr
 
-	// redirect-whoami for DEBUGGING
+	// dnsredir-whoami for DEBUGGING
 	//return whoami.Whoami{}.ServeDNS(ctx, w, req)
 }
 

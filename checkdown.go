@@ -1,8 +1,8 @@
-package redirect
+package dnsredir
 
 import "sync/atomic"
 
-// Default downFunc used in redirect plugin
+// Default downFunc used in dnsredir plugin
 // Taken from https://github.com/coredns/proxy/proxy/down.go
 var checkDownFunc = func(u *reloadableUpstream) UpstreamHostDownFunc {
 	return func(uh *UpstreamHost) bool {

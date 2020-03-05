@@ -1,4 +1,4 @@
-package redirect
+package dnsredir
 
 import (
 	"bufio"

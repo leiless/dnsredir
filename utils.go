@@ -36,6 +36,18 @@ func Close(c io.Closer) {
  * XXX: it won't honor valid TLD and Punycode
  */
 func isDomainName(s string) bool {
+	// Trailing dot had been removed in upper call
+	if strings.HasPrefix(s, ".") ||
+		strings.HasSuffix(s, ".") {
+		return false
+	}
+
+	if strings.Contains(s, "..") ||
+		strings.Contains(s, ".-") ||
+		strings.Contains(s, "-.") {
+		return false
+	}
+
 	f := strings.FieldsFunc(s, func(r rune) bool {
 		return r == '.'
 	})
@@ -52,6 +64,8 @@ func isDomainName(s string) bool {
 		}
 
 		for _, c := range seg {
+			// More specifically, TLD should only contain [a-z] and hyphen
+			// We currently don't have such constrain
 			if c != '-' && (c < '0' || c > '9') && (c < 'a' || c > 'z') {
 				return false
 			}

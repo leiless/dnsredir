@@ -17,7 +17,7 @@ import (
 
 var log = clog.NewWithPlugin(pluginName)
 
-type Redirect struct {
+type Dnsredir struct {
 	Next plugin.Handler
 
 	Upstreams *[]Upstream
@@ -40,7 +40,7 @@ type Upstream interface {
 	Stop() error
 }
 
-func (r *Redirect) OnStartup() error {
+func (r *Dnsredir) OnStartup() error {
 	for _, up := range *r.Upstreams {
 		if err := up.Start(); err != nil {
 			return err
@@ -49,7 +49,7 @@ func (r *Redirect) OnStartup() error {
 	return nil
 }
 
-func (r *Redirect) OnShutdown() error {
+func (r *Dnsredir) OnShutdown() error {
 	for _, up := range *r.Upstreams {
 		if err := up.Stop(); err != nil {
 			return err
@@ -58,7 +58,7 @@ func (r *Redirect) OnShutdown() error {
 	return nil
 }
 
-func (r *Redirect) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.Msg) (int, error) {
+func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.Msg) (int, error) {
 	state := request.Request{W: w, Req: req}
 	name := state.Name()
 
@@ -106,11 +106,11 @@ func (r *Redirect) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 	//return whoami.Whoami{}.ServeDNS(ctx, w, req)
 }
 
-func (r *Redirect) Name() string { return pluginName }
+func (r *Dnsredir) Name() string { return pluginName }
 
-func (r *Redirect) match(name string) Upstream {
+func (r *Dnsredir) match(name string) Upstream {
 	if r.Upstreams == nil {
-		panic("Why Redirect.Upstreams is nil?!")
+		panic("Why Dnsredir.Upstreams is nil?!")
 	}
 
 	// TODO: Add a metric value in Prometheus to determine average lookup time

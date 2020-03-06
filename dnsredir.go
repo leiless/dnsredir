@@ -128,6 +128,7 @@ func (r *Dnsredir) match(name string) Upstream {
 
 var (
 	errNoHealthy = errors.New("no healthy upstream host")
+	errCachedConnClosed = errors.New("cached connection was closed by peer")
 )
 
 //const defaultTimeout = 5 * time.Second

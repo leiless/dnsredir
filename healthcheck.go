@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"github.com/coredns/coredns/request"
 	"github.com/miekg/dns"
+	"io"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -167,7 +168,11 @@ type UpstreamHost struct {
 }
 
 // see: upstream.go/transToProto()
-func (uh *UpstreamHost) Dial(proto string) (*dns.Conn, error) {
+// Return:
+//	#0	Persistent connection
+//	#1	true if it's a cached connection
+//	#2	error(if any)
+func (uh *UpstreamHost) Dial(proto string) (*persistConn, bool, error) {
 	switch {
 	case uh.transport.tlsConfig != nil:
 		proto = "tcp-tls"
@@ -177,34 +182,62 @@ func (uh *UpstreamHost) Dial(proto string) (*dns.Conn, error) {
 		proto = "udp"
 	}
 
-	timeout := 1 * time.Second
-	if proto == "tcp-tls" {
-		return dns.DialTimeoutWithTLS(proto, uh.addr, uh.transport.tlsConfig, timeout)
+	uh.transport.dial <- proto
+	pc := <- uh.transport.ret
+	if pc != nil {
+		return pc, true, nil
 	}
-	return dns.DialTimeout(proto, uh.addr, timeout)
+
+	timeout := 2 * time.Second
+	if proto == "tcp-tls" {
+		conn, err := dns.DialTimeoutWithTLS(proto, uh.addr, uh.transport.tlsConfig, timeout)
+		if err != nil {
+			return nil, false, err
+		}
+		return &persistConn{c: conn}, false, err
+	}
+	conn, err := dns.DialTimeout(proto, uh.addr, timeout)
+	if err != nil {
+		return nil, false, err
+	}
+	return &persistConn{c:conn}, false, err
 }
 
 func (uh *UpstreamHost) Exchange(ctx context.Context, state request.Request) (*dns.Msg, error) {
 	Unused(ctx)
 
-	conn, err := uh.Dial(state.Proto())
+	pc, cached, err := uh.Dial(state.Proto())
 	if err != nil {
 		return nil, err
 	}
-	defer Close(conn)
+	log.Debugf("Cached connection used for %v", uh.addr)
 
-	conn.UDPSize = uint16(state.Size())
-	if conn.UDPSize < dns.MinMsgSize {
-		conn.UDPSize = dns.MinMsgSize
+	pc.c.UDPSize = uint16(state.Size())
+	if pc.c.UDPSize < dns.MinMsgSize {
+		pc.c.UDPSize = dns.MinMsgSize
 	}
 
-	_ = conn.SetWriteDeadline(time.Now().Add(defaultTimeout))
-	if err := conn.WriteMsg(state.Req); err != nil {
+	_ = pc.c.SetWriteDeadline(time.Now().Add(defaultTimeout))
+	if err := pc.c.WriteMsg(state.Req); err != nil {
+		Close(pc.c)
+		if err == io.EOF && cached {
+			return nil, errCachedConnClosed
+		}
 		return nil, err
 	}
 
-	_ = conn.SetReadDeadline(time.Now().Add(defaultTimeout))
-	return conn.ReadMsg()
+	_ = pc.c.SetReadDeadline(time.Now().Add(defaultTimeout))
+	ret, err := pc.c.ReadMsg()
+	if err != nil {
+		Close(pc.c)
+		if err == io.EOF && cached {
+			return nil, errCachedConnClosed
+		}
+		return nil, err
+	}
+
+	uh.transport.Yield(pc)
+	return ret, nil
 }
 
 // For health check we send to . IN NS +norec message to the upstream.
@@ -298,11 +331,19 @@ func (hc *HealthCheck) Start() {
 			hc.healthCheckWorker()
 		}()
 	}
+
+	for _, host := range hc.hosts {
+		host.transport.Start()
+	}
 }
 
 func (hc *HealthCheck) Stop() {
 	close(hc.stopChan)
 	hc.wg.Wait()
+
+	for _, host := range hc.hosts {
+		host.transport.Stop()
+	}
 }
 
 func (hc *HealthCheck) healthCheck() {

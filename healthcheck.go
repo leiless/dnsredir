@@ -5,10 +5,18 @@ import (
 	"crypto/tls"
 	"github.com/coredns/coredns/request"
 	"github.com/miekg/dns"
+	"sort"
 	"sync"
 	"sync/atomic"
 	"time"
 )
+
+// A persistConn hold the dns.Conn and the last used time(time.Time struct)
+// Taken from github.com/coredns/plugin/forward/persistent.go
+type persistConn struct {
+	c    *dns.Conn
+	used time.Time
+}
 
 // Transport settings
 // Inspired from coredns/plugin/forward/persistent.go
@@ -16,9 +24,126 @@ import (
 type Transport struct {
 	forceTcp  	bool				// forceTcp takes precedence over preferUdp
 	preferUdp 	bool
-	expire		time.Duration		// [sic] Expire (cached) connections after this time
+	expire		time.Duration		// [sic] After this duration a connection is expired
 	tlsConfig	*tls.Config
+
+	conns       [typeTotalCount][]*persistConn	// Buckets for udp, tcp and tcp-tls
+	dial  		chan string
+	yield 		chan *persistConn
+	ret   		chan *persistConn
+	stop  		chan struct{}
 }
+
+func newTransport() *Transport {
+	return &Transport{
+		expire:		defaultConnExpire,
+		conns:     [typeTotalCount][]*persistConn{},
+		dial:      make(chan string),
+		yield:     make(chan *persistConn),
+		ret:       make(chan *persistConn),
+		stop:      make(chan struct{}),
+	}
+}
+
+func (t *Transport) connManager() {
+	ticker := time.NewTicker(t.expire)
+Wait:
+	for {
+		select {
+		case proto := <- t.dial:
+			transType := stringToTransportType(proto)
+			// Take the last used conn - complexity O(1)
+			if stack := t.conns[transType]; len(stack) > 0 {
+				pc := stack[len(stack)-1]
+				if time.Since(pc.used) < t.expire {
+					// Found one, remove from pool and return this conn.
+					t.conns[transType] = stack[:len(stack)-1]
+					t.ret <- pc
+					continue Wait
+				}
+				// clear entire cache if the last conn is expired
+				t.conns[transType] = nil
+				// now, the connections being passed to closeConns() are not reachable from
+				// transport methods anymore. So, it's safe to close them in a separate goroutine
+				go closeConns(stack)
+			}
+			t.ret <- nil
+
+		case pc := <-t.yield:
+			transType := t.transportTypeFromConn(pc)
+			t.conns[transType] = append(t.conns[transType], pc)
+
+		case <-ticker.C:
+			t.cleanup(false)
+
+		case <-t.stop:
+			t.cleanup(true)
+			close(t.ret)
+			return
+		}
+	}
+}
+
+func closeConns(conns []*persistConn) {
+	for _, pc := range conns {
+		Close(pc.c)
+	}
+}
+
+// cleanup removes connections from cache.
+func (t *Transport) cleanup(all bool) {
+	staleTime := time.Now().Add(-t.expire)
+
+	for transType, stack := range t.conns {
+		if len(stack) == 0 {
+			continue
+		}
+		if all {
+			t.conns[transType] = nil
+			// now, the connections being passed to closeConns() are not reachable from
+			// transport methods anymore. So, it's safe to close them in a separate goroutine
+			go closeConns(stack)
+			continue
+		}
+		if stack[0].used.After(staleTime) {
+			// Skip if all connections are valid
+			continue
+		}
+
+		// connections in stack are sorted by "used"
+		firstGood := sort.Search(len(stack), func(i int) bool {
+			return stack[i].used.After(staleTime)
+		})
+		t.conns[transType] = stack[firstGood:]
+		// now, the connections being passed to closeConns() are not reachable from
+		// transport methods anymore. So, it's safe to close them in a separate goroutine
+		go closeConns(stack[:firstGood])
+	}
+}
+
+// It is hard to pin a value to this, the import thing is to no block forever, losing at cached connection is not terrible.
+const yieldTimeout = 25 * time.Millisecond
+
+// Yield return the connection to transport for reuse.
+func (t *Transport) Yield(pc *persistConn) {
+	pc.used = time.Now() // update used time
+
+	// Make this non-blocking, because in the case of a very busy forwarder we will *block* on this yield. This
+	// blocks the outer go-routine and stuff will just pile up.  We timeout when the send fails to as returning
+	// these connection is an optimization anyway.
+	select {
+	case t.yield <- pc:
+		return
+	case <-time.After(yieldTimeout):
+		return
+	}
+}
+
+// Start starts the transport's connection manager.
+func (t *Transport) Start() { go t.connManager() }
+
+// Stop stops the transport's connection manager.
+func (t *Transport) Stop() { close(t.stop) }
 
 // UpstreamHostDownFunc can be used to customize how Down behaves
 // see: proxy/healthcheck/healthcheck.go
@@ -248,4 +373,6 @@ func (hc *HealthCheck) Select() *UpstreamHost {
 	}
 	return hc.spray.Select(pool)
 }
+
+const defaultConnExpire = 15 * time.Second
 

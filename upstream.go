@@ -102,6 +102,7 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 			maxFails: defaultMaxFails,
 			checkInterval: defaultHcInterval,
 			transport: &Transport{
+				expire: defaultConnExpire,
 				tlsConfig: new(tls.Config),
 			},
 		},
@@ -127,11 +128,13 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 		}
 		host.addr = addr
 
-		host.transport = new(Transport)
-		// Inherit from global settings
-		*host.transport = *u.transport
-		if trans != transport.TLS {
-			host.transport.tlsConfig = nil
+		host.transport = newTransport()
+		// Inherit from global transport settings
+		host.transport.forceTcp = u.transport.forceTcp
+		host.transport.preferUdp = u.transport.preferUdp
+		host.transport.expire = u.transport.expire
+		if trans == transport.TLS {
+			host.transport.tlsConfig = u.transport.tlsConfig
 		}
 
 		host.c = &dns.Client{

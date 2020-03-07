@@ -40,7 +40,7 @@ func (t *testCase) Pass(err error) bool {
 	return pass
 }
 
-func TestSetup(t *testing.T) {
+func TestSetupTo(t *testing.T) {
 	tests := []testCase {
 		// Negative
 		{"dnsredir", true, `missing mandatory property: "to"`},
@@ -57,6 +57,16 @@ func TestSetup(t *testing.T) {
 		{"dnsredir . { to \n }", true, "Wrong argument count or unexpected line ending after"},
 		{"dnsredir . { to . \n }", true, "parsed from file(s), yet no valid entry was found"},
 		{"dnsredir . { to / \n }", true, "parsed from file(s), yet no valid entry was found"},
+		{"dnsredir . { to 1.2.3. \n }", true, "not an IP address or file:"},
+		{"dnsredir . { to foobar://1.1.1.1 \n }", true, "not an IP address or file:"},
+		// Positive
+		{"dnsredir . { to 1.2.3.4 \n }", false, ""},
+		{"dnsredir . { to 1.2.3.4 / . \n }", false, ""},
+		{"dnsredir . { to dns://8.8.4.4 \n }", false, ""},
+		{"dnsredir . { to dns://192.168.144.10:5353 \n }", false, ""},
+		{"dnsredir . { to tls://172.16.10.1 \n }", false, ""},
+		{"dnsredir . { to tls://172.16.10.1:1234 \n }", false, ""},
+		{"dnsredir . { to 10.1.2.3 dns://192.168.144.100 tls://172.16.10.1:1234 \n }", false, ""},
 	}
 
 	for i, test := range tests {

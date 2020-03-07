@@ -30,7 +30,7 @@ type reloadableUpstream struct {
 func (u *reloadableUpstream) Match(name string) bool {
 	child, ok := stringToDomain(name)
 	if !ok {
-		log.Warningf("Skip invalid domain '%v', report to Github repo if it's an error.", name)
+		log.Warningf("Skip invalid domain %q, report to Github repo if it's an error.", name)
 		return false
 	}
 
@@ -39,7 +39,7 @@ func (u *reloadableUpstream) Match(name string) bool {
 	}
 
 	if u.ignored.Match(child) {
-		log.Debugf("Skip %v since it's ignored", child)
+		log.Debugf("Skip %q since it's ignored", child)
 		return false
 	}
 	return true
@@ -210,7 +210,7 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		}
 		policy, ok := SupportedPolicies[arr[0]]
 		if !ok {
-			return c.Errf("unknown policy %q", arr[0])
+			return c.Errf("unknown policy: %q", arr[0])
 		}
 		u.policy = policy
 		log.Infof("%v: %v", dir, arr[0])

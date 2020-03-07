@@ -141,6 +141,7 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 
 		host.c = &dns.Client{
 			Net: transToProto(trans, host.transport),
+			TLSConfig: host.transport.tlsConfig,
 			Timeout: defaultHcTimeout,
 		}
 	}
@@ -375,6 +376,6 @@ const (
 	defaultMaxFails = 3
 	defaultReloadDuration = 2 * time.Second
 	defaultHcInterval = 2000 * time.Millisecond
-	defaultHcTimeout = 1500 * time.Millisecond
+	defaultHcTimeout = 5000 * time.Millisecond
 )
 

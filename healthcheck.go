@@ -122,6 +122,7 @@ func (t *Transport) cleanup(all bool) {
 			return stack[i].used.After(staleTime)
 		})
 		t.conns[transType] = stack[firstGood:]
+		log.Debugf("Going to cleanup expired connections: %v count: %v", stack[0].c.RemoteAddr(), firstGood)
 		// now, the connections being passed to closeConns() are not reachable from
 		// transport methods anymore. So, it's safe to close them in a separate goroutine
 		go closeConns(stack[:firstGood])
@@ -268,9 +269,9 @@ func (uh *UpstreamHost) Check() error {
 		proto = uh.c.Net
 	}
 
-	if err, _ := uh.send(); err != nil {
+	if err, rtt := uh.send(); err != nil {
 		atomic.AddUint32(&uh.fails, 1)
-		log.Warningf("DNS @%v +%v dead?  err: %v", uh.addr, proto, err)
+		log.Warningf("DNS @%v +%v dead?  rtt: %v err: %v", uh.addr, proto, rtt, err)
 		return err
 	} else {
 		// Reset failure counter once health check success
@@ -284,8 +285,12 @@ func (uh *UpstreamHost) send() (error, time.Duration) {
 	ping := &dns.Msg{}
 	ping.SetQuestion(".", dns.TypeNS)
 
-	// rtt stands for Round Trip Time
+	t := time.Now()
+	// rtt stands for Round Trip Time, it's 0 if Exchange() failed
 	msg, rtt, err := uh.c.Exchange(ping, uh.addr)
+	if err != nil {
+		rtt = time.Since(t)
+	}
 	// If we got a header, we're alright, basically only care about I/O errors 'n stuff.
 	if err != nil && msg != nil {
 		// Silly check, something sane came back.

@@ -14,24 +14,24 @@ import (
 type domainSet map[string]struct{}
 
 // Return true if name added successfully, false otherwise
-func (set *domainSet) Add(str string) bool {
+func (s *domainSet) Add(str string) bool {
 	// To reduce memory, we don't use full qualified name
 	if name, ok := stringToDomain(str); ok {
-		(*set)[name] = struct{}{}
+		(*s)[name] = struct{}{}
 		return true
 	}
 	return false
 }
 
-// Assume name is lower cased and without trailing dot
-func (set *domainSet) Match(child string) bool {
+// Assume `child' is lower cased and without trailing dot
+func (s *domainSet) Match(child string) bool {
 	// Fast lookup for a full match
-	if _, ok := (*set)[child]; ok {
+	if _, ok := (*s)[child]; ok {
 		return true
 	}
 
-	// Fallback to iterate the whole set
-	for parent := range *set {
+	// Fallback to iterate the whole s
+	for parent := range *s {
 		if plugin.Name(parent).Matches(child) {
 			return true
 		}
@@ -69,10 +69,10 @@ type Namelist struct {
 	// All name items shared the same reload duration
 	reload time.Duration
 
-	stopUpdateChan chan struct{}
+	stop chan struct{}
 }
 
-// Assume name is lower cased and without trailing dot
+// Assume `child' is lower cased and without trailing dot
 func (n *Namelist) Match(child string) bool {
 	for _, item := range n.items {
 		item.RLock()
@@ -87,11 +87,11 @@ func (n *Namelist) Match(child string) bool {
 
 // MT-Unsafe
 func (n *Namelist) periodicUpdate() {
-	if n.stopUpdateChan != nil {
-		panic("This function should be called once and don't make() the update channel manually")
+	if n.stop != nil {
+		panic("This function should be called once and don't make() the stop update channel manually")
 	}
 
-	n.stopUpdateChan = make(chan struct{})
+	n.stop = make(chan struct{})
 
 	// Kick off initial name list content population
 	n.parseNamelist()
@@ -101,7 +101,7 @@ func (n *Namelist) periodicUpdate() {
 			ticker := time.NewTicker(n.reload)
 			for {
 				select {
-				case <-n.stopUpdateChan:
+				case <-n.stop:
 					return
 				case <-ticker.C:
 					n.parseNamelist()
@@ -149,7 +149,10 @@ func (n *Namelist) parseNamelistCore(i int) {
 	}
 
 	log.Debugf("Parsing " + file.Name())
+	t1 := time.Now()
 	names := n.parse(file)
+	t2 := time.Since(t1)
+	log.Debugf("Time spent: %v", t2)
 
 	item.Lock()
 	item.names = names

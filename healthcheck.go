@@ -8,6 +8,7 @@ import (
 	"github.com/coredns/coredns/request"
 	"github.com/miekg/dns"
 	"io"
+	"net"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -19,6 +20,29 @@ import (
 type persistConn struct {
 	c    *dns.Conn
 	used time.Time
+}
+
+func (pc *persistConn) String() string {
+	return fmt.Sprintf("{%T c=%v used=%v}", pc, pc.c.RemoteAddr(), pc.used)
+}
+
+var errNotTcpConn = errors.New("connection isn't TCP protocol")
+
+// see:
+//	https://thenotexpert.com/golang-tcp-keepalive/
+//	http://archive.li/vBZM1
+func (pc *persistConn) setKeepAlive(d time.Duration) error {
+	if tcpConn, ok := pc.c.Conn.(*net.TCPConn); ok {
+		err := tcpConn.SetKeepAlive(true)
+		if err == nil {
+			err = tcpConn.SetKeepAlivePeriod(d)
+		}
+		if err != nil {
+			log.Warningf("Cannot set keep-alive for %v", pc)
+		}
+		return err
+	}
+	return errNotTcpConn
 }
 
 // Transport settings
@@ -215,6 +239,10 @@ func (uh *UpstreamHost) Exchange(ctx context.Context, state request.Request) (*d
 	if cached {
 		log.Debugf("Cached connection used for %v", uh.addr)
 	} else {
+		// TODO: use a variable to bookkeeping keepalive duration
+		if err := pc.setKeepAlive(3 * time.Second); err == nil {
+			log.Debugf("TCP keepalive set on %v", uh.addr)
+		}
 		log.Debugf("New connection established for %v", uh.addr)
 	}
 

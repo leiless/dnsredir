@@ -52,7 +52,7 @@ func (u *reloadableUpstream) Start() error {
 }
 
 func (u *reloadableUpstream) Stop() error {
-	close(u.stopUpdateChan)
+	close(u.stop)
 	u.HealthCheck.Stop()
 	return nil
 }

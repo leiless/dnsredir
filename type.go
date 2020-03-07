@@ -2,7 +2,11 @@
 
 package dnsredir
 
-import "net"
+import (
+	"crypto/tls"
+	"fmt"
+	"net"
+)
 
 type transportType int
 
@@ -33,9 +37,15 @@ func (t *Transport) transportTypeFromConn(pc *persistConn) transportType {
 	}
 
 	if t.tlsConfig == nil {
+		if _, ok := pc.c.Conn.(*net.TCPConn); !ok {
+			panic(fmt.Sprintf("Expected TCP connection, got %T", pc.c.Conn))
+		}
 		return typeTcp
 	}
 
+	if _, ok := pc.c.Conn.(*tls.Conn); !ok {
+		panic(fmt.Sprintf("Expected TLS connection, got %T", pc.c.Conn))
+	}
 	return typeTls
 }
 

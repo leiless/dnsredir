@@ -167,12 +167,10 @@ func (n *Namelist) parse(r io.Reader) domainSet {
 			line = line[0:i]
 		}
 
-		if names.Add(string(line)) {
-			continue
-		}
-
 		f := bytes.Split(line, []byte("/"))
 		if len(f) != 3 {
+			// Treat the whole line as a domain name
+			_ = names.Add(string(line))
 			continue
 		}
 

@@ -210,7 +210,7 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		}
 		policy, ok := SupportedPolicies[arr[0]]
 		if !ok {
-			return c.Errf("unsupported policy %q", arr[0])
+			return c.Errf("unknown policy %q", arr[0])
 		}
 		u.policy = policy
 		log.Infof("%v: %v", dir, arr[0])
@@ -350,7 +350,7 @@ func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 		return err
 	}
 	if len(toHosts) == 0 {
-		return c.Errf("%q parsed from file(s), yet no entry was found", dir)
+		return c.Errf("%q parsed from file(s), yet no valid entry was found", dir)
 	}
 
 	for i, host := range toHosts {

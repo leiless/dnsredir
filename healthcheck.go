@@ -342,7 +342,6 @@ type HealthCheck struct {
 }
 
 func (hc *HealthCheck) Start() {
-	hc.stopChan = make(chan struct{})
 	if hc.checkInterval != 0 {
 		hc.wg.Add(1)
 		go func() {

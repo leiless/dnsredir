@@ -99,6 +99,7 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 			reload: defaultReloadDuration,
 		},
 		HealthCheck: &HealthCheck{
+			stopChan: make(chan struct{}),
 			maxFails: defaultMaxFails,
 			checkInterval: defaultHcInterval,
 			transport: &Transport{

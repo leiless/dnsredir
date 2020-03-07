@@ -127,8 +127,9 @@ func (r *Dnsredir) match(name string) Upstream {
 	// TODO: Add a metric value in Prometheus to determine average lookup time
 
 	for _, up := range *r.Upstreams {
-		// TODO: perform longest prefix match?
+		// Q: perform longest domain match?
 		// For maximum performance, we search the first matched item and return directly
+		// Unlike proxy plugin, which try to find longest match
 		if up.Match(name) {
 			return up
 		}
@@ -142,5 +143,5 @@ var (
 	errCachedConnClosed = errors.New("cached connection was closed by peer")
 )
 
-const defaultTimeout = 10000 * time.Millisecond
+const defaultTimeout = 15000 * time.Millisecond
 

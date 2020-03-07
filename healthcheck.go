@@ -44,17 +44,17 @@ type Transport struct {
 func newTransport() *Transport {
 	return &Transport{
 		expire:		defaultConnExpire,
-		conns:     [typeTotalCount][]*persistConn{},
-		dial:      make(chan string),
-		yield:     make(chan *persistConn),
-		ret:       make(chan *persistConn),
-		stop:      make(chan struct{}),
+		conns:     	[typeTotalCount][]*persistConn{},
+		dial:      	make(chan string),
+		yield:     	make(chan *persistConn),
+		ret:       	make(chan *persistConn),
+		stop:      	make(chan struct{}),
 	}
 }
 
 func (t *Transport) connManager() {
 	ticker := time.NewTicker(t.expire)
-Wait:
+
 	for {
 		select {
 		case proto := <- t.dial:
@@ -66,7 +66,7 @@ Wait:
 					// Found one, remove from pool and return this conn.
 					t.conns[transType] = stack[:len(stack)-1]
 					t.ret <- pc
-					continue Wait
+					continue
 				}
 				// clear entire cache if the last conn is expired
 				t.conns[transType] = nil
@@ -271,12 +271,11 @@ func (uh *UpstreamHost) Check() error {
 
 	if err, rtt := uh.send(); err != nil {
 		atomic.AddUint32(&uh.fails, 1)
-		log.Warningf("DNS @%v +%v dead?  rtt: %v err: %v", uh.addr, proto, rtt, err)
+		log.Warningf("hc: DNS @%v +%v failed  rtt: %v err: %v", uh.addr, proto, rtt, err)
 		return err
 	} else {
 		// Reset failure counter once health check success
 		atomic.StoreUint32(&uh.fails, 0)
-		//log.Infof("DNS @%v +%v ok  rtt: %v", uh.addr, proto, rtt)
 		return nil
 	}
 }
@@ -289,6 +288,9 @@ func (uh *UpstreamHost) send() (error, time.Duration) {
 	// rtt stands for Round Trip Time, it's 0 if Exchange() failed
 	msg, rtt, err := uh.c.Exchange(ping, uh.addr)
 	if err != nil {
+		if rtt != 0 {
+			panic(fmt.Sprintf("Expected rtt = 0 on error, yet got %v", rtt))
+		}
 		rtt = time.Since(t)
 	}
 	// If we got a header, we're alright, basically only care about I/O errors 'n stuff.
@@ -299,7 +301,7 @@ func (uh *UpstreamHost) send() (error, time.Duration) {
 			if uh.c.Net != "" {
 				proto = uh.c.Net
 			}
-			log.Warningf("Correct DNS @%v +%v malformed response  err: %v msg: %v",
+			log.Warningf("hc: Correct DNS @%v +%v malformed response  err: %v msg: %v",
 							uh.addr, proto, err, msg)
 			err = nil
 		}

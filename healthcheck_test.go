@@ -1,6 +1,7 @@
 package dnsredir
 
 import (
+	"fmt"
 	"github.com/miekg/dns"
 	"strings"
 	"testing"
@@ -8,43 +9,60 @@ import (
 )
 
 const (
-	defaultProto = ""
+	defaultProto = ""	// Alias to UDP
 	udpProto = "udp"
 	tcpProto = "tcp"
 	tcpTlsProto = "tcp-tls"
+
 	ms = time.Millisecond
 	s = time.Second
 )
 
+type testCaseSend struct {
+	addr string
+	proto string
+	timeout time.Duration
+	shouldErr bool
+	expectedErr string
+}
+
+func (t testCaseSend) String() string {
+	return fmt.Sprintf("{%T addr=%v proto=%v timeout=%v shouldErr=%v expectedErr=%q}",
+		t, t.addr, t.proto, t.timeout, t.shouldErr, t.expectedErr)
+}
+
+// Return true if test passed, false otherwise
+func (t *testCaseSend) Pass(err error) bool {
+	// Empty expected error isn't allow
+	if t.shouldErr == (len(t.expectedErr) == 0) {
+		panic(fmt.Sprintf("Bad test case %v", t))
+	}
+
+	pass := true
+	if t.shouldErr == (err != nil) {
+		if err != nil {
+			s := strings.ToLower(err.Error())
+			t := strings.ToLower(t.expectedErr)
+			if !strings.Contains(s, t) {
+				pass = false
+			}
+		}
+	} else {
+		pass = false
+	}
+	return pass
+}
+
 func TestSend(t *testing.T) {
-	tests := []struct {
-		addr string
-		proto string
-		timeout time.Duration
-		shouldErr bool
-		expectedErr string	// Should be lower cased
-	}{
+	tests := []testCaseSend {
 		// Positive
-		{"223.5.5.5:53", defaultProto, 500 * ms, false, ""},
-		{"223.5.5.5:53", tcpProto, 500 * ms, false, ""},
-		{"223.6.6.6:53", udpProto, 500 * ms, false, ""},
-		{"223.6.6.6:53", tcpProto, 500 * ms, false, ""},
-		{"101.6.6.6:5353", tcpProto, 500 * ms, false, ""},
-		{"119.29.29.29:53", udpProto, 500 * ms, false, ""},
 		{"8.8.8.8:53", udpProto, 1 * s, false, ""},
 		{"8.8.4.4:53", tcpProto, 1 * s, false, ""},
 		{"8.8.8.8:853", tcpTlsProto, 1 * s, false, ""},
-		{"8.8.4.4:853", tcpTlsProto, 1 * s, false, ""},
-		{"1.0.0.1:53", udpProto, 1 * s, false, ""},
 		{"1.1.1.1:53", defaultProto, 1 * s, false, ""},
-		{"1.1.1.1:53", tcpProto, 1 * s, false, ""},
-		{"1.0.0.1:853", tcpTlsProto, 1 * s, false, ""},
-		{"1.1.1.1:853", tcpTlsProto, 1 * s, false, ""},
-		{"9.9.9.9:853", tcpTlsProto, 500 * ms, false, ""},
-		{"223.5.5.5:853", tcpTlsProto, 500 * ms, false, ""},
-		{"223.6.6.6:853", tcpTlsProto, 500 * ms, false, ""},
+		{"9.9.9.9:53", tcpProto, 1 * s, false, ""},
 		// Negative
-		{"223.5.5.5", defaultProto, 500 * ms, true, "missing port in address"},
+		{"1.2.3.4", defaultProto, 500 * ms, true, "missing port in address"},
 		{"127.0.0.1:853", tcpTlsProto, 100 * ms, true, "connection refused"},
 		// DNSPod doesn't support DNS over TCP/TLS
 		{"119.29.29.29:53", tcpProto, 500 * ms, true, "connection refused"},
@@ -61,17 +79,8 @@ func TestSend(t *testing.T) {
 			},
 		}
 		err := uh.Check()
-
-		if test.shouldErr == (err != nil) {
-			if err != nil {
-				if !strings.Contains(strings.ToLower(err.Error()), test.expectedErr) {
-					t.Errorf("Test#%v> expectErr: %v got: %v", i, test.expectedErr, err)
-				} else {
-					//t.Logf("Test#%v> error: %v", i, err)
-				}
-			}
-		} else {
-			t.Errorf("Test#%v> shouldErr: %v error: %v", i, test.shouldErr, err)
+		if !test.Pass(err) {
+			t.Errorf("Test#%v failed  %v vs err: %v", i, test, err)
 		}
 	}
 }

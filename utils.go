@@ -36,21 +36,7 @@ func Close(c io.Closer) {
  * XXX: it won't honor valid TLD and Punycode
  */
 func isDomainName(s string) bool {
-	// Trailing dot had been removed in upper call
-	if strings.HasPrefix(s, ".") ||
-		strings.HasSuffix(s, ".") {
-		return false
-	}
-
-	if strings.Contains(s, "..") ||
-		strings.Contains(s, ".-") ||
-		strings.Contains(s, "-.") {
-		return false
-	}
-
-	f := strings.FieldsFunc(s, func(r rune) bool {
-		return r == '.'
-	})
+	f := strings.Split(s, ".")
 
 	// len(f) == 1 means a TLD
 	if len(f) == 0 {

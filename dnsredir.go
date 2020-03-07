@@ -80,7 +80,21 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 		}
 		log.Debugf("Upstream host %v is selected", host.addr)
 
-		reply, upstreamErr = host.Exchange(ctx, state)
+		for {
+			t := time.Now()
+			reply, upstreamErr = host.Exchange(ctx, state)
+			log.Debugf("rtt: %v", time.Since(t))
+			if upstreamErr == errCachedConnClosed {
+				// [sic] Remote side closed conn, can only happen with TCP.
+				// Retry for another connection
+				log.Debugf("%v: %v", upstreamErr, host.addr)
+				continue
+			}
+			if reply != nil && reply.Truncated && !host.transport.forceTcp && host.transport.preferUdp {
+				log.Warningf("TODO: Retry with TCP since response truncated and prefer_udp configured")
+			}
+			break
+		}
 		if upstreamErr == nil {
 			if !state.Match(reply) {
 				debug.Hexdumpf(reply, "Wrong reply  id: %d, qname: %s qtype: %d", reply.Id, state.QName(), state.QType())
@@ -101,9 +115,6 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 		panic("Why upstreamErr is nil?! Are you in a debugger?")
 	}
 	return dns.RcodeServerFailure, upstreamErr
-
-	// dnsredir-whoami for DEBUGGING
-	//return whoami.Whoami{}.ServeDNS(ctx, w, req)
 }
 
 func (r *Dnsredir) Name() string { return pluginName }
@@ -131,6 +142,5 @@ var (
 	errCachedConnClosed = errors.New("cached connection was closed by peer")
 )
 
-//const defaultTimeout = 5 * time.Second
-const defaultTimeout = 2000 * time.Millisecond
+const defaultTimeout = 10000 * time.Millisecond
 

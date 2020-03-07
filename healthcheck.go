@@ -3,6 +3,8 @@ package dnsredir
 import (
 	"context"
 	"crypto/tls"
+	"errors"
+	"fmt"
 	"github.com/coredns/coredns/request"
 	"github.com/miekg/dns"
 	"io"
@@ -210,7 +212,11 @@ func (uh *UpstreamHost) Exchange(ctx context.Context, state request.Request) (*d
 	if err != nil {
 		return nil, err
 	}
-	log.Debugf("Cached connection used for %v", uh.addr)
+	if cached {
+		log.Debugf("Cached connection used for %v", uh.addr)
+	} else {
+		log.Debugf("New connection established for %v", uh.addr)
+	}
 
 	pc.c.UDPSize = uint16(state.Size())
 	if pc.c.UDPSize < dns.MinMsgSize {
@@ -234,6 +240,15 @@ func (uh *UpstreamHost) Exchange(ctx context.Context, state request.Request) (*d
 			return nil, errCachedConnClosed
 		}
 		return nil, err
+	}
+	if state.Req.Id != ret.Id {
+		Close(pc.c)
+		// Unlike coredns/plugin/forward/connect.go drop out-of-order responses
+		//	we pursuing not to tolerate such error
+		// Thus we have some time to retry for another upstream, for example
+		return nil, errors.New(fmt.Sprintf(
+			"met out-of-order response  cached: %v name: %v ret: %v",
+			cached, state.Name(), ret))
 	}
 
 	uh.transport.Yield(pc)

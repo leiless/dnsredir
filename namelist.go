@@ -171,10 +171,7 @@ func (n *Namelist) parse(r io.Reader) domainSet {
 			continue
 		}
 
-		f := bytes.FieldsFunc(line, func(r rune) bool {
-			return r == '/'
-		})
-
+		f := bytes.Split(line, []byte("/"))
 		if len(f) != 3 {
 			continue
 		}

@@ -97,6 +97,7 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 	u := &reloadableUpstream{
 		Namelist: &Namelist{
 			reload: defaultReloadDuration,
+			stop: make(chan struct{}),
 		},
 		HealthCheck: &HealthCheck{
 			stopChan: make(chan struct{}),

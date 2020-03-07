@@ -87,12 +87,6 @@ func (n *Namelist) Match(child string) bool {
 
 // MT-Unsafe
 func (n *Namelist) periodicUpdate() {
-	if n.stop != nil {
-		panic("This function should be called once and don't make() the stop update channel manually")
-	}
-
-	n.stop = make(chan struct{})
-
 	// Kick off initial name list content population
 	n.parseNamelist()
 

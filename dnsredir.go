@@ -62,12 +62,12 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 	state := request.Request{W: w, Req: req}
 	name := state.Name()
 
-	upstream := r.match(name)
+	upstream, t := r.match(name)
 	if upstream == nil {
-		log.Debugf("%v not found in name list", name)
+		log.Debugf("%v not found in name list, t: %v", name, t)
 		return plugin.NextOrFailure(r.Name(), r.Next, ctx, w, req)
 	}
-	log.Debugf("%v in name list", name)
+	log.Debugf("%v in name list, t: %v", name, t)
 
 	var reply *dns.Msg
 	var upstreamErr error
@@ -119,23 +119,24 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 
 func (r *Dnsredir) Name() string { return pluginName }
 
-func (r *Dnsredir) match(name string) Upstream {
+func (r *Dnsredir) match(name string) (Upstream, time.Duration) {
 	if r.Upstreams == nil {
 		panic("Why Dnsredir.Upstreams is nil?!")
 	}
 
 	// TODO: Add a metric value in Prometheus to determine average lookup time
 
+	t := time.Now()
 	for _, up := range *r.Upstreams {
 		// Q: perform longest domain match?
 		// For maximum performance, we search the first matched item and return directly
 		// Unlike proxy plugin, which try to find longest match
 		if up.Match(name) {
-			return up
+			return up, time.Since(t)
 		}
 	}
 
-	return nil
+	return nil, time.Since(t)
 }
 
 var (

@@ -69,7 +69,7 @@ type Namelist struct {
 	// All name items shared the same reload duration
 	reload time.Duration
 
-	stop chan struct{}
+	stopReload chan struct{}
 }
 
 // Assume `child' is lower cased and without trailing dot
@@ -95,7 +95,7 @@ func (n *Namelist) periodicUpdate() {
 			ticker := time.NewTicker(n.reload)
 			for {
 				select {
-				case <-n.stop:
+				case <-n.stopReload:
 					return
 				case <-ticker.C:
 					n.parseNamelist()

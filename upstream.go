@@ -52,7 +52,7 @@ func (u *reloadableUpstream) Start() error {
 }
 
 func (u *reloadableUpstream) Stop() error {
-	close(u.stop)
+	close(u.stopReload)
 	u.HealthCheck.Stop()
 	return nil
 }
@@ -96,8 +96,8 @@ func isKnownTrans(trans string) bool {
 func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 	u := &reloadableUpstream{
 		Namelist: &Namelist{
-			reload: defaultReloadDuration,
-			stop: make(chan struct{}),
+			reload:     defaultReloadDuration,
+			stopReload: make(chan struct{}),
 		},
 		HealthCheck: &HealthCheck{
 			stop:          make(chan struct{}),

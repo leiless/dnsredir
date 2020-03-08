@@ -49,9 +49,9 @@ func (d domainSet) String() string {
 }
 
 // Return total number of domains in the domain set
-func (d domainSet) Len() uint64 {
+func (d *domainSet) Len() uint64 {
 	var n uint64
-	for _, s := range d {
+	for _, s := range *d {
 		n += uint64(len(s))
 	}
 	return n
@@ -75,6 +75,18 @@ func (d *domainSet) Add(str string) bool {
 		return true
 	}
 	return false
+}
+
+// for loop will exit in advance if f() return error
+func (d *domainSet) ForEachDomain(f func(name string) error) error {
+	for _, s := range *d {
+		for name := range s {
+			if err := f(name); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // Assume `child' is lower cased and without trailing dot

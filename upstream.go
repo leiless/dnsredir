@@ -165,6 +165,15 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 		}
 	}
 
+	if err := u.inline.ForEachDomain(func(name string) error {
+		if u.ignored.Match(name) {
+			return c.Errf("conflict domain %q in both %q and %q", name, "except", "INLINE")
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
 	if u.matchAny {
 		if u.inline.Len() != 0 {
 			return nil, c.Errf("INLINE is forbidden since %q will match all requests", ".")

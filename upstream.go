@@ -24,6 +24,7 @@ type reloadableUpstream struct {
 	// Flag indicate match any request, i.e. the root zone "."
 	matchAny bool
 	*Namelist
+	inline domainSet
 	ignored domainSet
 	*HealthCheck
 }
@@ -50,7 +51,7 @@ func (u *reloadableUpstream) Match(name string) bool {
 		return !ignored
 	}
 
-	if !u.Namelist.Match(child) {
+	if !u.Namelist.Match(child) && !u.inline.Match(child) {
 		return false
 	}
 
@@ -116,6 +117,7 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 			stopReload: make(chan struct{}),
 		},
 		ignored: make(domainSet),
+		inline: make(domainSet),
 		HealthCheck: &HealthCheck{
 			stop:          make(chan struct{}),
 			maxFails:      defaultMaxFails,
@@ -163,9 +165,18 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 		}
 	}
 
-	if u.matchAny && u.reload != 0 {
-		log.Warningf("Reset reload %v since FILE is %q", u.reload, ".")
-		u.reload = 0
+	if u.matchAny {
+		if u.inline.Len() != 0 {
+			return nil, c.Errf("INLINE is forbidden since %q will match all requests", ".")
+		}
+		if u.reload != 0 {
+			log.Warningf("Reset reload %v since FILE is %q", u.reload, ".")
+			u.reload = 0
+		}
+	}
+
+	if u.inline.Len() != 0 {
+		log.Infof("inline: %v", u.inline)
 	}
 
 	return u, nil
@@ -328,7 +339,9 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		u.transport.tlsConfig.ServerName = domain
 		log.Infof("%v: %v", dir, domain)
 	default:
-		return c.Errf("unknown property: %q", dir)
+		if !u.inline.Add(dir) {
+			return c.Errf("unknown property: %q", dir)
+		}
 	}
 	return nil
 }

@@ -287,10 +287,7 @@ func (uh *UpstreamHost) send() (error, time.Duration) {
 	t := time.Now()
 	// rtt stands for Round Trip Time, it's 0 if Exchange() failed
 	msg, rtt, err := uh.c.Exchange(ping, uh.addr)
-	if err != nil {
-		if rtt != 0 {
-			panic(fmt.Sprintf("Expected rtt = 0 on error, yet got %v", rtt))
-		}
+	if err != nil && rtt == 0 {
 		rtt = time.Since(t)
 	}
 	// If we got a header, we're alright, basically only care about I/O errors 'n stuff.

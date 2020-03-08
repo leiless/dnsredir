@@ -3,15 +3,32 @@ package dnsredir
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"github.com/coredns/coredns/plugin"
 	"io"
 	"net"
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
 
 type domainSet map[string]struct{}
+
+func (s domainSet) String() string {
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("%T[", s))
+	i := 0
+	n := len(s)
+	for name := range s {
+		sb.WriteString(name)
+		if i++; i != n {
+			sb.WriteString(", ")
+		}
+	}
+	sb.WriteString("]")
+	return sb.String()
+}
 
 // Return true if name added successfully, false otherwise
 func (s *domainSet) Add(str string) bool {

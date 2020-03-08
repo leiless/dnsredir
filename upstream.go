@@ -112,7 +112,7 @@ func isKnownTrans(trans string) bool {
 func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 	u := &reloadableUpstream{
 		Namelist: &Namelist{
-			reload:     defaultReloadDuration,
+			reload:     defaultReloadInterval,
 			stopReload: make(chan struct{}),
 		},
 		ignored: make(domainSet),
@@ -215,6 +215,9 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		if err != nil {
 			return err
 		}
+		if dur < minReloadInterval {
+			return c.Errf("%v: minimal interval is %v", dir, minReloadInterval)
+		}
 		u.reload = dur
 		log.Infof("%v: %v", dir, u.reload)
 	case "except":
@@ -258,6 +261,9 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		if err != nil {
 			return err
 		}
+		if dur < minHcInterval {
+			return c.Errf("%v: minimal interval is %v", dir, minHcInterval)
+		}
 		u.checkInterval = dur
 		log.Infof("%v: %v", dir, u.checkInterval)
 	case "to":
@@ -291,6 +297,9 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		dur, err := parseDuration(c)
 		if err != nil {
 			return err
+		}
+		if dur < minExpireInterval {
+			return c.Errf("%v: minimal interval is %v", dir, minExpireInterval)
 		}
 		u.transport.expire = dur
 		log.Infof("%v: %v", dir, dur)
@@ -403,9 +412,15 @@ func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 }
 
 const (
-	defaultMaxFails = 3
-	defaultReloadDuration = 2 * time.Second
-	defaultHcInterval = 2000 * time.Millisecond
-	defaultHcTimeout = 5000 * time.Millisecond
+	defaultMaxFails       = 3
+	defaultReloadInterval = 2 * time.Second
+	defaultHcInterval     = 2000 * time.Millisecond
+	defaultHcTimeout      = 5000 * time.Millisecond
+)
+
+const (
+	minReloadInterval = 1 * time.Second
+	minHcInterval     = 500 * time.Millisecond
+	minExpireInterval = 1 * time.Second
 )
 

@@ -13,42 +13,84 @@ import (
 	"time"
 )
 
-type domainSet map[string]struct{}
+type stringSet map[string]struct{}
+// uint8 used to store an ASCII character
+type domainSet map[uint8]stringSet
 
-func (s domainSet) String() string {
+func (s *stringSet) Add(str string) {
+	(*s)[str] = struct{}{}
+}
+
+func (s *stringSet) Contains(str string) bool {
+	if s == nil {
+		return false
+	}
+	_, ok := (*s)[str]
+	return ok
+}
+
+func (d domainSet) String() string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("%T[", s))
-	i := 0
-	n := len(s)
-	for name := range s {
-		sb.WriteString(name)
-		if i++; i != n {
-			sb.WriteString(", ")
+	sb.WriteString(fmt.Sprintf("%T[", d))
+
+	var i uint64
+	n := d.Len()
+	for _, s := range d {
+		for name := range s {
+			sb.WriteString(name)
+			if i++; i != n {
+				sb.WriteString(", ")
+			}
 		}
 	}
 	sb.WriteString("]")
+
 	return sb.String()
 }
 
+// Return total number of domains in the domain set
+func (d domainSet) Len() uint64 {
+	var n uint64
+	for _, s := range d {
+		n += uint64(len(s))
+	}
+	return n
+}
+
 // Return true if name added successfully, false otherwise
-func (s *domainSet) Add(str string) bool {
+func (d *domainSet) Add(str string) bool {
 	// To reduce memory, we don't use full qualified name
 	if name, ok := stringToDomain(str); ok {
-		(*s)[name] = struct{}{}
+		// To speed up name lookup, we utilized two-way hash
+		// The first one is the first ASCII character of the domain name
+		// The second one is the real domain set
+		// Which works just like ordinary English dictionary lookup
+		s := (*d)[name[0]]
+		if s == nil {
+			// MT-Unsafe: Initialize real domain set on demand
+			s = make(stringSet)
+			(*d)[name[0]] = s
+		}
+		s.Add(name)
 		return true
 	}
 	return false
 }
 
 // Assume `child' is lower cased and without trailing dot
-func (s *domainSet) Match(child string) bool {
+func (d *domainSet) Match(child string) bool {
+	if len(child) == 0 {
+		return false
+	}
+
+	s := (*d)[child[0]]
 	// Fast lookup for a full match
-	if _, ok := (*s)[child]; ok {
+	if s.Contains(child) {
 		return true
 	}
 
-	// Fallback to iterate the whole s
-	for parent := range *s {
+	// Fallback to iterate the whole set
+	for parent := range s {
 		if plugin.Name(parent).Matches(child) {
 			return true
 		}
@@ -206,8 +248,7 @@ func (n *Namelist) parse(r io.Reader) domainSet {
 		}
 	}
 
-	log.Debugf("Name added: %v / %v", len(names), totalLines)
-
+	log.Debugf("Name added: %v / %v", names.Len(), totalLines)
 	return names
 }
 

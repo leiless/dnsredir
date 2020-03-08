@@ -6,8 +6,10 @@ package dnsredir
 
 import (
 	"crypto/tls"
+	"fmt"
 	"github.com/caddyserver/caddy"
 	"github.com/coredns/coredns/core/dnsserver"
+	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/pkg/parse"
 	pkgtls "github.com/coredns/coredns/plugin/pkg/tls"
 	"github.com/coredns/coredns/plugin/pkg/transport"
@@ -19,6 +21,8 @@ import (
 )
 
 type reloadableUpstream struct {
+	// Flag indicate match any request, i.e. the root zone "."
+	matchAny bool
 	*Namelist
 	ignored domainSet
 	*HealthCheck
@@ -34,12 +38,24 @@ func (u *reloadableUpstream) Match(name string) bool {
 		return false
 	}
 
+	if u.matchAny {
+		if !plugin.Name(".").Matches(child) {
+			panic(fmt.Sprintf("Why %v doesn't match %q?!", child, "."))
+		}
+
+		ignored := u.ignored.Match(child)
+		if ignored {
+			log.Debugf("#0 Skip %q since it's ignored", child)
+		}
+		return !ignored
+	}
+
 	if !u.Namelist.Match(child) {
 		return false
 	}
 
 	if u.ignored.Match(child) {
-		log.Debugf("Skip %q since it's ignored", child)
+		log.Debugf("#1 Skip %q since it's ignored", child)
 		return false
 	}
 	return true
@@ -146,13 +162,25 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 		}
 	}
 
+	if u.matchAny && u.reload != 0 {
+		log.Warningf("Reset reload %v since FILE is %q", u.reload, ".")
+		u.reload = 0
+	}
+
 	return u, nil
 }
 
 func parseFilePaths(c *caddy.Controller, u *reloadableUpstream) error {
 	paths := c.RemainingArgs()
-	if len(paths) == 0 {
+	n := len(paths)
+	if n == 0 {
 		return c.ArgErr()
+	}
+
+	if n == 1 && paths[0] == "." {
+		u.matchAny = true
+		log.Infof("Match any")
+		return nil
 	}
 
 	config := dnsserver.GetConfig(c)

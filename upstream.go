@@ -76,13 +76,13 @@ func NewReloadableUpstreams(c *caddy.Controller) ([]Upstream, error) {
 }
 
 // see: healthcheck.go/UpstreamHost.Dial()
-func transToProto(proto string, tp *Transport) string {
+func transToProto(proto string, t *Transport) string {
 	switch {
-	case tp.tlsConfig != nil:
+	case t.tlsConfig != nil:
 		proto = "tcp-tls"
-	case tp.forceTcp:
+	case t.forceTcp:
 		proto = "tcp"
-	case tp.preferUdp || proto == transport.DNS:
+	case t.preferUdp || proto == transport.DNS:
 		proto = "udp"
 	}
 	return proto
@@ -100,8 +100,8 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 			stop: make(chan struct{}),
 		},
 		HealthCheck: &HealthCheck{
-			stopChan: make(chan struct{}),
-			maxFails: defaultMaxFails,
+			stop:          make(chan struct{}),
+			maxFails:      defaultMaxFails,
 			checkInterval: defaultHcInterval,
 			transport: &Transport{
 				expire: defaultConnExpire,

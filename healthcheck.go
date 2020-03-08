@@ -331,8 +331,8 @@ func (uh *UpstreamHost) Down() bool {
 }
 
 type HealthCheck struct {
-	wg sync.WaitGroup		// Wait until all running goroutines to stop
-	stopChan chan struct{}	// Signal health check worker to stop
+	wg   sync.WaitGroup // Wait until all running goroutines to stop
+	stop chan struct{}  // Signal health check worker to stop
 
 	hosts UpstreamHostPool
 	policy Policy
@@ -363,7 +363,7 @@ func (hc *HealthCheck) Start() {
 }
 
 func (hc *HealthCheck) Stop() {
-	close(hc.stopChan)
+	close(hc.stop)
 	hc.wg.Wait()
 
 	for _, host := range hc.hosts {
@@ -386,7 +386,7 @@ func (hc *HealthCheck) healthCheckWorker() {
 		select {
 		case <-ticker.C:
 			hc.healthCheck()
-		case <-hc.stopChan:
+		case <-hc.stop:
 			return
 		}
 	}

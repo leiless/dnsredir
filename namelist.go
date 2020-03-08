@@ -113,8 +113,6 @@ type Nameitem struct {
 	// Domain name set for lookups
 	names domainSet
 
-	// TODO: [optimization] add a domainSet for TLDs?
-
 	path string
 	mtime time.Time
 	size int64

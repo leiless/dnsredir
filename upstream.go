@@ -40,7 +40,7 @@ func (u *reloadableUpstream) Match(name string) bool {
 
 	if u.matchAny {
 		if !plugin.Name(".").Matches(child) {
-			panic(fmt.Sprintf("Why %v doesn't match %q?!", child, "."))
+			panic(fmt.Sprintf("Why %q doesn't match %q?!", child, "."))
 		}
 
 		ignored := u.ignored.Match(child)
@@ -193,12 +193,12 @@ func parseFilePaths(c *caddy.Controller, u *reloadableUpstream) error {
 		st, err := os.Stat(path)
 		if err != nil {
 			if os.IsNotExist(err) {
-				log.Warningf("File %s doesn't exist", path)
+				log.Warningf("File %q doesn't exist", path)
 			} else {
 				return err
 			}
 		} else if st != nil && !st.Mode().IsRegular() {
-			log.Warningf("File %s isn't a regular file", path)
+			log.Warningf("File %q isn't a regular file", path)
 		}
 	}
 
@@ -228,7 +228,7 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		}
 		for _, name := range args {
 			if !u.ignored.Add(name) {
-				log.Warningf("'%v' isn't a domain name", name)
+				log.Warningf("%q isn't a domain name", name)
 			}
 		}
 		log.Infof("%v: %v", dir, u.ignored)

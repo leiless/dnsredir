@@ -64,10 +64,10 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 
 	upstream, t := r.match(name)
 	if upstream == nil {
-		log.Debugf("%v not found in name list, t: %v", name, t)
+		log.Debugf("%q not found in name list, t: %v", name, t)
 		return plugin.NextOrFailure(r.Name(), r.Next, ctx, w, req)
 	}
-	log.Debugf("%v in name list, t: %v", name, t)
+	log.Debugf("%q in name list, t: %v", name, t)
 
 	var reply *dns.Msg
 	var upstreamErr error
@@ -97,7 +97,7 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 		}
 		if upstreamErr == nil {
 			if !state.Match(reply) {
-				debug.Hexdumpf(reply, "Wrong reply  id: %d, qname: %s qtype: %d", reply.Id, state.QName(), state.QType())
+				debug.Hexdumpf(reply, "Wrong reply  id: %v, qname: %v qtype: %v", reply.Id, state.QName(), state.QType())
 
 				formerr := new(dns.Msg)
 				formerr.SetRcode(state.Req, dns.RcodeFormatError)

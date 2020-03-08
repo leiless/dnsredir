@@ -239,12 +239,12 @@ func (n *Namelist) parse(r io.Reader) domainSet {
 		}
 
 		if net.ParseIP(string(f[2])) == nil {
-			log.Warningf("'%s' isn't an IP address", string(f[2]))
+			log.Warningf("%q isn't an IP address", string(f[2]))
 			continue
 		}
 
 		if !names.Add(string(f[1])) {
-			log.Warningf("'%v' isn't a domain name", string(f[1]))
+			log.Warningf("%q isn't a domain name", string(f[1]))
 		}
 	}
 

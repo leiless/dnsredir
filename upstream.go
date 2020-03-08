@@ -115,6 +115,7 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 			reload:     defaultReloadDuration,
 			stopReload: make(chan struct{}),
 		},
+		ignored: make(domainSet),
 		HealthCheck: &HealthCheck{
 			stop:          make(chan struct{}),
 			maxFails:      defaultMaxFails,
@@ -217,11 +218,11 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		u.reload = dur
 		log.Infof("%v: %v", dir, u.reload)
 	case "except":
+		// Multiple "except"s will be merged together
 		args := c.RemainingArgs()
 		if len(args) == 0 {
 			return c.ArgErr()
 		}
-		u.ignored = make(domainSet)
 		for _, name := range args {
 			if !u.ignored.Add(name) {
 				log.Warningf("'%v' isn't a domain name", name)
@@ -260,6 +261,7 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		u.checkInterval = dur
 		log.Infof("%v: %v", dir, u.checkInterval)
 	case "to":
+		// Multiple "to"s will be merged together
 		if err := parseTo(c, u); err != nil {
 			return err
 		}

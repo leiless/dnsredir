@@ -80,20 +80,28 @@ func (d *domainSet) Add(str string) bool {
 // Assume `child' is lower cased and without trailing dot
 func (d *domainSet) Match(child string) bool {
 	if len(child) == 0 {
-		return false
+		panic(fmt.Sprintf("Why child is an empty string?!"))
 	}
 
-	s := (*d)[child[0]]
-	// Fast lookup for a full match
-	if s.Contains(child) {
-		return true
-	}
-
-	// Fallback to iterate the whole set
-	for parent := range s {
-		if plugin.Name(parent).Matches(child) {
+	for {
+		s := (*d)[child[0]]
+		// Fast lookup for a full match
+		if s.Contains(child) {
 			return true
 		}
+
+		// Fallback to iterate the whole set
+		for parent := range s {
+			if plugin.Name(parent).Matches(child) {
+				return true
+			}
+		}
+
+		i := strings.Index(child, ".")
+		if i <= 0 {
+			break
+		}
+		child = child[i+1:]
 	}
 
 	return false

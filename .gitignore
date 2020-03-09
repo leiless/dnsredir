@@ -1,5 +1,6 @@
 *.conf
 *.cp
 *.log
+*.zip
 Corefile
 

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/coredns/coredns/plugin"
 	"io"
-	"net"
 	"os"
 	"strings"
 	"sync"
@@ -251,15 +250,13 @@ func (n *Namelist) parse(r io.Reader) domainSet {
 			continue
 		}
 
-		// Format: server=/DOMAIN/IP
+		// Format: server=/<domain>/<?>
 		if string(f[0]) != "server=" {
 			continue
 		}
 
-		if net.ParseIP(string(f[2])) == nil {
-			log.Warningf("%q isn't an IP address", string(f[2]))
-			continue
-		}
+		// Don't check f[2], see: http://manpages.ubuntu.com/manpages/bionic/man8/dnsmasq.8.html
+		// Thus server=/<domain>/<ip>, server=/<domain>/, server=/<domain>/# won't be honored
 
 		if !names.Add(string(f[1])) {
 			log.Warningf("%q isn't a domain name", string(f[1]))

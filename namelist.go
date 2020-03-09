@@ -182,15 +182,13 @@ func (n *Namelist) periodicUpdate() {
 }
 
 func (n *Namelist) parseNamelist() {
-	for i := range n.items {
+	for _, item := range n.items {
 		// Q: Use goroutine for concurrent update?
-		n.parseNamelistCore(i)
+		n.parseNamelistCore(item)
 	}
 }
 
-func (n *Namelist) parseNamelistCore(i int) {
-	item := &n.items[i]
-
+func (n *Namelist) parseNamelistCore(item Nameitem) {
 	file, err := os.Open(item.path)
 	if err != nil {
 		if os.IsNotExist(err) {

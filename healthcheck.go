@@ -122,7 +122,7 @@ func (t *Transport) cleanup(all bool) {
 			return stack[i].used.After(staleTime)
 		})
 		t.conns[transType] = stack[firstGood:]
-		log.Debugf("Going to cleanup expired connections: %v count: %v", stack[0].c.RemoteAddr(), firstGood)
+		log.Debugf("Going to cleanup expired connection(s): %v count: %v", stack[0].c.RemoteAddr(), firstGood)
 		// now, the connections being passed to closeConns() are not reachable from
 		// transport methods anymore. So, it's safe to close them in a separate goroutine
 		go closeConns(stack[:firstGood])

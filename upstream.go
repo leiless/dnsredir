@@ -179,7 +179,7 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 			return nil, c.Errf("INLINE is forbidden since %q will match all requests", ".")
 		}
 		if u.reload != 0 {
-			log.Warningf("Reset reload %v since FILE is %q", u.reload, ".")
+			log.Warningf("Reset reload %v to zero since %q is matched", u.reload, ".")
 			u.reload = 0
 		}
 	}

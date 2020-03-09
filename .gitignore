@@ -1,4 +1,5 @@
 *.conf
 *.cp
+*.log
 Corefile
 

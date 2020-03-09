@@ -129,17 +129,19 @@ type Nameitem struct {
 	size int64
 }
 
-func NewNameitemsWithPaths(paths []string) []Nameitem {
-	items := make([]Nameitem, len(paths))
+func NewNameitemsWithPaths(paths []string) []*Nameitem {
+	items := make([]*Nameitem, len(paths))
 	for i, path := range paths {
-		items[i].path = path
+		items[i] = &Nameitem{
+			path: path,
+		}
 	}
 	return items
 }
 
 type Namelist struct {
 	// List of name items
-	items []Nameitem
+	items []*Nameitem
 
 	// Time between two reload of a name item
 	// All name items shared the same reload duration
@@ -188,7 +190,7 @@ func (n *Namelist) parseNamelist() {
 	}
 }
 
-func (n *Namelist) parseNamelistCore(item Nameitem) {
+func (n *Namelist) parseNamelistCore(item *Nameitem) {
 	file, err := os.Open(item.path)
 	if err != nil {
 		if os.IsNotExist(err) {

@@ -111,14 +111,6 @@ func isKnownTrans(trans string) bool {
 	return trans == transport.DNS || trans == transport.TLS
 }
 
-func splitTlsServerName(addr string) (string, string) {
-	i := strings.IndexByte(addr, '@')
-	if i >= 0 {
-		return addr[:i], addr[i+1:]
-	}
-	return addr, ""
-}
-
 func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 	u := &reloadableUpstream{
 		Namelist: &Namelist{
@@ -152,7 +144,7 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 		return nil, c.Errf("missing mandatory property: %q", "to")
 	}
 	for _, host := range u.hosts {
-		addr, tlsServerName := splitTlsServerName(host.addr)
+		addr, tlsServerName := SplitByByte(host.addr, '@')
 		trans, addr := parse.Transport(addr)
 		if !isKnownTrans(trans) {
 			return nil, c.Errf("%q protocol isn't supported currently", trans)
@@ -167,11 +159,11 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 		if trans == transport.TLS {
 			host.transport.tlsConfig = u.transport.tlsConfig
 
-			tlsServerName, ok := stringToDomain(tlsServerName)
+			serverName, ok := stringToDomain(tlsServerName)
 			if !ok && len(tlsServerName) != 0 {
 				return nil, c.Errf("invalid TLS server name %q", tlsServerName)
 			}
-			host.transport.tlsConfig.ServerName = tlsServerName
+			host.transport.tlsConfig.ServerName = serverName
 		}
 
 		host.c = &dns.Client{

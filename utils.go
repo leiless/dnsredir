@@ -99,4 +99,13 @@ func stringToDomainRootZoneValid(s string) (string, bool) {
 	return "", false
 }
 
+// Return two strings delimited by the `c'
+// If `c' not found in `s', `s' and an empty string will be returned
+func SplitByByte(s string, c byte) (string, string) {
+	i := strings.IndexByte(s, c)
+	if i >= 0 {
+		return s[:i], s[i+1:]
+	}
+	return s, ""
+}
 

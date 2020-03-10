@@ -34,10 +34,10 @@ type reloadableUpstream struct {
 
 // Check if given name in upstream name list
 func (u *reloadableUpstream) Match(name string) bool {
-	child, ok := stringToDomainRootZoneValid(name)
-	if !ok {
-		log.Warningf("Skip invalid domain %q, report to Github repo if it's an error.", name)
-		return false
+	// Don't check validity of domain name, delegate to upstream host
+	var child string
+	if len(name) > 1 {
+		child = removeTrailingDot(name)
 	}
 
 	if u.matchAny {

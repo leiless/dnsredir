@@ -2,7 +2,6 @@ package dnsredir
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"github.com/coredns/coredns/plugin"
 	"io"
@@ -218,11 +217,11 @@ func (n *Namelist) parseNamelistCore(item *Nameitem) {
 		log.Warningf("%v", err)
 	}
 
-	log.Debugf("Parsing " + file.Name())
 	t1 := time.Now()
-	names := n.parse(file)
+	names, totalLines := n.parse(file)
 	t2 := time.Since(t1)
-	log.Debugf("Time spent: %v", t2)
+	log.Debugf("Parsed %v  time spent: %v name added: %v / %v",
+		file.Name(), t2, names.Len(), totalLines)
 
 	item.Lock()
 	item.names = names
@@ -231,39 +230,39 @@ func (n *Namelist) parseNamelistCore(item *Nameitem) {
 	item.Unlock()
 }
 
-func (n *Namelist) parse(r io.Reader) domainSet {
+func (n *Namelist) parse(r io.Reader) (domainSet, uint64) {
 	names := make(domainSet)
 
-	totalLines := 0
+	var totalLines uint64
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		totalLines++
-		line := scanner.Bytes()
-		if i := bytes.Index(line, []byte{'#'}); i >= 0 {
-			line = line[0:i]
+
+		line := scanner.Text()
+		if i := strings.IndexByte(line, '#'); i >= 0 {
+			line = line[:i]
 		}
 
-		f := bytes.Split(line, []byte("/"))
+		f := strings.Split(line, "/")
 		if len(f) != 3 {
 			// Treat the whole line as a domain name
-			_ = names.Add(string(line))
+			_ = names.Add(line)
 			continue
 		}
 
 		// Format: server=/<domain>/<?>
-		if string(f[0]) != "server=" {
+		if f[0] != "server=" {
 			continue
 		}
 
 		// Don't check f[2], see: http://manpages.ubuntu.com/manpages/bionic/man8/dnsmasq.8.html
 		// Thus server=/<domain>/<ip>, server=/<domain>/, server=/<domain>/# won't be honored
 
-		if !names.Add(string(f[1])) {
-			log.Warningf("%q isn't a domain name", string(f[1]))
+		if !names.Add(f[1]) {
+			log.Warningf("%q isn't a domain name", f[1])
 		}
 	}
 
-	log.Debugf("Name added: %v / %v", names.Len(), totalLines)
-	return names
+	return names, totalLines
 }
 

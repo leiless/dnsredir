@@ -159,11 +159,14 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 		if trans == transport.TLS {
 			host.transport.tlsConfig = u.transport.tlsConfig
 
-			serverName, ok := stringToDomain(tlsServerName)
-			if !ok && len(tlsServerName) != 0 {
-				return nil, c.Errf("invalid TLS server name %q", tlsServerName)
+			// TLS server name in tls:// takes precedence over the global one(if any)
+			if len(tlsServerName) != 0 {
+				serverName, ok := stringToDomain(tlsServerName)
+				if !ok {
+					return nil, c.Errf("invalid TLS server name %q", tlsServerName)
+				}
+				host.transport.tlsConfig.ServerName = serverName
 			}
-			host.transport.tlsConfig.ServerName = serverName
 		}
 
 		host.c = &dns.Client{
@@ -340,8 +343,21 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		if err != nil {
 			return err
 		}
+		// Merge server name if tls_servername set previously
+		tlsConfig.ServerName = u.transport.tlsConfig.ServerName
 		u.transport.tlsConfig = tlsConfig
 		log.Infof("%v: %v", dir, args)
+	case "tls_servername":
+		args := c.RemainingArgs()
+		if len(args) != 1 {
+			return c.ArgErr()
+		}
+		serverName, ok := stringToDomain(args[0])
+		if !ok {
+			return c.Errf("%v: %q isn't a valid domain name", dir, args[0])
+		}
+		u.transport.tlsConfig.ServerName = serverName
+		log.Infof("%v: %v", dir, serverName)
 	default:
 		if len(c.RemainingArgs()) != 0 ||!u.inline.Add(dir) {
 			return c.Errf("unknown property: %q", dir)

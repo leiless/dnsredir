@@ -184,7 +184,7 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 
 	if u.matchAny {
 		if u.inline.Len() != 0 {
-			return nil, c.Errf("INLINE is forbidden since %q will match all requests", ".")
+			return nil, c.Errf("INLINE %q is forbidden since %q will match all requests", u.inline, ".")
 		}
 		if u.reload != 0 {
 			log.Warningf("Reset reload %v to zero since %q is matched", u.reload, ".")
@@ -340,23 +340,10 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		if err != nil {
 			return err
 		}
-		// Merge server name if tls_servername set previously
-		tlsConfig.ServerName = u.transport.tlsConfig.ServerName
 		u.transport.tlsConfig = tlsConfig
 		log.Infof("%v: %v", dir, args)
-	case "tls_servername":
-		args := c.RemainingArgs()
-		if len(args) != 1 {
-			return c.ArgErr()
-		}
-		domain, ok := stringToDomain(args[0])
-		if !ok {
-			return c.Errf("%v: %q isn't a valid domain name", dir, args[0])
-		}
-		u.transport.tlsConfig.ServerName = domain
-		log.Infof("%v: %v", dir, domain)
 	default:
-		if !u.inline.Add(dir) {
+		if len(c.RemainingArgs()) != 0 ||!u.inline.Add(dir) {
 			return c.Errf("unknown property: %q", dir)
 		}
 	}
@@ -454,7 +441,7 @@ func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 		log.Infof("#%v: Transport: %v \t Address: %v%v", i, trans, addr, tlsServerNames[i])
 
 		uh := &UpstreamHost{
-			// Not an error, host and tls_servername will be separated later
+			// Not an error, host and tls server name will be separated later
 			addr: host + tlsServerNames[i],
 			downFunc: checkDownFunc(u),
 		}

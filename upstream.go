@@ -17,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -110,6 +111,14 @@ func isKnownTrans(trans string) bool {
 	return trans == transport.DNS || trans == transport.TLS
 }
 
+func splitTlsServerName(addr string) (string, string) {
+	i := strings.IndexByte(addr, '@')
+	if i >= 0 {
+		return addr[:i], addr[i+1:]
+	}
+	return addr, ""
+}
+
 func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 	u := &reloadableUpstream{
 		Namelist: &Namelist{
@@ -143,7 +152,8 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 		return nil, c.Errf("missing mandatory property: %q", "to")
 	}
 	for _, host := range u.hosts {
-		trans, addr := parse.Transport(host.addr)
+		addr, tlsServerName := splitTlsServerName(host.addr)
+		trans, addr := parse.Transport(addr)
 		if !isKnownTrans(trans) {
 			return nil, c.Errf("%q protocol isn't supported currently", trans)
 		}
@@ -156,6 +166,12 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 		host.transport.expire = u.transport.expire
 		if trans == transport.TLS {
 			host.transport.tlsConfig = u.transport.tlsConfig
+
+			tlsServerName, ok := stringToDomain(tlsServerName)
+			if !ok && len(tlsServerName) != 0 {
+				return nil, c.Errf("invalid TLS server name %q", tlsServerName)
+			}
+			host.transport.tlsConfig.ServerName = tlsServerName
 		}
 
 		host.c = &dns.Client{
@@ -402,6 +418,29 @@ func parseDuration(c *caddy.Controller) (time.Duration, error) {
 	return duration, nil
 }
 
+// tls://ip[[:port]|[@tls_server_name]]
+// If you combine ':' and '@', ':' must comes first
+// TODO: lame implementation, rewrite this someday
+func splitTlsServerNames(args []string) ([]string, []string) {
+	var tos []string
+	var tlsServerNames []string
+	for _, to := range args {
+		i := strings.IndexByte(to, '@')
+		if i >= 0 {
+			tos = append(tos, to[:i])
+			// '@' will be reserved in place
+			tlsServerNames = append(tlsServerNames, to[i:])
+		} else {
+			tos = append(tos, to)
+			tlsServerNames = append(tlsServerNames, "")
+		}
+	}
+	if len(tos) != len(tlsServerNames) {
+		panic(fmt.Sprintf("Size mismatch  %v vs %v", len(tos), len(tlsServerNames)))
+	}
+	return tos, tlsServerNames
+}
+
 func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 	dir := c.Val()
 	args := c.RemainingArgs()
@@ -409,6 +448,7 @@ func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 		return c.ArgErr()
 	}
 
+	args, tlsServerNames := splitTlsServerNames(args)
 	toHosts, err := parse.HostPortOrFile(args...)
 	if err != nil {
 		return err
@@ -419,10 +459,11 @@ func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 
 	for i, host := range toHosts {
 		trans, addr := parse.Transport(host)
-		log.Infof("#%v: Transport: %v \t Address: %v", i, trans, addr)
+		log.Infof("#%v: Transport: %v \t Address: %v%v", i, trans, addr, tlsServerNames[i])
 
 		uh := &UpstreamHost{
-			addr: host,		// Not an error, addr will be separated later
+			// Not an error, host and tls_servername will be separated later
+			addr: host + tlsServerNames[i],
 			downFunc: checkDownFunc(u),
 		}
 		u.hosts = append(u.hosts, uh)

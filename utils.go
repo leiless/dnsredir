@@ -89,16 +89,6 @@ func stringToDomain(s string) (string, bool) {
 	return "", false
 }
 
-// Treat root zone, i.e. "." as valid domain name
-func stringToDomainRootZoneValid(s string) (string, bool) {
-	if domain, ok := stringToDomain(s); ok {
-		return domain, true
-	} else if s == "." {
-		return s, true
-	}
-	return "", false
-}
-
 // Return two strings delimited by the `c'
 // If `c' not found in `s', `s' and an empty string will be returned
 func SplitByByte(s string, c byte) (string, string) {

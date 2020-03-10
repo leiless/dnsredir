@@ -33,31 +33,26 @@ type reloadableUpstream struct {
 // reloadableUpstream implements Upstream interface
 
 // Check if given name in upstream name list
+// `name' is lower cased and without trailing dot(except for root zone)
 func (u *reloadableUpstream) Match(name string) bool {
-	// Don't check validity of domain name, delegate to upstream host
-	var child string
-	if len(name) > 1 {
-		child = removeTrailingDot(name)
-	}
-
 	if u.matchAny {
-		if !plugin.Name(".").Matches(child) {
-			panic(fmt.Sprintf("Why %q doesn't match %q?!", child, "."))
+		if !plugin.Name(".").Matches(name) {
+			panic(fmt.Sprintf("Why %q doesn't match %q?!", name, "."))
 		}
 
-		ignored := u.ignored.Match(child)
+		ignored := u.ignored.Match(name)
 		if ignored {
-			log.Debugf("#0 Skip %q since it's ignored", child)
+			log.Debugf("#0 Skip %q since it's ignored", name)
 		}
 		return !ignored
 	}
 
-	if !u.Namelist.Match(child) && !u.inline.Match(child) {
+	if !u.Namelist.Match(name) && !u.inline.Match(name) {
 		return false
 	}
 
-	if u.ignored.Match(child) {
-		log.Debugf("#1 Skip %q since it's ignored", child)
+	if u.ignored.Match(name) {
+		log.Debugf("#1 Skip %q since it's ignored", name)
 		return false
 	}
 	return true

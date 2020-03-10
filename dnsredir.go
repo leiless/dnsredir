@@ -129,6 +129,11 @@ func (r *Dnsredir) match(name string) (Upstream, time.Duration) {
 
 	// TODO: Add a metric value in Prometheus to determine average lookup time
 
+	// Don't check validity of domain name, delegate to upstream host
+	if len(name) > 1 {
+		name = removeTrailingDot(name)
+	}
+
 	t := time.Now()
 	for _, up := range *r.Upstreams {
 		// Q: perform longest domain match?

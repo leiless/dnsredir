@@ -95,24 +95,27 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 			}
 			break
 		}
-		if upstreamErr == nil {
-			if !state.Match(reply) {
-				debug.Hexdumpf(reply, "Wrong reply  id: %v, qname: %v qtype: %v", reply.Id, state.QName(), state.QType())
 
-				formerr := new(dns.Msg)
-				formerr.SetRcode(state.Req, dns.RcodeFormatError)
-				_ = w.WriteMsg(formerr)
-				return 0, nil
-			}
+		if upstreamErr != nil {
+			log.Warningf("Exchange() failed  error: %v", upstreamErr)
+			continue
+		}
 
-			_ = w.WriteMsg(reply)
+		if !state.Match(reply) {
+			debug.Hexdumpf(reply, "Wrong reply  id: %v, qname: %v qtype: %v", reply.Id, state.QName(), state.QType())
+
+			formerr := new(dns.Msg)
+			formerr.SetRcode(state.Req, dns.RcodeFormatError)
+			_ = w.WriteMsg(formerr)
 			return 0, nil
 		}
-		log.Warningf("Exchange() failed  error: %v", upstreamErr)
+
+		_ = w.WriteMsg(reply)
+		return 0, nil
 	}
 
 	if upstreamErr == nil {
-		panic("Why upstreamErr is nil?! Are you in a debugger?")
+		panic("Why upstreamErr is nil?! Are you in a debugger or your machine running slow?")
 	}
 	return dns.RcodeServerFailure, upstreamErr
 }

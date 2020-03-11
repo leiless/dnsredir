@@ -152,7 +152,9 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 		host.transport.preferUdp = u.transport.preferUdp
 		host.transport.expire = u.transport.expire
 		if trans == transport.TLS {
-			host.transport.tlsConfig = u.transport.tlsConfig
+			// Deep copy
+			host.transport.tlsConfig = new(tls.Config)
+			*host.transport.tlsConfig = *u.transport.tlsConfig
 
 			// TLS server name in tls:// takes precedence over the global one(if any)
 			if len(tlsServerName) != 0 {

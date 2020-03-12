@@ -2,7 +2,7 @@
 
 ## Name
 
-_dnsredir_ - yet another seems better forward/proxy plugin for CoreDNS.
+_dnsredir_ - yet another seems better forward/proxy plugin for CoreDNS, mainly focused on speed and reliable.
 
 *dnsredir* plugin works just like the *forward* plugin which re-uses already opened sockets to the upstreams. Currently, it supports `UDP`, `TCP`, and `DNS-over-TLS` and uses in continuous health checking.
 
@@ -30,21 +30,21 @@ dnsredir FILE... {
 
 	1. `DOMAIN`, which the whole line is the domain name.
 
-	2. `server=/DOMAIN/...`, which is the format of `dnsmasq` config file, note that only the `DOMAIN` will be honored, other fields will be simply discarded.
+	1. `server=/DOMAIN/...`, which is the format of `dnsmasq` config file, note that only the `DOMAIN` will be honored, other fields will be simply discarded.
 
 	Text after `#` character will be treated as comment.
 
 	Unparsable lines(including whitespace-only line) are therefore just ignored.
 
-* `to TO...` are the destination endpoints to redirected to.
+* `to TO...` are the destination endpoints to redirected to. This is a mandatory option.
 
 	The `to` syntax allows you to specify a protocol, a port, etc:
 
-	`[dns://]IP[:PORT]`(or no protocol) for plain DNS.
+	`[dns://]IP[:PORT]` for plain DNS(without encryption).
 
-	`tls://IP[:PORT][@TLS_SERVER_NAME]` for DNS over TLS, if you combine `:` and `@`, `@` must comes last. Be aware of some DoT servers require TLS server name as mandatory option.
+	`tls://IP[:PORT][@TLS_SERVER_NAME]` for DNS over TLS, if you combine `:` and `@`, `@` must comes last. Be aware of some DoT servers require TLS server name as a mandatory option.
 
-An expanded syntax can be utilized to unleash of power of `dnsredir` plugin:
+An expanded syntax can be utilized to unleash of the power of `dnsredir` plugin:
 
 ```Corefile
 dnsredir FILE... {
@@ -70,11 +70,15 @@ Some of the knobs take a `DURATION` as argument, *second* will be used as defaul
 
 * `FILE...` and `to TO...` as above.
 
-* `reload` change the interval between each `FILE...` reload, zero to disable the feature. Default is `2s`, minimal is `1s`.
+* `reload` change the interval between each `FILE...` reload. Default is `2s`, minimal is `1s`.
 
 * `INLINE` are the domain names sealed in `Corefile`, they serve as supplementaries. Note that domain names in `FILE...` will still be read. `INLINE` is forbidden if you specify `.`(i.e. root zone) as `FILE...`.
 
+	It usually not a good idea to seal too many `INLINE` domains in `Corefile`, in which case you should put them into a sole file.
+
 * `except` is a space-separated list of domains to exclude from redirecting. Requests that match none of these names will be passed through.
+
+	It usually not a good idea to seal too many `except` domains in `Corefile`, in which case you should try to delete them directly in `to` files.
 
 * `spray` when all upstreams in `to` are marked as unhealthy, randomly pick one to send the traffic to. (Last resort, as a failsafe.)
 
@@ -88,13 +92,13 @@ Some of the knobs take a `DURATION` as argument, *second* will be used as defaul
 
 * `health_check` specifies upstream hosts health checking interval. Default is `2s`, minimal is `500ms`.
 
-* `max_fails` is the maximum number of consecutive health checking failures that are needed before considering an upstream to be down. `0` to disable this feature(which the upstream will never be marked as down). Default is `3`.
+* `max_fails` is the maximum number of consecutive health checking failures that are needed before considering an upstream as down. `0` to disable this feature(which the upstream will never be marked as down). Default is `3`.
 
 * `expire` will expire (cached) connections after this time interval. Default is `15s`, minimal is `1s`.
 
 * `force_tcp` uses `TCP` even if the request comes in over UDP.
 
-* `prefer_udp` try first using `UDP` even when the request comes in over `TCP`. If response is truncated(`TC` flag set in response) then do another attempt over `TCP`. If both `force_tcp` and `prefer_udp` are specified the `force_tcp` takes precedence.
+* `prefer_udp` try first using `UDP` even when the request comes in over `TCP`. If response is truncated(`TC` flag set in response) then do another attempt over `TCP`. If both `force_tcp` and `prefer_udp` are specified then `force_tcp` takes precedence.
 
 	**XXX**: not yet implemented, this feature might be deprecated in future.
 
@@ -112,7 +116,7 @@ Some of the knobs take a `DURATION` as argument, *second* will be used as defaul
 
 * `tls_servername` specifies the global TLS server name in the TLS configuration.
 
-	For example, `cloudflare-dns.com` can be used for `1.1.1.1`(Cloudflare), `quad9.net` can be used for `9.9.9.9`(Quad9).
+	For example, `cloudflare-dns.com` can be used for `1.1.1.1`(Cloudflare), and `quad9.net` can be used for `9.9.9.9`(Quad9).
 
 	Note that this is a global name, it doesn't affect the TLS server names specified in `to TO...`.
 

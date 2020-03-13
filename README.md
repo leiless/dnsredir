@@ -66,21 +66,21 @@ dnsredir FILE... {
 }
 ```
 
-Some of the knobs take a `DURATION` as argument, *second* will be used as default time unit as if you don't specify it, **zero time duration to disable the feature** unless it's explicitly stated.
+Some of the options take a `DURATION` as argument, *second* will be used as default time unit as if you don't specify it, **zero time duration to disable corresponding feature** unless it's explicitly stated otherwise.
 
 * `FILE...` and `to TO...` as above.
 
-* `reload` change the interval between each `FILE...` reload. Default is `2s`, minimal is `1s`.
+* `reload` changes the interval between each `FILE...` reload. Default is `2s`, minimal is `1s`.
 
-* `INLINE` are the domain names sealed in `Corefile`, they serve as supplementaries. Note that domain names in `FILE...` will still be read. `INLINE` is forbidden if you specify `.`(i.e. root zone) as `FILE...`.
+* `INLINE` are the domain names embedded in `Corefile`, they serve as supplementaries. Note that domain names in `FILE...` will still be read. `INLINE` is forbidden if you specify `.`(i.e. root zone) as `FILE...`.
 
-	It usually not a good idea to seal too many `INLINE` domains in `Corefile`, in which case you should put them into a sole file.
+	It usually not a good idea to embed too many `INLINE` domains in `Corefile`, in which case you should put them into a sole file, say, `user_custom.conf`.
 
 * `except` is a space-separated list of domains to exclude from redirecting. Requests that match none of these names will be passed through.
 
-	It usually not a good idea to seal too many `except` domains in `Corefile`, in which case you should try to delete them directly in `to` files.
+	It usually not a good idea to embed too many `except` domains in `Corefile`, in which case you should try to delete them directly in `to` files.
 
-* `spray` when all upstreams in `to` are marked as unhealthy, randomly pick one to send the traffic to. (Last resort, as a failsafe.)
+* `spray` when all upstreams in `to` are marked as unhealthy, randomly pick one to send the traffic with. (Last resort, as a failsafe.)
 
 * `policy` specifies the policy to use for selecting upstream hosts. The default is `random`.
 
@@ -90,7 +90,7 @@ Some of the knobs take a `DURATION` as argument, *second* will be used as defaul
 
 	* `sequential` will select a healthy upstream host in sequential order.
 
-* `health_check` specifies upstream hosts health checking interval. Default is `2s`, minimal is `500ms`.
+* `health_check` specifies upstream hosts health checking interval. Default is `2s`, minimal is `1s`.
 
 * `max_fails` is the maximum number of consecutive health checking failures that are needed before considering an upstream as down. `0` to disable this feature(which the upstream will never be marked as down). Default is `3`.
 
@@ -114,7 +114,7 @@ Some of the knobs take a `DURATION` as argument, *second* will be used as defaul
 
 	Note that this TLS config is global for redirecting DNS requests.
 
-* `tls_servername` specifies the global TLS server name in the TLS configuration.
+* `tls_servername` specifies the global TLS server name used in the TLS configuration.
 
 	For example, `cloudflare-dns.com` can be used for `1.1.1.1`(Cloudflare), and `quad9.net` can be used for `9.9.9.9`(Quad9).
 

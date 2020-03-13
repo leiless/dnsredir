@@ -475,7 +475,7 @@ const (
 
 const (
 	minReloadInterval = 1 * time.Second
-	minHcInterval     = 500 * time.Millisecond
+	minHcInterval     = 1 * time.Second
 	minExpireInterval = 1 * time.Second
 )
 

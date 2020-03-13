@@ -58,7 +58,7 @@ func isDomainName(s string) bool {
 		for _, c := range seg {
 			// More specifically, TLD should only contain [a-z] and hyphen
 			// We currently don't have such constrain
-			if c != '-' && c != '_' && (c < '0' || c > '9') && (c < 'a' || c > 'z') {
+			if c != '-' && (c < '0' || c > '9') && (c < 'a' || c > 'z') {
 				return false
 			}
 		}

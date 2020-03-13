@@ -3,4 +3,5 @@
 *.log
 *.zip
 Corefile
+.DS_Store
 

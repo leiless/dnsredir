@@ -2,7 +2,7 @@
 
 ## Name
 
-_dnsredir_ - yet another seems better forward/proxy plugin for CoreDNS, mainly focused on speed and reliable.
+*dnsredir* - yet another seems better forward/proxy plugin for CoreDNS, mainly focused on speed and reliable.
 
 *dnsredir* plugin works just like the *forward* plugin which re-uses already opened sockets to the upstreams. Currently, it supports `UDP`, `TCP`, and `DNS-over-TLS` and uses in continuous health checking.
 
@@ -10,7 +10,7 @@ Like the *proxy* plugin, it also supports multiple backends, which each upstream
 
 The health check works by sending `. IN NS` to upstream host, somewhat like a ping packet in `ICMP` protocol. Any response that is not a network error(for example, `REFUSED`, `SERVFAIL`, etc.) is taken as a healthy upstream.
 
-When all upstream hosts are down this plugin can opt fallback to randomly selecting a upstream host and sending the requests to it as last resort.
+When all upstream hosts are down this plugin can opt to fallback to randomly selecting a upstream host and sending the requests to it as last resort.
 
 ## Syntax
 
@@ -28,9 +28,9 @@ dnsredir FILE... {
 
 	Currently, two kind of formats are supported:
 
-	1. `DOMAIN`, which the whole line is the domain name.
+	* `DOMAIN`, which the whole line is the domain name.
 
-	1. `server=/DOMAIN/...`, which is the format of `dnsmasq` config file, note that only the `DOMAIN` will be honored, other fields will be simply discarded.
+	* `server=/DOMAIN/...`, which is the format of `dnsmasq` config file, note that only the `DOMAIN` will be honored, other fields will be simply discarded.
 
 	Text after `#` character will be treated as comment.
 
@@ -96,7 +96,7 @@ Some of the knobs take a `DURATION` as argument, *second* will be used as defaul
 
 * `expire` will expire (cached) connections after this time interval. Default is `15s`, minimal is `1s`.
 
-* `force_tcp` uses `TCP` even if the request comes in over UDP.
+* `force_tcp` uses `TCP` even if the request comes in over `UDP`.
 
 * `prefer_udp` try first using `UDP` even when the request comes in over `TCP`. If response is truncated(`TC` flag set in response) then do another attempt over `TCP`. If both `force_tcp` and `prefer_udp` are specified then `force_tcp` takes precedence.
 
@@ -178,7 +178,15 @@ dnsredir . {
 
 **TODO**: add more examples
 
-### See also
+## Courtesy
+
+Implementation and documentation of this plugin mainly inspired by [*forward*](https://coredns.io/plugins/forward/) plugin, [*proxy*](https://coredns.io/explugins/proxy/) plugin, [*hosts*](https://coredns.io/plugins/hosts/) plugin.
+
+## LICENSE
+
+*dnsredir* uses the same [LICENSE](LICENSE) as with [CoreDNS](https://github.com/coredns/coredns).
+
+## See also
 
 [CoreDNS github repository](https://github.com/coredns/coredns)
 

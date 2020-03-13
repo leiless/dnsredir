@@ -2,6 +2,8 @@
 *.cp
 *.log
 *.zip
+*.swp
 Corefile
 .DS_Store
+coredns
 

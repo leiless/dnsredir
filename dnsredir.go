@@ -7,6 +7,7 @@ package dnsredir
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/debug"
 	clog "github.com/coredns/coredns/plugin/pkg/log"
@@ -62,11 +63,16 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 	state := request.Request{W: w, Req: req}
 	name := state.Name()
 
-	upstream, t := r.match(name)
-	if upstream == nil {
+	upstream0, t := r.match(name)
+	if upstream0 == nil {
 		log.Debugf("%q not found in name list, t: %v", name, t)
 		return plugin.NextOrFailure(r.Name(), r.Next, ctx, w, req)
 	}
+	upstream, ok := upstream0.(*reloadableUpstream)
+	if !ok {
+		panic(fmt.Sprintf("Why %T isn't a %T", upstream0, reloadableUpstream{}))
+	}
+
 	log.Debugf("%q in name list, t: %v", name, t)
 
 	var reply *dns.Msg
@@ -97,7 +103,10 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 		}
 
 		if upstreamErr != nil {
-			log.Warningf("Exchange() failed  error: %v", upstreamErr)
+			if upstream.maxFails != 0 {
+				log.Warningf("Exchange() failed  error: %v", upstreamErr)
+				go UnusedResult(host.Check())
+			}
 			continue
 		}
 

@@ -13,6 +13,7 @@ import (
 	"github.com/coredns/coredns/plugin/pkg/parse"
 	pkgtls "github.com/coredns/coredns/plugin/pkg/tls"
 	"github.com/coredns/coredns/plugin/pkg/transport"
+	"github.com/coredns/coredns/plugin/pkg/up"
 	"github.com/miekg/dns"
 	"os"
 	"path/filepath"
@@ -28,6 +29,7 @@ type reloadableUpstream struct {
 	inline domainSet
 	ignored domainSet
 	*HealthCheck
+	up *up.Probe
 }
 
 // reloadableUpstream implements Upstream interface
@@ -67,6 +69,7 @@ func (u *reloadableUpstream) Start() error {
 func (u *reloadableUpstream) Stop() error {
 	close(u.stopReload)
 	u.HealthCheck.Stop()
+	u.up.Stop()
 	return nil
 }
 
@@ -123,6 +126,7 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 				tlsConfig: new(tls.Config),
 			},
 		},
+		up: up.New(),
 	}
 
 	if err := parseFilePaths(c, u); err != nil {

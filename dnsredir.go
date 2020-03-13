@@ -82,6 +82,8 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 		host := upstream.Select()
 		if host == nil {
 			log.Debug(errNoHealthy)
+			// Stop continuous health checking probe
+			upstream.up.Stop()
 			return dns.RcodeServerFailure, errNoHealthy
 		}
 		log.Debugf("Upstream host %v is selected", host.addr)
@@ -105,7 +107,7 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 		if upstreamErr != nil {
 			if upstream.maxFails != 0 {
 				log.Warningf("Exchange() failed  error: %v", upstreamErr)
-				go UnusedResult(host.Check())
+				upstream.up.Do(host.Check)
 			}
 			continue
 		}

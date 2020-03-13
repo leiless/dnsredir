@@ -243,7 +243,7 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		if err != nil {
 			return err
 		}
-		if dur < minReloadInterval {
+		if dur < minReloadInterval && dur != 0 {
 			return c.Errf("%v: minimal interval is %v", dir, minReloadInterval)
 		}
 		u.reload = dur
@@ -289,7 +289,7 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		if err != nil {
 			return err
 		}
-		if dur < minHcInterval {
+		if dur < minHcInterval && dur != 0 {
 			return c.Errf("%v: minimal interval is %v", dir, minHcInterval)
 		}
 		u.checkInterval = dur
@@ -326,7 +326,7 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		if err != nil {
 			return err
 		}
-		if dur < minExpireInterval {
+		if dur < minExpireInterval && dur != 0 {
 			return c.Errf("%v: minimal interval is %v", dir, minExpireInterval)
 		}
 		u.transport.expire = dur

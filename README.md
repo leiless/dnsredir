@@ -178,6 +178,24 @@ dnsredir . {
 
 **TODO**: add more examples
 
+## BUGS
+
+Sometimes you modified `Corefile` and yet Caddy server failed to reload the new config with the error "Error during parsing", *dnsredir* will do sanity check during parsing, if you misconfiged the `Corefile`, you're out of lock:
+
+* Argument count mismatch, out of range arguments, unrecognizable arguments, etc.
+
+* Missing mandatory property `to TO...`.
+
+* Used unsupported DNS transport type in `to TO...`.
+
+* `except` and `INLINE` share some same domain names(which yields a conflict).
+
+* `.`(i.e. root zone) is matched yet `INLINE` also embedded in Server Block(still a conflict).
+
+Also note that some of the properties are cumulative: `INLINE`, `except`, `to`, in which case `INLINE` domains should be put one domain per line.
+
+Rationale: Strict checking to ensure that user can detect errors ASAP, and make the `Corefile` less confusing.
+
 ## Courtesy
 
 Implementation and documentation of this plugin mainly inspired by [*forward*](https://coredns.io/plugins/forward/) plugin, [*proxy*](https://coredns.io/explugins/proxy/) plugin, [*hosts*](https://coredns.io/plugins/hosts/) plugin.

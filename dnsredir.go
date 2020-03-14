@@ -106,7 +106,7 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 		if upstreamErr != nil {
 			if upstream.maxFails != 0 {
 				log.Warningf("Exchange() failed  error: %v", upstreamErr)
-				healthCheck(host)
+				healthCheck(upstream, host)
 			}
 			continue
 		}
@@ -130,7 +130,12 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 	return dns.RcodeServerFailure, upstreamErr
 }
 
-func healthCheck(uh *UpstreamHost) {
+func healthCheck(r *reloadableUpstream, uh *UpstreamHost) {
+	// Skip unnecessary health checking
+	if r.checkInterval == 0 || r.maxFails == 0 {
+		return
+	}
+
 	failTimeout := defaultFailTimeout
 	fails := atomic.AddInt32(&uh.fails, 1)
 	go func(uh *UpstreamHost) {

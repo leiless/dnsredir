@@ -6,7 +6,10 @@ import (
 	"strings"
 )
 
-const pluginName = "dnsredir"
+const (
+	pluginName = "dnsredir"
+	pluginVersion = "0.0.1"
+)
 
 // Used for generic expressions and statements
 func Unused(arg0 interface{}, args ...interface{}) {

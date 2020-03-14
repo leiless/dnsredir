@@ -163,7 +163,7 @@ type UpstreamHost struct {
 	//protocol string					// DNS protocol, i.e. "udp", "tcp", "tcp-tls"
 	addr string						// IP:PORT
 
-	fails uint32					// Fail count
+	fails int32					// Fail count
 	downFunc UpstreamHostDownFunc	// This function should be side-effect save
 
 	c *dns.Client					// DNS client used for health check
@@ -270,12 +270,12 @@ func (uh *UpstreamHost) Check() error {
 	}
 
 	if err, rtt := uh.send(); err != nil {
-		atomic.AddUint32(&uh.fails, 1)
+		atomic.AddInt32(&uh.fails, 1)
 		log.Warningf("hc: DNS @%v +%v failed  rtt: %v err: %v", uh.addr, proto, rtt, err)
 		return err
 	} else {
 		// Reset failure counter once health check success
-		atomic.StoreUint32(&uh.fails, 0)
+		atomic.StoreInt32(&uh.fails, 0)
 		return nil
 	}
 }
@@ -316,7 +316,7 @@ type UpstreamHostPool []*UpstreamHost
 func (uh *UpstreamHost) Down() bool {
 	if uh.downFunc == nil {
 		log.Warningf("Upstream host %v have no downFunc, fallback to default", uh.addr)
-		fails := atomic.LoadUint32(&uh.fails)
+		fails := atomic.LoadInt32(&uh.fails)
 		return fails > 0
 	}
 
@@ -338,7 +338,7 @@ type HealthCheck struct {
 	// [PENDING]
 	//failTimeout time.Duration	// Single health check timeout
 
-	maxFails uint32				// Maximum fail count considered as down
+	maxFails int32				// Maximum fail count considered as down
 	checkInterval time.Duration	// Health check interval
 
 	// A global transport since Caddy doesn't support over nested blocks

@@ -13,6 +13,7 @@ import (
 	clog "github.com/coredns/coredns/plugin/pkg/log"
 	"github.com/coredns/coredns/request"
 	"github.com/miekg/dns"
+	"sync/atomic"
 	"time"
 )
 
@@ -82,8 +83,6 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 		host := upstream.Select()
 		if host == nil {
 			log.Debug(errNoHealthy)
-			// Stop continuous health checking probe
-			upstream.up.Stop()
 			return dns.RcodeServerFailure, errNoHealthy
 		}
 		log.Debugf("Upstream host %v is selected", host.addr)
@@ -107,7 +106,7 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 		if upstreamErr != nil {
 			if upstream.maxFails != 0 {
 				log.Warningf("Exchange() failed  error: %v", upstreamErr)
-				upstream.up.Do(host.Check)
+				healthCheck(host)
 			}
 			continue
 		}
@@ -129,6 +128,20 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 		panic("Why upstreamErr is nil?! Are you in a debugger or your machine running slow?")
 	}
 	return dns.RcodeServerFailure, upstreamErr
+}
+
+func healthCheck(uh *UpstreamHost) {
+	failTimeout := defaultFailTimeout
+	fails := atomic.AddInt32(&uh.fails, 1)
+	go func(uh *UpstreamHost) {
+		time.Sleep(failTimeout)
+		// Failure count may go negative here, should be rectified by HC eventually
+		atomic.AddInt32(&uh.fails, -1)
+		// Kick off health check on every failureCheck failure
+		if fails % failureCheck == 0 {
+			UnusedResult(uh.Check())
+		}
+	}(uh)
 }
 
 func (r *Dnsredir) Name() string { return pluginName }
@@ -163,5 +176,9 @@ var (
 	errCachedConnClosed = errors.New("cached connection was closed by peer")
 )
 
-const defaultTimeout = 15000 * time.Millisecond
+const (
+	defaultTimeout = 15000 * time.Millisecond
+	defaultFailTimeout = 2000 * time.Millisecond
+	failureCheck = 3
+)
 

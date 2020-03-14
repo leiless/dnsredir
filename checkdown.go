@@ -6,7 +6,7 @@ import "sync/atomic"
 // Taken from https://github.com/coredns/proxy/proxy/down.go
 var checkDownFunc = func(u *reloadableUpstream) UpstreamHostDownFunc {
 	return func(uh *UpstreamHost) bool {
-		fails := atomic.LoadUint32(&uh.fails)
+		fails := atomic.LoadInt32(&uh.fails)
 		return fails >= u.maxFails && u.maxFails > 0
 	}
 }

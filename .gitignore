@@ -6,4 +6,5 @@
 Corefile
 .DS_Store
 coredns
+go.sum
 

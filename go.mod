@@ -1,4 +1,4 @@
-module github.com/lynnlx/dnsredir
+module github.com/leiless/dnsredir
 
 go 1.13
 

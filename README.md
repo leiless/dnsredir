@@ -54,7 +54,7 @@ dnsredir FILE... {
 
 	spray
 	policy random|round_robin|sequential
-	health_check DURATION
+	health_check DURATION [no_rec]
 	max_fails INTEGER
 
 	to TO...
@@ -90,7 +90,11 @@ Some of the options take a `DURATION` as argument, *second* will be used as defa
 
 	* `sequential` will select a healthy upstream host in sequential order.
 
-* `health_check` specifies upstream hosts health checking interval. Default is `2s`, minimal is `1s`.
+* `health_check` configure the behaviour of health checking of the upstream hosts:
+
+     * `DURATION` specifies health checking interval. Default is `2s`, minimal is `1s`.
+
+     * `[no_rec]` optional argument to set `RecursionDesired` flag to `false` for health checking. Default is `true`, i.e. recursion is desired.
 
 * `max_fails` is the maximum number of consecutive health checking failures that are needed before considering an upstream as down. `0` to disable this feature(which the upstream will never be marked as down). Default is `3`.
 

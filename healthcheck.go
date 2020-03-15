@@ -31,6 +31,7 @@ func (pc *persistConn) String() string {
 type Transport struct {
 	forceTcp  	bool				// forceTcp takes precedence over preferUdp
 	preferUdp 	bool
+	recursionDesired bool			// RD flag
 	expire		time.Duration		// [sic] After this duration a connection is expired
 	tlsConfig	*tls.Config
 
@@ -283,6 +284,7 @@ func (uh *UpstreamHost) Check() error {
 func (uh *UpstreamHost) send() (error, time.Duration) {
 	ping := &dns.Msg{}
 	ping.SetQuestion(".", dns.TypeNS)
+	ping.MsgHdr.RecursionDesired = uh.transport.recursionDesired
 
 	t := time.Now()
 	// rtt stands for Round Trip Time, it's 0 if Exchange() failed

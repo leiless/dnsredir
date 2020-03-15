@@ -6,6 +6,7 @@ package dnsredir
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"github.com/caddyserver/caddy"
 	"github.com/coredns/coredns/core/dnsserver"
@@ -121,6 +122,7 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 			transport: &Transport{
 				expire: defaultConnExpire,
 				tlsConfig: new(tls.Config),
+				recursionDesired: true,
 			},
 		},
 	}
@@ -150,6 +152,7 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 		// Inherit from global transport settings
 		host.transport.forceTcp = u.transport.forceTcp
 		host.transport.preferUdp = u.transport.preferUdp
+		host.transport.recursionDesired = u.transport.recursionDesired
 		host.transport.expire = u.transport.expire
 		if trans == transport.TLS {
 			// Deep copy
@@ -285,15 +288,24 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		u.maxFails = n
 		log.Infof("%v: %v", dir, n)
 	case "health_check":
-		dur, err := parseDuration(c)
+		args := c.RemainingArgs()
+		n := len(args)
+		if n != 1 && n != 2 {
+			return c.ArgErr()
+		}
+		dur, err := parseDuration0(dir, args[0])
 		if err != nil {
-			return err
+			return c.Err(err.Error())
 		}
 		if dur < minHcInterval && dur != 0 {
 			return c.Errf("%v: minimal interval is %v", dir, minHcInterval)
 		}
+		if n == 2 && args[1] != "no_rec" {
+			return c.Errf("%v: unknown option: %v", dir, args[1])
+		}
 		u.checkInterval = dur
-		log.Infof("%v: %v", dir, u.checkInterval)
+		u.transport.recursionDesired = n == 1
+		log.Infof("%v: %v %v", dir, u.checkInterval, u.transport.recursionDesired)
 	case "to":
 		// Multiple "to"s will be merged together
 		if err := parseTo(c, u); err != nil {
@@ -385,17 +397,9 @@ func parseInt32(c *caddy.Controller) (int32, error) {
 	return int32(n), nil
 }
 
-// Return a non-negative time.Duration and an error(if any)
-func parseDuration(c *caddy.Controller) (time.Duration, error) {
-	dir := c.Val()
-	args := c.RemainingArgs()
-	if len(args) != 1 {
-		return 0, c.ArgErr()
-	}
-
-	arg := args[0]
+func parseDuration0(dir, arg string) (time.Duration, error) {
 	if _, err := strconv.Atoi(arg); err == nil {
-		log.Warningf("%v: %s missing time unit, assume it's second", dir, arg)
+		log.Warningf("%v: %v missing time unit, assume it's second", dir, arg)
 		arg += "s"
 	}
 
@@ -405,9 +409,23 @@ func parseDuration(c *caddy.Controller) (time.Duration, error) {
 	}
 
 	if duration < 0 {
-		return 0, c.Errf("%v: negative time duration %s", arg)
+		return 0, errors.New(fmt.Sprintf("%v: negative time duration %v", dir, arg))
 	}
 	return duration, nil
+}
+
+// Return a non-negative time.Duration and an error(if any)
+func parseDuration(c *caddy.Controller) (time.Duration, error) {
+	dir := c.Val()
+	args := c.RemainingArgs()
+	if len(args) != 1 {
+		return 0, c.ArgErr()
+	}
+	dur, err := parseDuration0(dir, args[0])
+	if err == nil {
+		return dur, nil
+	}
+	return dur, c.Err(err.Error())
 }
 
 // tls://ip[[:port]|[@tls_server_name]]

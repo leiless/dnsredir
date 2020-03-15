@@ -77,6 +77,7 @@ func TestSend(t *testing.T) {
 				Net: test.proto,
 				Timeout: test.timeout,
 			},
+			transport: newTransport(),
 		}
 		err := uh.Check()
 		if !test.Pass(err) {

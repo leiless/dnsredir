@@ -27,7 +27,7 @@ steps:
     - cd $COREDNS_DIR
     - sed -i 's|BUILDOPTS:=-v|BUILDOPTS:=-v -race|g' Makefile
     - sed -i 's|CGO_ENABLED:=0|CGO_ENABLED:=1|g' Makefile
-    - sed -i 's|forward:forward|forward:forward\ndnsredir:dnsredir|g' plugin.cfg
+    - sed -i 's|forward:forward|forward:forward\\ndnsredir:dnsredir|g' plugin.cfg
     - git diff
     - ln -s $DNSREDIR_DIR $COREDNS_DIR/plugin/$(basename $DNSREDIR_DIR)
     - make

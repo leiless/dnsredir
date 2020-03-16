@@ -13,6 +13,11 @@ steps:
 - name: prepare
   image: golang
   commands:
+    - go env | grep GOOS
+    - go env | grep GOARCH
+    - rm -f go.mod go.sum
+    - export DNSREDIR_DIR=/go/src/github.com/leiless/dnsredir
+    - mkdir -p $DNSREDIR_DIR/bin
     - export COREDNS_DIR=/go/src/github.com/coredns/coredns
     - export COREDNS_URL=https://github.com/coredns/coredns.git
     # Get the latest tag name
@@ -20,5 +25,11 @@ steps:
     # Do a shallow clone, silent "You are in 'detached HEAD' state..."
     - git clone --branch $TAG_NAME --depth 1 $COREDNS_URL $COREDNS_DIR 2> /dev/null
     - cd $COREDNS_DIR
+    - sed -i 's|BUILDOPTS:=-v|BUILDOPTS:=-v -race|g' Makefile
+    - sed -i 's|CGO_ENABLED:=0|CGO_ENABLED:=1|g' Makefile
+    - sed -i 's|forward:forward|forward:forward\ndnsredir:dnsredir|g' plugin.cfg
+    - git diff
+    - ln -s $DNSREDIR_DIR $COREDNS_DIR/plugin/$(basename $DNSREDIR_DIR)
     - make
+    - ./coredns -plugins | grep dnsredir
 

@@ -13,11 +13,11 @@ steps:
 - name: prepare
   image: golang
   commands:
-    - go env | grep GOOS
-    - go env | grep GOARCH
+    - set -euf
     - rm -f go.mod go.sum
     - export DNSREDIR_DIR=/go/src/github.com/leiless/dnsredir
-    - mkdir -p $DNSREDIR_DIR/bin
+    - export BIN=$DNSREDIR_DIR/bin
+    - mkdir -p $BIN
     - export COREDNS_DIR=/go/src/github.com/coredns/coredns
     - export COREDNS_URL=https://github.com/coredns/coredns.git
     # Get the latest tag name
@@ -30,6 +30,55 @@ steps:
     - sed -i 's|forward:forward|forward:forward\\\\ndnsredir:dnsredir|g' plugin.cfg
     - git diff
     - ln -s $DNSREDIR_DIR $COREDNS_DIR/plugin/$(basename $DNSREDIR_DIR)
-    #- make
-    #- ./coredns -plugins | grep dnsredir
+- name: build-coredns-linux-amd64
+  image: golang
+  environment:
+    GOOS: linux
+    GOARCH: amd64
+  commands:
+    - cd /go/src/github.com/coredns/coredns
+    - make
+    - mv coredns /go/src/github.com/leiless/dnsredir/bin/coredns_dnsredir-$GOOS-$GOARCH
+- name: build-coredns-linux-arm
+  image: golang
+  environment:
+    GOOS: linux
+    GOARCH: arm
+  commands:
+    - cd /go/src/github.com/coredns/coredns
+    - make
+    - mv coredns /go/src/github.com/leiless/dnsredir/bin/coredns_dnsredir-$GOOS-$GOARCH
+- name: build-coredns-linux-arm64
+  image: golang
+  environment:
+    GOOS: linux
+    GOARCH: arm64
+  commands:
+    - cd /go/src/github.com/coredns/coredns
+    - make
+    - mv coredns /go/src/github.com/leiless/dnsredir/bin/coredns_dnsredir-$GOOS-$GOARCH
+- name: build-coredns-darwin-amd64
+  image: golang
+  environment:
+    GOOS: darwin
+    GOARCH: amd64
+  commands:
+    - cd /go/src/github.com/coredns/coredns
+    - make
+    - mv coredns /go/src/github.com/leiless/dnsredir/bin/coredns_dnsredir-$GOOS-$GOARCH
+- name: build-coredns-windows-amd64
+  image: golang
+  environment:
+    GOOS: windows
+    GOARCH: amd64
+  commands:
+    - cd /go/src/github.com/coredns/coredns
+    - make
+    - mv coredns /go/src/github.com/leiless/dnsredir/bin/coredns_dnsredir-$GOOS-$GOARCH
+- name: calc-shasum256
+  image: alpine
+  commands:
+    - uname -a
+    - cd /go/src/github.com/leiless/dnsredir/bin
+    - sha256sum coredns* | tee shasum256.txt
 

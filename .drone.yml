@@ -78,7 +78,7 @@ steps:
     GOARCH: amd64
   commands:
     - cd /go/src/github.com/coredns/coredns
-    - make
+    - make CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++
     - mv coredns /go/src/github.com/leiless/dnsredir/bin/coredns_dnsredir-$GOOS-$GOARCH
 - name: calc-shasum256
   image: alpine

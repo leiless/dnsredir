@@ -56,7 +56,8 @@ steps:
     GOARCH: arm64
   commands:
     - cd /go/src/github.com/coredns/coredns
-    - make
+    # Silent "Error: no such instruction: ..."
+    - make CGO_ENABLED=0 BUILDOPTS=-v
     - mv coredns /go/src/github.com/leiless/dnsredir/bin/coredns_dnsredir-$GOOS-$GOARCH
 - name: build-coredns-darwin-amd64
   image: golang

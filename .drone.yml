@@ -38,7 +38,7 @@ steps:
   commands:
     - cd /go/src/github.com/coredns/coredns
     #- cat /usr/local/go/src/os/user/getgrouplist_darwin.go
-    sed -i 's|#include <unistd.h>|#include <grp.h>\\\\n#include <unistd.h>|g' /usr/local/go/src/os/user/getgrouplist_darwin.go
+    - sed -i 's|#include <unistd.h>|#include <grp.h>\\\\n#include <unistd.h>|g' /usr/local/go/src/os/user/getgrouplist_darwin.go
     - make
     - mv coredns /go/src/github.com/leiless/dnsredir/bin/coredns_dnsredir-$GOOS-$GOARCH
 - name: build-coredns-linux-amd64

@@ -15,6 +15,8 @@ steps:
   commands:
     - set -euf
     - uname -a
+    - go version
+    - go env
     - rm -f go.mod go.sum
     - export DNSREDIR_DIR=/go/src/github.com/leiless/dnsredir
     - export BIN=$DNSREDIR_DIR/bin
@@ -67,8 +69,7 @@ steps:
     GOARCH: amd64
   commands:
     - cd /go/src/github.com/coredns/coredns
-    - sed -i 's|#include <unistd.h>|#include <grp.h>\\\\n#include <unistd.h>|g' /usr/local/go/src/os/user/getgrouplist_darwin.go
-    - make
+    - make CGO_ENABLED=0 BUILDOPTS=-v
     - mv coredns /go/src/github.com/leiless/dnsredir/bin/coredns_dnsredir-$GOOS-$GOARCH
 - name: build-coredns-windows-amd64
   image: golang

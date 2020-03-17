@@ -12,8 +12,8 @@ import (
 )
 
 type stringSet map[string]struct{}
-// uint8 used to store an ASCII character
-type domainSet map[uint8]stringSet
+// uint16 used to store two ASCII characters
+type domainSet map[uint16]stringSet
 
 func (s *stringSet) Add(str string) {
 	(*s)[str] = struct{}{}
@@ -55,19 +55,34 @@ func (d *domainSet) Len() uint64 {
 	return n
 }
 
+func domainToIndex(str string) uint16 {
+	n := len(str)
+	if n == 0 {
+		panic(fmt.Sprintf("Unexpected empty string?!"))
+	}
+	// Since we use two ASCII characters to present index
+	//	Insufficient length will padded with '-'
+	//	Since a valid domain segment will never begin with '-'
+	//	So it can maintain balance between buckets
+	if n == 1 {
+		return (uint16('-') << 8) | uint16(str[0])
+	}
+	return uint16((str[0] << 8) | str[1])
+}
+
 // Return true if name added successfully, false otherwise
 func (d *domainSet) Add(str string) bool {
 	// To reduce memory, we don't use full qualified name
 	if name, ok := stringToDomain(str); ok {
 		// To speed up name lookup, we utilized two-way hash
-		// The first one is the first ASCII character of the domain name
+		// The first one is the first two ASCII characters of the domain name
 		// The second one is the real domain set
-		// Which works just like ordinary English dictionary lookup
-		s := (*d)[name[0]]
+		// Which works somewhat like ordinary English dictionary lookup
+		s := (*d)[domainToIndex(name)]
 		if s == nil {
 			// MT-Unsafe: Initialize real domain set on demand
 			s = make(stringSet)
-			(*d)[name[0]] = s
+			(*d)[domainToIndex(name)] = s
 		}
 		s.Add(name)
 		return true
@@ -94,7 +109,7 @@ func (d *domainSet) Match(child string) bool {
 	}
 
 	for {
-		s := (*d)[child[0]]
+		s := (*d)[domainToIndex(child)]
 		// Fast lookup for a full match
 		if s.Contains(child) {
 			return true

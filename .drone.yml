@@ -49,6 +49,8 @@ steps:
     - cd /go/src/github.com/coredns/coredns
     - make
     - mv coredns /go/src/github.com/leiless/dnsredir/bin/coredns_dnsredir-$GOOS-$GOARCH
+  when:
+    event: tag
 - name: build-coredns-linux-arm64
   image: golang
   environment:
@@ -58,6 +60,8 @@ steps:
     - cd /go/src/github.com/coredns/coredns
     - make
     - mv coredns /go/src/github.com/leiless/dnsredir/bin/coredns_dnsredir-$GOOS-$GOARCH
+  when:
+    event: tag
 - name: build-coredns-darwin-amd64
   image: golang
   environment:
@@ -67,6 +71,8 @@ steps:
     - cd /go/src/github.com/coredns/coredns
     - make
     - mv coredns /go/src/github.com/leiless/dnsredir/bin/coredns_dnsredir-$GOOS-$GOARCH
+  when:
+    event: tag
 - name: build-coredns-windows-amd64
   image: golang
   environment:
@@ -76,16 +82,25 @@ steps:
     - cd /go/src/github.com/coredns/coredns
     - make
     - mv coredns /go/src/github.com/leiless/dnsredir/bin/coredns_dnsredir-$GOOS-$GOARCH.exe
+  when:
+    event: tag
 - name: calc-shasum256
   image: alpine
   commands:
     - uname -a
     - cd /go/src/github.com/leiless/dnsredir/bin
+    - ls -l coredns*
     - sha256sum coredns* | tee shasum256.txt
-- name: publish
+  when:
+    event: tag
+- name: github-release
   image: plugins/github-release
   settings:
     api_key:
       from_secret: github_token
-    files: bin/coredns*
+    files:
+      - bin/coredns*
+      - bin/shasum256.txt
+  when:
+    event: tag
 

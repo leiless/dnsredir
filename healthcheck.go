@@ -29,6 +29,8 @@ func (pc *persistConn) String() string {
 // Inspired from coredns/plugin/forward/persistent.go
 // addr isn't sealed into this struct since it's a high-level item
 type Transport struct {
+	avgDialTime int64				// Cumulative moving average dial time in ns(i.e. time.Duration)
+
 	forceTcp  	bool				// forceTcp takes precedence over preferUdp
 	preferUdp 	bool
 	recursionDesired bool			// RD flag
@@ -44,6 +46,7 @@ type Transport struct {
 
 func newTransport() *Transport {
 	return &Transport{
+		avgDialTime: int64(minDialTimeout),
 		expire:		defaultConnExpire,
 		conns:     	[typeTotalCount][]*persistConn{},
 		dial:      	make(chan string),
@@ -175,6 +178,33 @@ type UpstreamHost struct {
 	transport *Transport
 }
 
+// Taken from coredns/plugin/forward/connect.go
+// see: https://en.wikipedia.org/wiki/Moving_average#Cumulative_moving_average
+//
+// limitDialTimeout is a utility function to auto-tune timeout values
+// average observed time is moved towards the last observed delay moderated by a weight
+// next timeout to use will be the double of the computed average, limited by min and max frame.
+func limitDialTimeout(currentAvg *int64, minValue, maxValue time.Duration) time.Duration {
+	rt := time.Duration(atomic.LoadInt64(currentAvg))
+	if rt < minValue {
+		return minValue
+	}
+	if rt < maxValue / 2 {
+		return rt * 2
+	}
+	return maxValue
+}
+
+func (t *Transport) dialTimeout() time.Duration {
+	return limitDialTimeout(&t.avgDialTime, minDialTimeout, maxDialTimeout)
+}
+
+func (t *Transport) updateDialTimeout(newDialTime time.Duration) {
+	oldDialTime := time.Duration(atomic.LoadInt64(&t.avgDialTime))
+	dt := int64(newDialTime - oldDialTime)
+	atomic.AddInt64(&t.avgDialTime, dt / cumulativeAvgWeight)
+}
+
 // see: upstream.go/transToProto()
 // Return:
 //	#0	Persistent connection
@@ -196,15 +226,18 @@ func (uh *UpstreamHost) Dial(proto string) (*persistConn, bool, error) {
 		return pc, true, nil
 	}
 
-	timeout := 2 * time.Second
+	reqTime := time.Now()
+	timeout := uh.transport.dialTimeout()
 	if proto == "tcp-tls" {
 		conn, err := dns.DialTimeoutWithTLS(proto, uh.addr, uh.transport.tlsConfig, timeout)
+		uh.transport.updateDialTimeout(time.Since(reqTime))
 		if err != nil {
 			return nil, false, err
 		}
 		return &persistConn{c: conn}, false, err
 	}
 	conn, err := dns.DialTimeout(proto, uh.addr, timeout)
+	uh.transport.updateDialTimeout(time.Since(reqTime))
 	if err != nil {
 		return nil, false, err
 	}
@@ -439,5 +472,11 @@ func (hc *HealthCheck) Select() *UpstreamHost {
 	return hc.spray.Select(pool)
 }
 
-const defaultConnExpire = 15 * time.Second
+const (
+	defaultConnExpire = 15 * time.Second
+	minDialTimeout = 1 * time.Second
+	// Relatively short dial timeout, so we can retry with other upstreams
+	maxDialTimeout = 5 * time.Second
+	cumulativeAvgWeight = 4
+)
 

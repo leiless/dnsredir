@@ -20,11 +20,11 @@ steps:
     - MOD_ADDR=$(cat go.mod | grep '^module ' | awk '{print $2}')
     - HEAD_COMMIT=$(git describe --dirty --always)
     - rm -f go.mod go.sum
-    - export DNSREDIR_DIR=/go/src/github.com/leiless/dnsredir
-    - export BIN=$DNSREDIR_DIR/bin
+    - DNSREDIR_DIR=/go/src/github.com/leiless/dnsredir
+    - BIN=$DNSREDIR_DIR/bin
     - mkdir -p $BIN
-    - export COREDNS_DIR=/go/src/github.com/coredns/coredns
-    - export COREDNS_URL=https://github.com/coredns/coredns.git
+    - COREDNS_DIR=/go/src/github.com/coredns/coredns
+    - COREDNS_URL=https://github.com/coredns/coredns.git
     # Get the latest tag name
     - TAG_NAME=$(curl --silent https://api.github.com/repos/coredns/coredns/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
     # Do a shallow clone, silent "You are in 'detached HEAD' state..."

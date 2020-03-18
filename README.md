@@ -182,7 +182,11 @@ dnsredir . {
 
 **TODO**: add more examples
 
-## BUGS
+## Caveats
+
+* To yield a maximum match performance, we search and return the first matched upstream, thus the block order between `dnsredir`s are important. Unlike the `proxy` plugin, which always try to find a longest match, i.e. position-independent search.
+
+## Bugs
 
 Sometimes you modified `Corefile` and yet Caddy server failed to reload the new config with the error "Error during parsing", *dnsredir* will do sanity check during parsing, if you misconfiged the `Corefile`, you're out of lock:
 

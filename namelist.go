@@ -199,7 +199,6 @@ func (n *Namelist) periodicUpdate() {
 
 func (n *Namelist) parseNamelist() {
 	for _, item := range n.items {
-		// Q: Use goroutine for concurrent update?
 		n.parseNamelistCore(item)
 	}
 }

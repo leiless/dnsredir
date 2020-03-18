@@ -165,7 +165,6 @@ func (r *Dnsredir) match(name string) (Upstream, time.Duration) {
 
 	t := time.Now()
 	for _, up := range *r.Upstreams {
-		// Q: perform longest domain match?
 		// For maximum performance, we search the first matched item and return directly
 		// Unlike proxy plugin, which try to find longest match
 		if up.Match(name) {

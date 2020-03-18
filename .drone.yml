@@ -41,6 +41,11 @@ steps:
   environment:
     GOOS: linux
     GOARCH: amd64
+    # Disable code optimization
+    CGO_CFLAGS: -g -O0
+    CGO_CXXFLAGS: -g -O0
+    CGO_FFLAGS: -g -O0
+    CGO_LDFLAGS: -g -O0
   commands:
     - cd /go/src/github.com/coredns/coredns
     - make CGO_ENABLED=1 BUILDOPTS="-v -race"

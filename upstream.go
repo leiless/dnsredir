@@ -398,11 +398,6 @@ func parseInt32(c *caddy.Controller) (int32, error) {
 }
 
 func parseDuration0(dir, arg string) (time.Duration, error) {
-	if _, err := strconv.Atoi(arg); err == nil {
-		log.Warningf("%v: %v missing time unit, assume it's second", dir, arg)
-		arg += "s"
-	}
-
 	duration, err := time.ParseDuration(arg)
 	if err != nil {
 		return 0, err

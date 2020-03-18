@@ -66,7 +66,7 @@ dnsredir FILE... {
 }
 ```
 
-Some of the options take a `DURATION` as argument, *second* will be used as default time unit as if you don't specify it, **zero time duration to disable corresponding feature** unless it's explicitly stated otherwise.
+Some of the options take a `DURATION` as argument, **zero time(i.e. `0`) duration to disable corresponding feature** unless it's explicitly stated otherwise. Valid time duration examples: `0`, `500ms`, `3s`, `1h`, `2h15m`, etc.
 
 * `FILE...` and `to TO...` as above.
 

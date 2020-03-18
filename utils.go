@@ -11,6 +11,8 @@ const (
 	pluginVersion = "0.0.1"
 )
 
+var pluginHeadCommit = "?"
+
 // Used for generic expressions and statements
 func Unused(arg0 interface{}, args ...interface{}) {
 	// Just consume all arguments

@@ -2,6 +2,7 @@ package dnsredir
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"github.com/coredns/coredns/plugin"
 	"io"
@@ -132,25 +133,52 @@ func (d *domainSet) Match(child string) bool {
 	return false
 }
 
+const (
+	NameItemTypePath = iota
+	NameItemTypeUrl
+	NameItemTypeLast	// Dummy
+)
+
 type NameItem struct {
 	sync.RWMutex
 
 	// Domain name set for lookups
 	names domainSet
 
+	whichType int
+
 	path string
 	mtime time.Time
 	size int64
+
+	url string
+	contentHash uint64
 }
 
-func NewNameItemsWithPaths(paths []string) []*NameItem {
-	items := make([]*NameItem, len(paths))
-	for i, path := range paths {
-		items[i] = &NameItem{
-			path: path,
+func NewNameItemsWithForms(forms []string) ([]*NameItem, error) {
+	items := make([]*NameItem, len(forms))
+	for i, from := range forms {
+		if j := strings.Index(from, "://"); j > 0 {
+			proto := strings.ToLower(from[:j])
+			if proto == "http" {
+				log.Warningf("Due to security reasons, URL %q is prohibited", from)
+				continue
+			}
+			if proto != "https" {
+				return nil, errors.New(fmt.Sprintf("Unsupport URL %q", from))
+			}
+			items[i] = &NameItem{
+				whichType: 	NameItemTypeUrl,
+				url: 		from,
+			}
+		} else {
+			items[i] = &NameItem{
+				whichType: NameItemTypePath,
+				path:      from,
+			}
 		}
 	}
-	return items
+	return items, nil
 }
 
 type NameList struct {
@@ -160,8 +188,10 @@ type NameList struct {
 	// Time between two reload of a name item
 	// All name items shared the same reload duration
 	reload time.Duration
-
 	stopReload chan struct{}
+
+	urlReload time.Duration
+	stopUrlReload chan struct{}
 }
 
 // Assume `child' is lower cased and without trailing dot
@@ -180,9 +210,9 @@ func (n *NameList) Match(child string) bool {
 // MT-Unsafe
 func (n *NameList) periodicUpdate() {
 	// Kick off initial name list content population
-	n.parseNamelist()
+	n.parseNamelist(NameItemTypeLast)
 
-	if n.reload != 0 {
+	if n.reload > 0 {
 		go func() {
 			ticker := time.NewTicker(n.reload)
 			for {
@@ -190,16 +220,40 @@ func (n *NameList) periodicUpdate() {
 				case <-n.stopReload:
 					return
 				case <-ticker.C:
-					n.parseNamelist()
+					n.parseNamelist(NameItemTypePath)
+				}
+			}
+		}()
+	}
+
+	if n.urlReload > 0 {
+		go func() {
+			ticker := time.NewTicker(n.urlReload)
+			for {
+				select {
+				case <-n.stopUrlReload:
+					return
+				case <-ticker.C:
+					n.parseNamelist(NameItemTypeUrl)
 				}
 			}
 		}()
 	}
 }
 
-func (n *NameList) parseNamelist() {
+func (n *NameList) parseNamelist(whichType int) {
 	for _, item := range n.items {
-		n.parseNamelistCore(item)
+		switch whichType {
+		case NameItemTypePath:
+			n.parseNamelistCore(item)
+		case NameItemTypeUrl:
+			n.update(item)
+		case NameItemTypeLast:
+			n.parseNamelistCore(item)
+			n.update(item)
+		default:
+			panic(fmt.Sprintf("Unexpected NameItem type %v", whichType))
+		}
 	}
 }
 
@@ -278,5 +332,9 @@ func (n *NameList) parse(r io.Reader) (domainSet, uint64) {
 	}
 
 	return names, totalLines
+}
+
+func (n *NameList) update(item *NameItem) {
+
 }
 

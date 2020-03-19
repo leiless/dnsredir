@@ -127,7 +127,7 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 		},
 	}
 
-	if err := parseFilePaths(c, u); err != nil {
+	if err := parseFrom(c, u); err != nil {
 		return nil, err
 	}
 
@@ -202,40 +202,47 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 	return u, nil
 }
 
-func parseFilePaths(c *caddy.Controller, u *reloadableUpstream) error {
-	paths := c.RemainingArgs()
-	n := len(paths)
+func parseFrom(c *caddy.Controller, u *reloadableUpstream) error {
+	forms := c.RemainingArgs()
+	n := len(forms)
 	if n == 0 {
 		return c.ArgErr()
 	}
 
-	if n == 1 && paths[0] == "." {
+	if n == 1 && forms[0] == "." {
 		u.matchAny = true
 		log.Infof("Match any")
 		return nil
 	}
 
 	config := dnsserver.GetConfig(c)
-	for _, path := range paths {
-		if !filepath.IsAbs(path) && config.Root != "" {
-			path = filepath.Join(config.Root, path)
+	for _, from := range forms {
+		if strings.Index(from, "://") > 0 {
+			continue
 		}
 
-		st, err := os.Stat(path)
+		if !filepath.IsAbs(from) && config.Root != "" {
+			from = filepath.Join(config.Root, from)
+		}
+
+		st, err := os.Stat(from)
 		if err != nil {
 			if os.IsNotExist(err) {
-				log.Warningf("File %q doesn't exist", path)
+				log.Warningf("File %q doesn't exist", from)
 			} else {
 				return err
 			}
 		} else if st != nil && !st.Mode().IsRegular() {
-			log.Warningf("File %q isn't a regular file", path)
+			log.Warningf("File %q isn't a regular file", from)
 		}
 	}
 
-	u.items = NewNameItemsWithPaths(paths)
-	log.Infof("Files: %v", paths)
-
+	items, err := NewNameItemsWithForms(forms)
+	if err != nil {
+		return err
+	}
+	u.items = items
+	log.Infof("FROM...: %v", forms)
 	return nil
 }
 

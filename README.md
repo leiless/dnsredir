@@ -19,12 +19,12 @@ The phrase *redirect* and *forward* can be used interchangeably, unless explicit
 In its most basic form, a simple DNS redirecter uses the following syntax:
 
 ```Corefile
-dnsredir FILE... {
+dnsredir FROM... {
 	to TO...
 }
 ```
 
-* `FILE...` is the file list which contains base domain to match for the request to be redirected. `.`(i.e. root zone) can be used solely to match all incoming requests as a fallback.
+* `FROM...` is the file list which contains base domain to match for the request to be redirected. `.`(i.e. root zone) can be used solely to match all incoming requests as a fallback.
 
 	Currently, two kind of formats are supported:
 
@@ -47,7 +47,7 @@ dnsredir FILE... {
 An expanded syntax can be utilized to unleash of the power of `dnsredir` plugin:
 
 ```Corefile
-dnsredir FILE... {
+dnsredir FROM... {
 	reload DURATION
 	[INLINE]
 	except IGNORED_NAME...
@@ -68,11 +68,11 @@ dnsredir FILE... {
 
 Some of the options take a `DURATION` as argument, **zero time(i.e. `0`) duration to disable corresponding feature** unless it's explicitly stated otherwise. Valid time duration examples: `0`, `500ms`, `3s`, `1h`, `2h15m`, etc.
 
-* `FILE...` and `to TO...` as above.
+* `FROM...` and `to TO...` as above.
 
-* `reload` changes the interval between each `FILE...` reload. Default is `2s`, minimal is `1s`.
+* `reload` changes the interval between each `FROM...` reload. Default is `2s`, minimal is `1s`.
 
-* `INLINE` are the domain names embedded in `Corefile`, they serve as supplementaries. Note that domain names in `FILE...` will still be read. `INLINE` is forbidden if you specify `.`(i.e. root zone) as `FILE...`.
+* `INLINE` are the domain names embedded in `Corefile`, they serve as supplementaries. Note that domain names in `FROM...` will still be read. `INLINE` is forbidden if you specify `.`(i.e. root zone) as `FROM...`.
 
 	It usually not a good idea to embed too many `INLINE` domains in `Corefile`, in which case you should put them into a sole file, say, `user_custom.conf`.
 

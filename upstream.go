@@ -25,7 +25,7 @@ import (
 type reloadableUpstream struct {
 	// Flag indicate match any request, i.e. the root zone "."
 	matchAny bool
-	*Namelist
+	*NameList
 	inline domainSet
 	ignored domainSet
 	*HealthCheck
@@ -48,7 +48,7 @@ func (u *reloadableUpstream) Match(name string) bool {
 		return !ignored
 	}
 
-	if !u.Namelist.Match(name) && !u.inline.Match(name) {
+	if !u.NameList.Match(name) && !u.inline.Match(name) {
 		return false
 	}
 
@@ -109,7 +109,7 @@ func isKnownTrans(trans string) bool {
 
 func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 	u := &reloadableUpstream{
-		Namelist: &Namelist{
+		NameList: &NameList{
 			reload:     defaultReloadInterval,
 			stopReload: make(chan struct{}),
 		},
@@ -233,7 +233,7 @@ func parseFilePaths(c *caddy.Controller, u *reloadableUpstream) error {
 		}
 	}
 
-	u.items = NewNameitemsWithPaths(paths)
+	u.items = NewNameItemsWithPaths(paths)
 	log.Infof("Files: %v", paths)
 
 	return nil

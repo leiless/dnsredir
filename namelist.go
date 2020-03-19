@@ -12,7 +12,7 @@ import (
 )
 
 type stringSet map[string]struct{}
-// uint16 used to store two ASCII characters
+// uint16 used to store first two ASCII characters
 type domainSet map[uint16]stringSet
 
 func (s *stringSet) Add(str string) {
@@ -132,7 +132,7 @@ func (d *domainSet) Match(child string) bool {
 	return false
 }
 
-type Nameitem struct {
+type NameItem struct {
 	sync.RWMutex
 
 	// Domain name set for lookups
@@ -143,19 +143,19 @@ type Nameitem struct {
 	size int64
 }
 
-func NewNameitemsWithPaths(paths []string) []*Nameitem {
-	items := make([]*Nameitem, len(paths))
+func NewNameItemsWithPaths(paths []string) []*NameItem {
+	items := make([]*NameItem, len(paths))
 	for i, path := range paths {
-		items[i] = &Nameitem{
+		items[i] = &NameItem{
 			path: path,
 		}
 	}
 	return items
 }
 
-type Namelist struct {
+type NameList struct {
 	// List of name items
-	items []*Nameitem
+	items []*NameItem
 
 	// Time between two reload of a name item
 	// All name items shared the same reload duration
@@ -165,7 +165,7 @@ type Namelist struct {
 }
 
 // Assume `child' is lower cased and without trailing dot
-func (n *Namelist) Match(child string) bool {
+func (n *NameList) Match(child string) bool {
 	for _, item := range n.items {
 		item.RLock()
 		if item.names.Match(child) {
@@ -178,7 +178,7 @@ func (n *Namelist) Match(child string) bool {
 }
 
 // MT-Unsafe
-func (n *Namelist) periodicUpdate() {
+func (n *NameList) periodicUpdate() {
 	// Kick off initial name list content population
 	n.parseNamelist()
 
@@ -197,13 +197,13 @@ func (n *Namelist) periodicUpdate() {
 	}
 }
 
-func (n *Namelist) parseNamelist() {
+func (n *NameList) parseNamelist() {
 	for _, item := range n.items {
 		n.parseNamelistCore(item)
 	}
 }
 
-func (n *Namelist) parseNamelistCore(item *Nameitem) {
+func (n *NameList) parseNamelistCore(item *NameItem) {
 	file, err := os.Open(item.path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -244,7 +244,7 @@ func (n *Namelist) parseNamelistCore(item *Nameitem) {
 	item.Unlock()
 }
 
-func (n *Namelist) parse(r io.Reader) (domainSet, uint64) {
+func (n *NameList) parse(r io.Reader) (domainSet, uint64) {
 	names := make(domainSet)
 
 	var totalLines uint64

@@ -1,8 +1,12 @@
 package dnsredir
 
 import (
+	"fmt"
 	"github.com/coredns/coredns/plugin"
+	"hash/fnv"
 	"io"
+	"io/ioutil"
+	"net/http"
 	"strings"
 )
 
@@ -102,5 +106,38 @@ func SplitByByte(s string, c byte) (string, string) {
 		return s[:i], s[i+1:]
 	}
 	return s, ""
+}
+
+func getUrlContent(url, contentType string) (string, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("bad status code: %v", resp.StatusCode)
+	}
+
+	contentType = contentType
+	contentType1 := resp.Header.Get("Content-Type")
+	if len(contentType) != 0 && !strings.Contains(contentType1, contentType) {
+		return "", fmt.Errorf("bad Content-Type, expect: %q got: %q", contentType, contentType1)
+	}
+
+	content, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	// We don't http.DetectContentType()
+	return string(content), nil
+}
+
+func stringHash(str string) uint64 {
+	h := fnv.New64a()
+	_, err := h.Write([]byte(str))
+	if err != nil {
+		panic(err)
+	}
+	return h.Sum64()
 }
 

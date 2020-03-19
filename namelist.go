@@ -243,16 +243,21 @@ func (n *NameList) periodicUpdate() {
 
 func (n *NameList) parseNamelist(whichType int) {
 	for _, item := range n.items {
-		switch whichType {
-		case NameItemTypePath:
-			n.parseNamelistCore(item)
-		case NameItemTypeUrl:
-			n.update(item)
-		case NameItemTypeLast:
-			n.parseNamelistCore(item)
-			n.update(item)
-		default:
-			panic(fmt.Sprintf("Unexpected NameItem type %v", whichType))
+		if whichType == NameItemTypeLast || whichType == item.whichType {
+			switch item.whichType {
+			case NameItemTypePath:
+				n.parseNamelistCore(item)
+			case NameItemTypeUrl:
+				if whichType == NameItemTypeLast {
+					// Initial name list population needs a working DNS upstream
+					//	thus we need to fallback to it(if any) in case of population failure
+					go n.update(item)
+				} else {
+					n.update(item)
+				}
+			default:
+				panic(fmt.Sprintf("Unexpected NameItem type %v", whichType))
+			}
 		}
 	}
 }
@@ -335,6 +340,53 @@ func (n *NameList) parse(r io.Reader) (domainSet, uint64) {
 }
 
 func (n *NameList) update(item *NameItem) {
+	names := make(domainSet)
 
+	if item.whichType != NameItemTypeUrl || len(item.url) == 0 {
+		panic("Function call misuse or bad URL config")
+	}
+
+	t1 := time.Now()
+	content, err := getUrlContent(item.url, "text/plain")
+	t2 := time.Since(t1)
+	if err != nil {
+		log.Warningf("Failed to update %q, err: %v", item.url, err)
+		return
+	}
+	log.Debugf("Fetched %v, rtt: %v", item.url, t2)
+
+	item.RLock()
+	contentHash := item.contentHash
+	item.RUnlock()
+	contentHash1 := stringHash(content)
+	if contentHash1 == contentHash {
+		return
+	}
+
+	lines := strings.Split(content, "\n")
+	for _, line := range lines {
+		if i := strings.IndexByte(line, '#'); i >= 0 {
+			line = line[:i]
+		}
+
+		f := strings.Split(line, "/")
+		if len(f) != 3 {
+			_ = names.Add(line)
+			continue
+		}
+
+		if f[0] != "server=" {
+			continue
+		}
+
+		if !names.Add(f[1]) {
+			log.Warningf("%q isn't a domain name", f[1])
+		}
+	}
+
+	item.Lock()
+	item.names = names
+	item.contentHash = contentHash1
+	item.Unlock()
 }
 

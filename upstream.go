@@ -67,6 +67,7 @@ func (u *reloadableUpstream) Start() error {
 
 func (u *reloadableUpstream) Stop() error {
 	close(u.stopReload)
+	close(u.stopUrlReload)
 	u.HealthCheck.Stop()
 	return nil
 }
@@ -112,6 +113,8 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 		NameList: &NameList{
 			reload:     defaultReloadInterval,
 			stopReload: make(chan struct{}),
+			urlReload: defaultUrlReloadInterval,
+			stopUrlReload: make(chan struct{}),
 		},
 		ignored: make(domainSet),
 		inline: make(domainSet),
@@ -193,6 +196,10 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 			log.Debugf("Reset reload %v to zero since %q is matched", u.reload, ".")
 			u.reload = 0
 		}
+		if u.urlReload != 0 {
+			log.Debugf("Reset url_reload %v to zero since %q is matched", u.urlReload, ".")
+			u.urlReload = 0
+		}
 	}
 
 	if u.inline.Len() != 0 {
@@ -258,6 +265,16 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		}
 		u.reload = dur
 		log.Infof("%v: %v", dir, u.reload)
+	case "url_reload":
+		dur, err := parseDuration(c)
+		if err != nil {
+			return err
+		}
+		if dur < minUrlReloadInterval && dur != 0 {
+			return c.Errf("%v: minimal interval is %v", dir, minUrlReloadInterval)
+		}
+		u.urlReload = dur
+		log.Infof("%v: %v", dir, u.urlReload)
 	case "except":
 		// Multiple "except"s will be merged together
 		args := c.RemainingArgs()
@@ -489,12 +506,14 @@ func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 const (
 	defaultMaxFails       = 3
 	defaultReloadInterval = 2 * time.Second
+	defaultUrlReloadInterval = 60 * time.Second
 	defaultHcInterval     = 2000 * time.Millisecond
 	defaultHcTimeout      = 5000 * time.Millisecond
 )
 
 const (
 	minReloadInterval = 1 * time.Second
+	minUrlReloadInterval = 10 * time.Second
 	minHcInterval     = 1 * time.Second
 	minExpireInterval = 1 * time.Second
 )

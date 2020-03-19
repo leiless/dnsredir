@@ -36,7 +36,7 @@ steps:
     - sed -i 's|$(GITCOMMIT)|$(GITCOMMIT) $(CUSTOM_FLAGS)|g' Makefile
     - git diff
     - ln -s $DNSREDIR_DIR $COREDNS_DIR/plugin/$(basename $DNSREDIR_DIR)
-- name: build-coredns-linux-amd64
+- name: build-coredns-linux-amd64-debug
   image: golang
   environment:
     GOOS: linux
@@ -49,7 +49,18 @@ steps:
   commands:
     - cd /go/src/github.com/coredns/coredns
     - make CGO_ENABLED=1 BUILDOPTS="-v -race"
+    - mv coredns /go/src/github.com/leiless/dnsredir/bin/coredns_dnsredir-$GOOS-$GOARCH-debug
+- name: build-coredns-linux-amd64
+  image: golang
+  environment:
+    GOOS: linux
+    GOARCH: amd64
+  commands:
+    - cd /go/src/github.com/coredns/coredns
+    - make
     - mv coredns /go/src/github.com/leiless/dnsredir/bin/coredns_dnsredir-$GOOS-$GOARCH
+  when:
+    event: tag
 - name: build-coredns-linux-arm
   image: golang
   environment:

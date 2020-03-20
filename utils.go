@@ -118,7 +118,7 @@ func getUrlContent(url, contentType string, timeout time.Duration) (string, erro
 	if err != nil {
 		return "", err
 	}
-	defer UnusedResult(resp.Body.Close())
+	defer Close(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("bad status code: %v", resp.StatusCode)

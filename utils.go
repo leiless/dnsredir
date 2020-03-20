@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 )
 
 const (
@@ -108,27 +109,33 @@ func SplitByByte(s string, c byte) (string, string) {
 	return s, ""
 }
 
-func getUrlContent(url, contentType string) (string, error) {
-	resp, err := http.Get(url)
+// see:
+//	https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
+//	https://medium.com/@nate510/don-t-use-go-s-default-http-client-4804cb19f779
+func getUrlContent(url, contentType string, timeout time.Duration) (string, error) {
+	c := &http.Client{ Timeout: timeout }
+	resp, err := c.Get(url)
 	if err != nil {
 		return "", err
 	}
+	defer UnusedResult(resp.Body.Close())
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("bad status code: %v", resp.StatusCode)
 	}
 
-	contentType = contentType
 	contentType1 := resp.Header.Get("Content-Type")
-	if len(contentType) != 0 && !strings.Contains(contentType1, contentType) {
-		return "", fmt.Errorf("bad Content-Type, expect: %q got: %q", contentType, contentType1)
+	if len(contentType) != 0 {
+		if contentType1 != contentType && !strings.Contains(contentType1, contentType + ";") {
+			return "", fmt.Errorf("bad Content-Type, expect: %q got: %q", contentType, contentType1)
+		}
 	}
 
 	content, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
-	// We don't http.DetectContentType()
+	// We don't use http.DetectContentType()
 	return string(content), nil
 }
 

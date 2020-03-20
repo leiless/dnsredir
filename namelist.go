@@ -339,6 +339,8 @@ func (n *NameList) parse(r io.Reader) (domainSet, uint64) {
 	return names, totalLines
 }
 
+const urlGetTimeout = 15 * time.Second
+
 func (n *NameList) update(item *NameItem) {
 	names := make(domainSet)
 
@@ -347,7 +349,7 @@ func (n *NameList) update(item *NameItem) {
 	}
 
 	t1 := time.Now()
-	content, err := getUrlContent(item.url, "text/plain")
+	content, err := getUrlContent(item.url, "text/plain", urlGetTimeout)
 	t2 := time.Since(t1)
 	if err != nil {
 		log.Warningf("Failed to update %q, err: %v", item.url, err)

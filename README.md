@@ -48,7 +48,9 @@ An expanded syntax can be utilized to unleash of the power of `dnsredir` plugin:
 
 ```Corefile
 dnsredir FROM... {
-	reload DURATION
+	path_reload DURATION
+	url_reload DURATION
+
 	[INLINE]
 	except IGNORED_NAME...
 
@@ -70,7 +72,9 @@ Some of the options take a `DURATION` as argument, **zero time(i.e. `0`) duratio
 
 * `FROM...` and `to TO...` as above.
 
-* `reload` changes the interval between each `FROM...` reload. Default is `2s`, minimal is `1s`.
+* `path_reload` changes the reload interval between each path in `FROM...`. Default is `2s`, minimal is `1s`.
+
+* `url_reload` changes the reload interval between each URL in `FROM...`. Default is `5m`, minimal is `10s`.
 
 * `INLINE` are the domain names embedded in `Corefile`, they serve as supplementaries. Note that domain names in `FROM...` will still be read. `INLINE` is forbidden if you specify `.`(i.e. root zone) as `FROM...`.
 

@@ -111,7 +111,7 @@ func isKnownTrans(trans string) bool {
 func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 	u := &reloadableUpstream{
 		NameList: &NameList{
-			pathReload:     defaultReloadInterval,
+			pathReload:     defaultPathReloadInterval,
 			stopPathReload: make(chan struct{}),
 			urlReload:      defaultUrlReloadInterval,
 			stopUrlReload:  make(chan struct{}),
@@ -179,13 +179,12 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 		}
 	}
 
-	if err := u.inline.ForEachDomain(func(name1 string) error {
-		return u.ignored.ForEachDomain(func(name2 string) error {
-			if name1 == name2 {
-				return c.Errf("conflict domain %q in both %q and %q", name1, "except", "INLINE")
-			}
-			return nil
-		})
+	if err := u.inline.ForEachDomain(func(name string) error {
+		// except takes precedence over INLINE
+		if u.ignored.Match(name) {
+			return c.Errf("%q %v is conflict with %q", "INLINE", name, "except")
+		}
+		return nil
 	}); err != nil {
 		return nil, err
 	}
@@ -283,8 +282,8 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		if err != nil {
 			return err
 		}
-		if dur < minReloadInterval && dur != 0 {
-			return c.Errf("%v: minimal interval is %v", dir, minReloadInterval)
+		if dur < minPathReloadInterval && dur != 0 {
+			return c.Errf("%v: minimal interval is %v", dir, minPathReloadInterval)
 		}
 		u.pathReload = dur
 		log.Infof("%v: %v", dir, u.pathReload)
@@ -418,6 +417,9 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		if len(c.RemainingArgs()) != 0 ||!u.inline.Add(dir) {
 			return c.Errf("unknown property: %q", dir)
 		}
+		if u.ignored.Len() != 0 {
+			return c.Errf("%q must comes before %q", "INLINE", "except")
+		}
 	}
 	return nil
 }
@@ -528,15 +530,18 @@ func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 
 const (
 	defaultMaxFails       = 3
-	defaultReloadInterval = 2 * time.Second
-	defaultUrlReloadInterval = 60 * time.Second
+
+	defaultPathReloadInterval = 2 * time.Second
+	defaultUrlReloadInterval  = 5 * time.Minute
+
 	defaultHcInterval     = 2000 * time.Millisecond
 	defaultHcTimeout      = 5000 * time.Millisecond
 )
 
 const (
-	minReloadInterval = 1 * time.Second
-	minUrlReloadInterval = 10 * time.Second
+	minPathReloadInterval = 1 * time.Second
+	minUrlReloadInterval  = 10 * time.Second
+
 	minHcInterval     = 1 * time.Second
 	minExpireInterval = 1 * time.Second
 )

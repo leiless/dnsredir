@@ -66,7 +66,7 @@ func (u *reloadableUpstream) Start() error {
 }
 
 func (u *reloadableUpstream) Stop() error {
-	close(u.stopReload)
+	close(u.stopPathReload)
 	close(u.stopUrlReload)
 	u.HealthCheck.Stop()
 	return nil
@@ -111,10 +111,10 @@ func isKnownTrans(trans string) bool {
 func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 	u := &reloadableUpstream{
 		NameList: &NameList{
-			reload:     defaultReloadInterval,
-			stopReload: make(chan struct{}),
-			urlReload: defaultUrlReloadInterval,
-			stopUrlReload: make(chan struct{}),
+			pathReload:     defaultReloadInterval,
+			stopPathReload: make(chan struct{}),
+			urlReload:      defaultUrlReloadInterval,
+			stopUrlReload:  make(chan struct{}),
 		},
 		ignored: make(domainSet),
 		inline: make(domainSet),
@@ -192,13 +192,34 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 		if u.inline.Len() != 0 {
 			return nil, c.Errf("INLINE %q is forbidden since %q will match all requests", u.inline, ".")
 		}
-		if u.reload != 0 {
-			log.Debugf("Reset reload %v to zero since %q is matched", u.reload, ".")
-			u.reload = 0
+		if u.pathReload != 0 {
+			log.Debugf("Reset path_reload %v to zero since %q is matched", u.pathReload, ".")
+			u.pathReload = 0
 		}
 		if u.urlReload != 0 {
 			log.Debugf("Reset url_reload %v to zero since %q is matched", u.urlReload, ".")
 			u.urlReload = 0
+		}
+	} else {
+		hasPath := false
+		hasUrl := false
+		for _, item := range u.NameList.items {
+			switch item.whichType {
+			case NameItemTypePath:
+				hasPath = true
+			case NameItemTypeUrl:
+				hasUrl = true
+			default:
+				panic(fmt.Sprintf("Unexpected NameItem type %v", item.whichType))
+			}
+		}
+		if !hasPath {
+			log.Debugf("Reset path_reload %v to zero since no path found", u.pathReload)
+			u.NameList.pathReload = 0
+		}
+		if !hasUrl {
+			log.Debugf("Reset url_reload %v to zero since no url found", u.urlReload)
+			u.NameList.urlReload = 0
 		}
 	}
 
@@ -255,7 +276,7 @@ func parseFrom(c *caddy.Controller, u *reloadableUpstream) error {
 
 func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 	switch dir := c.Val(); dir {
-	case "reload":
+	case "path_reload":
 		dur, err := parseDuration(c)
 		if err != nil {
 			return err
@@ -263,8 +284,8 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		if dur < minReloadInterval && dur != 0 {
 			return c.Errf("%v: minimal interval is %v", dir, minReloadInterval)
 		}
-		u.reload = dur
-		log.Infof("%v: %v", dir, u.reload)
+		u.pathReload = dur
+		log.Infof("%v: %v", dir, u.pathReload)
 	case "url_reload":
 		dur, err := parseDuration(c)
 		if err != nil {

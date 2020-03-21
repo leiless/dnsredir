@@ -185,13 +185,13 @@ type NameList struct {
 	// List of name items
 	items []*NameItem
 
-	// Time between two reload of a name item
 	// All name items shared the same reload duration
-	reload time.Duration
-	stopReload chan struct{}
 
-	urlReload time.Duration
-	stopUrlReload chan struct{}
+	pathReload     	time.Duration
+	stopPathReload 	chan struct{}
+
+	urlReload		time.Duration
+	stopUrlReload 	chan struct{}
 }
 
 // Assume `child' is lower cased and without trailing dot
@@ -212,12 +212,12 @@ func (n *NameList) periodicUpdate() {
 	// Kick off initial name list content population
 	n.parseNamelist(NameItemTypeLast)
 
-	if n.reload > 0 {
+	if n.pathReload > 0 {
 		go func() {
-			ticker := time.NewTicker(n.reload)
+			ticker := time.NewTicker(n.pathReload)
 			for {
 				select {
-				case <-n.stopReload:
+				case <-n.stopPathReload:
 					return
 				case <-ticker.C:
 					n.parseNamelist(NameItemTypePath)

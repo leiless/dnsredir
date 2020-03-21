@@ -114,6 +114,7 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 			pathReload:     defaultPathReloadInterval,
 			stopPathReload: make(chan struct{}),
 			urlReload:      defaultUrlReloadInterval,
+			urlReadTimeout: defaultUrlReadTimeout,
 			stopUrlReload:  make(chan struct{}),
 		},
 		ignored: make(domainSet),
@@ -288,15 +289,30 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		u.pathReload = dur
 		log.Infof("%v: %v", dir, u.pathReload)
 	case "url_reload":
-		dur, err := parseDuration(c)
+		args := c.RemainingArgs()
+		n := len(args)
+		if n != 1 && n != 2 {
+			return c.ArgErr()
+		}
+		dur, err := parseDuration0(dir, args[0])
 		if err != nil {
-			return err
+			return c.Err(err.Error())
 		}
 		if dur < minUrlReloadInterval && dur != 0 {
-			return c.Errf("%v: minimal interval is %v", dir, minUrlReloadInterval)
+			return c.Errf("%v: minimal reload interval is %v", dir, minUrlReloadInterval)
+		}
+		if n == 2 {
+			dur, err := parseDuration0(dir, args[1])
+			if err != nil {
+				return c.Err(err.Error())
+			}
+			if dur < minUrlReadTimeout {
+				return c.Errf("%v: minimal read timeout is %v", dir, minUrlReadTimeout)
+			}
+			u.urlReadTimeout = dur
 		}
 		u.urlReload = dur
-		log.Infof("%v: %v", dir, u.urlReload)
+		log.Infof("%v: %v %v", dir, u.urlReload, u.urlReadTimeout)
 	case "except":
 		// Multiple "except"s will be merged together
 		args := c.RemainingArgs()
@@ -533,6 +549,7 @@ const (
 
 	defaultPathReloadInterval = 2 * time.Second
 	defaultUrlReloadInterval  = 5 * time.Minute
+	defaultUrlReadTimeout = 30 * time.Second
 
 	defaultHcInterval     = 2000 * time.Millisecond
 	defaultHcTimeout      = 5000 * time.Millisecond
@@ -541,6 +558,7 @@ const (
 const (
 	minPathReloadInterval = 1 * time.Second
 	minUrlReloadInterval  = 10 * time.Second
+	minUrlReadTimeout = 3 * time.Second
 
 	minHcInterval     = 1 * time.Second
 	minExpireInterval = 1 * time.Second

@@ -194,6 +194,8 @@ dnsredir . {
 
 * To yield a maximum match performance, we search and return the first matched upstream, thus the block order between `dnsredir`s are important. Unlike the `proxy` plugin, which always try to find a longest match, i.e. position-independent search.
 
+* Inappropriate URL read timeout will cause either failed to fetch URL content or _Server Block_ hijack(due to read timeout too large), thus DNS queries may fallback to other upstream servers, the answer may not optimal.
+
 ## Bugs
 
 Sometimes you modified `Corefile` and yet Caddy server failed to reload the new config with the error "Error during parsing", *dnsredir* will do sanity check during parsing, if you misconfiged the `Corefile`, you're out of lock:
@@ -206,7 +208,7 @@ Sometimes you modified `Corefile` and yet Caddy server failed to reload the new 
 
 * `except` and `INLINE` share some same domain names(which yields a conflict).
 
-* `.`(i.e. root zone) is matched yet `INLINE` also embedded in Server Block(still a conflict).
+* `.`(i.e. root zone) is matched yet `INLINE` also embedded in _Server Block_(still a conflict).
 
 Also note that some of the properties are cumulative: `INLINE`, `except`, `to`, in which case `INLINE` domains should be put one domain per line.
 

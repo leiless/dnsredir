@@ -144,7 +144,7 @@ func healthCheck(r *reloadableUpstream, uh *UpstreamHost) {
 		atomic.AddInt32(&uh.fails, -1)
 		// Kick off health check on every failureCheck failure
 		if fails % failureCheck == 0 {
-			UnusedResult(uh.Check())
+			_ = uh.Check()
 		}
 	}(uh)
 }

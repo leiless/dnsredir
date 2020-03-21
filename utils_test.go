@@ -1,19 +1,8 @@
 package dnsredir
 
 import (
-	"strings"
 	"testing"
 )
-
-func TestUnused(t *testing.T) {
-	var i int
-	UnusedParam(i)
-	var j int
-	s := "Hello, world!"
-	UnusedParam(j, s)
-	Unused(i, j, s, 1, false, "", nil, 'c', 2.0)
-	UnusedResult(1 + 2, strings.Contains("foobar", "foo"))
-}
 
 func TestStringToDomain(t *testing.T) {
 	tests := []struct {

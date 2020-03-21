@@ -18,23 +18,6 @@ const (
 
 var pluginHeadCommit = "?"
 
-// Used for generic expressions and statements
-func Unused(arg0 interface{}, args ...interface{}) {
-	// Just consume all arguments
-	if arg0 == nil {
-		for i := range args {
-			if i == 0 {
-				break
-			}
-		}
-	}
-}
-
-var (
-	UnusedParam = Unused
-	UnusedResult = Unused
-)
-
 func PluginError(err error) error {
 	return plugin.Error(pluginName, err)
 }

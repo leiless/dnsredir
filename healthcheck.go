@@ -245,8 +245,6 @@ func (uh *UpstreamHost) Dial(proto string) (*persistConn, bool, error) {
 }
 
 func (uh *UpstreamHost) Exchange(ctx context.Context, state request.Request) (*dns.Msg, error) {
-	UnusedParam(ctx)
-
 	pc, cached, err := uh.Dial(state.Proto())
 	if err != nil {
 		return nil, err
@@ -405,7 +403,7 @@ func (hc *HealthCheck) Stop() {
 
 func (hc *HealthCheck) healthCheck() {
 	for _, host := range hc.hosts {
-		go UnusedResult(host.Check())
+		go host.Check()
 	}
 }
 

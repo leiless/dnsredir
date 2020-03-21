@@ -71,8 +71,7 @@ func TestSetupTo(t *testing.T) {
 
 	for i, test := range tests {
 		c := caddy.NewTestController("dns", test.input)
-		r, err := newReloadableUpstream(c)
-		Unused(r)
+		_, err := newReloadableUpstream(c)
 		if !test.Pass(err) {
 			t.Errorf("Test#%v failed  %v vs err: %v", i, test, err)
 		}

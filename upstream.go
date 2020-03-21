@@ -179,11 +179,13 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 		}
 	}
 
-	if err := u.inline.ForEachDomain(func(name string) error {
-		if u.ignored.Match(name) {
-			return c.Errf("conflict domain %q in both %q and %q", name, "except", "INLINE")
-		}
-		return nil
+	if err := u.inline.ForEachDomain(func(name1 string) error {
+		return u.ignored.ForEachDomain(func(name2 string) error {
+			if name1 == name2 {
+				return c.Errf("conflict domain %q in both %q and %q", name1, "except", "INLINE")
+			}
+			return nil
+		})
 	}); err != nil {
 		return nil, err
 	}

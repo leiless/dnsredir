@@ -250,11 +250,9 @@ func (n *NameList) updateList(whichType int) {
 				n.updateItemFromPath(item)
 			case NameItemTypeUrl:
 				if whichType == NameItemTypeLast {
-					// Initial name list population needs a working DNS upstream
-					//	thus we need to fallback to it(if any) in case of population failure
-					go n.updateItemFromUrl(item)
+					n.initialUpdateFromUrl(item)
 				} else {
-					n.updateItemFromUrl(item)
+					_ = n.updateItemFromUrl(item)
 				}
 			default:
 				panic(fmt.Sprintf("Unexpected NameItem type %v", whichType))
@@ -340,7 +338,8 @@ func (n *NameList) parse(r io.Reader) (domainSet, uint64) {
 	return names, totalLines
 }
 
-func (n *NameList) updateItemFromUrl(item *NameItem) {
+// Return true if NameItem updated
+func (n *NameList) updateItemFromUrl(item *NameItem) bool {
 	names := make(domainSet)
 
 	if item.whichType != NameItemTypeUrl || len(item.url) == 0 {
@@ -352,7 +351,7 @@ func (n *NameList) updateItemFromUrl(item *NameItem) {
 	t2 := time.Since(t1)
 	if err != nil {
 		log.Warningf("Failed to update %q, err: %v", item.url, err)
-		return
+		return false
 	}
 
 	item.RLock()
@@ -360,7 +359,7 @@ func (n *NameList) updateItemFromUrl(item *NameItem) {
 	item.RUnlock()
 	contentHash1 := stringHash(content)
 	if contentHash1 == contentHash {
-		return
+		return true
 	}
 
 	var totalLines uint64
@@ -395,5 +394,30 @@ func (n *NameList) updateItemFromUrl(item *NameItem) {
 	item.names = names
 	item.contentHash = contentHash1
 	item.Unlock()
+
+	return true
+}
+
+func (n *NameList)initialUpdateFromUrl(item *NameItem) {
+	// Initial name list population needs a working DNS upstream
+	//	thus we need to fallback to it(if any) in case of population failure
+	go func() {
+		// Fast retry in case of unstable network
+		retryIntervals := []time.Duration{
+			500 * time.Millisecond,
+			1 * time.Second,
+		}
+		i := 0
+		for {
+			if n.updateItemFromUrl(item) {
+				break
+			}
+			if i == len(retryIntervals) {
+				break
+			}
+			time.Sleep(retryIntervals[i])
+			i++
+		}
+	}()
 }
 

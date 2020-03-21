@@ -284,8 +284,8 @@ func (uh *UpstreamHost) Exchange(ctx context.Context, state request.Request) (*d
 		//	we pursuing not to tolerate such error
 		// Thus we have some time to retry for another upstream, for example
 		return nil, errors.New(fmt.Sprintf(
-			"met out-of-order response  cached: %v name: %v ret: %v",
-			cached, state.Name(), ret))
+			"met out-of-order response\nid: %v cached: %v name: %q\nresponse:\n%v",
+			state.Req.Id, cached, state.Name(), ret))
 	}
 
 	uh.transport.Yield(pc)

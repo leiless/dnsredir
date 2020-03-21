@@ -22,6 +22,13 @@ func PluginError(err error) error {
 	return plugin.Error(pluginName, err)
 }
 
+func MinUint32(a, b uint32) uint32 {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 // see: https://blevesearch.com/news/Deferred-Cleanup,-Checking-Errors,-and-Potential-Problems/
 func Close(c io.Closer) {
 	err := c.Close()

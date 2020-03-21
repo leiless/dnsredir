@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/debug"
+	"github.com/coredns/coredns/plugin/pkg/dnsutil"
 	clog "github.com/coredns/coredns/plugin/pkg/log"
 	"github.com/coredns/coredns/request"
 	"github.com/miekg/dns"
@@ -120,6 +121,9 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 			return 0, nil
 		}
 
+		if r.urlInitialInProgress() {
+			rewriteToMinimalTTLs(reply, uint32(dnsutil.MinimalDefaultTTL / time.Second))
+		}
 		_ = w.WriteMsg(reply)
 		return 0, nil
 	}
@@ -128,6 +132,35 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 		panic("Why upstreamErr is nil?! Are you in a debugger or your machine running slow?")
 	}
 	return dns.RcodeServerFailure, upstreamErr
+}
+
+func (r *Dnsredir)urlInitialInProgress() bool {
+	for _, u := range *r.Upstreams {
+		up := u.(*reloadableUpstream)
+		if atomic.LoadInt32(&up.initialCount) != 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// minimalTTL: TTL in seconds
+// see: dnsutil.MinimalTTL()
+func rewriteToMinimalTTLs(reply *dns.Msg, minimalTTL uint32) {
+	for _, r := range reply.Answer {
+		r.Header().Ttl = MinUint32(r.Header().Ttl, minimalTTL)
+	}
+
+	for _, r := range reply.Ns {
+		r.Header().Ttl = MinUint32(r.Header().Ttl, minimalTTL)
+	}
+
+	for _, r := range reply.Extra {
+		// [sic] OPT records use TTL field for extended rcode and flags
+		if r.Header().Rrtype != dns.TypeOPT {
+			r.Header().Ttl = MinUint32(r.Header().Ttl, minimalTTL)
+		}
+	}
 }
 
 func healthCheck(r *reloadableUpstream, uh *UpstreamHost) {

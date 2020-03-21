@@ -13,7 +13,7 @@ import (
 
 const (
 	pluginName = "dnsredir"
-	pluginVersion = "0.0.1"
+	pluginVersion = "0.0.1-rc1"
 )
 
 var pluginHeadCommit = "?"

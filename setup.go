@@ -9,7 +9,6 @@ import (
 func init() { plugin.Register(pluginName, setup) }
 
 func setup(c *caddy.Controller) error {
-	// TODO: automate plugin versioning
 	log.Infof("Initializing, version %v, HEAD %v", pluginVersion, pluginHeadCommit)
 
 	ups, err := NewReloadableUpstreams(c)

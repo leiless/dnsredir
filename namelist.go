@@ -211,7 +211,7 @@ func (n *NameList) Match(child string) bool {
 // MT-Unsafe
 func (n *NameList) periodicUpdate() {
 	// Kick off initial name list content population
-	n.parseNamelist(NameItemTypeLast)
+	n.updateList(NameItemTypeLast)
 
 	if n.pathReload > 0 {
 		go func() {
@@ -221,7 +221,7 @@ func (n *NameList) periodicUpdate() {
 				case <-n.stopPathReload:
 					return
 				case <-ticker.C:
-					n.parseNamelist(NameItemTypePath)
+					n.updateList(NameItemTypePath)
 				}
 			}
 		}()
@@ -235,26 +235,26 @@ func (n *NameList) periodicUpdate() {
 				case <-n.stopUrlReload:
 					return
 				case <-ticker.C:
-					n.parseNamelist(NameItemTypeUrl)
+					n.updateList(NameItemTypeUrl)
 				}
 			}
 		}()
 	}
 }
 
-func (n *NameList) parseNamelist(whichType int) {
+func (n *NameList) updateList(whichType int) {
 	for _, item := range n.items {
 		if whichType == NameItemTypeLast || whichType == item.whichType {
 			switch item.whichType {
 			case NameItemTypePath:
-				n.parseNamelistCore(item)
+				n.updateItemFromPath(item)
 			case NameItemTypeUrl:
 				if whichType == NameItemTypeLast {
 					// Initial name list population needs a working DNS upstream
 					//	thus we need to fallback to it(if any) in case of population failure
-					go n.update(item)
+					go n.updateItemFromUrl(item)
 				} else {
-					n.update(item)
+					n.updateItemFromUrl(item)
 				}
 			default:
 				panic(fmt.Sprintf("Unexpected NameItem type %v", whichType))
@@ -263,7 +263,7 @@ func (n *NameList) parseNamelist(whichType int) {
 	}
 }
 
-func (n *NameList) parseNamelistCore(item *NameItem) {
+func (n *NameList) updateItemFromPath(item *NameItem) {
 	file, err := os.Open(item.path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -340,7 +340,7 @@ func (n *NameList) parse(r io.Reader) (domainSet, uint64) {
 	return names, totalLines
 }
 
-func (n *NameList) update(item *NameItem) {
+func (n *NameList) updateItemFromUrl(item *NameItem) {
 	names := make(domainSet)
 
 	if item.whichType != NameItemTypeUrl || len(item.url) == 0 {

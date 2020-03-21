@@ -354,7 +354,6 @@ func (n *NameList) update(item *NameItem) {
 		log.Warningf("Failed to update %q, err: %v", item.url, err)
 		return
 	}
-	log.Debugf("Fetched %v, rtt: %v", item.url, t2)
 
 	item.RLock()
 	contentHash := item.contentHash
@@ -364,8 +363,12 @@ func (n *NameList) update(item *NameItem) {
 		return
 	}
 
+	var totalLines uint64
+	t3 := time.Now()
 	lines := strings.Split(content, "\n")
 	for _, line := range lines {
+		totalLines++
+
 		if i := strings.IndexByte(line, '#'); i >= 0 {
 			line = line[:i]
 		}
@@ -384,6 +387,9 @@ func (n *NameList) update(item *NameItem) {
 			log.Warningf("%q isn't a domain name", f[1])
 		}
 	}
+	t4 := time.Since(t3)
+	log.Debugf("Fetched %v, time spent: %v %v, added: %v / %v",
+				item.url, t2, t4, names.Len(), totalLines)
 
 	item.Lock()
 	item.names = names

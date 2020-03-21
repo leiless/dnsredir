@@ -24,9 +24,11 @@ dnsredir FROM... {
 }
 ```
 
-* `FROM...` is the file list which contains base domain to match for the request to be redirected. `.`(i.e. root zone) can be used solely to match all incoming requests as a fallback.
+* `FROM...` is the file list which contains base domain to match for the request to be redirected. URL can also be used, currently only `HTTPS` is supported(due to security reasons).
 
-	Currently, two kind of formats are supported:
+    `.`(i.e. root zone) can be used solely to match all incoming requests as a fallback.
+
+	Two kind of formats are supported currently:
 
 	* `DOMAIN`, which the whole line is the domain name.
 

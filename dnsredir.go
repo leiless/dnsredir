@@ -134,13 +134,24 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 	return dns.RcodeServerFailure, upstreamErr
 }
 
+// [optimization]
+// Positive cache once all upstream hosts finished initial name list population from URL
+//	thus we don't need to iterate over all upstream hosts
+var initialFinished int32 = 0
+
 func (r *Dnsredir)urlInitialInProgress() bool {
+	if atomic.LoadInt32(&initialFinished) != 0 {
+		return false
+	}
+
 	for _, u := range *r.Upstreams {
 		up := u.(*reloadableUpstream)
 		if atomic.LoadInt32(&up.initialCount) != 0 {
 			return true
 		}
 	}
+
+	atomic.StoreInt32(&initialFinished, 1)
 	return false
 }
 

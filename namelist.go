@@ -389,8 +389,8 @@ func (n *NameList) updateItemFromUrl(item *NameItem) bool {
 		}
 	}
 	t4 := time.Since(t3)
-	log.Debugf("Fetched %v, time spent: %v %v, added: %v / %v",
-				item.url, t2, t4, names.Len(), totalLines)
+	log.Debugf("Fetched %v, time spent: %v %v, added: %v / %v, hash: %#x",
+				item.url, t2, t4, names.Len(), totalLines, contentHash1)
 
 	item.Lock()
 	item.names = names
@@ -400,15 +400,15 @@ func (n *NameList) updateItemFromUrl(item *NameItem) bool {
 	return true
 }
 
+// Initial name list population needs a working DNS upstream
+//	thus we need to fallback to it(if any) in case of population failure
 func (n *NameList)initialUpdateFromUrl(item *NameItem) {
-	// Initial name list population needs a working DNS upstream
-	//	thus we need to fallback to it(if any) in case of population failure
 	atomic.AddInt32(&n.initialCount, 1)
 	go func() {
 		// Fast retry in case of unstable network
 		retryIntervals := []time.Duration{
 			500 * time.Millisecond,
-			1 * time.Second,
+			1500 * time.Millisecond,
 		}
 		i := 0
 		for {

@@ -7,7 +7,6 @@ package dnsredir
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/debug"
 	"github.com/coredns/coredns/plugin/pkg/dnsutil"
@@ -70,11 +69,7 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 		log.Debugf("%q not found in name list, t: %v", name, t)
 		return plugin.NextOrFailure(r.Name(), r.Next, ctx, w, req)
 	}
-	upstream, ok := upstream0.(*reloadableUpstream)
-	if !ok {
-		panic(fmt.Sprintf("Why %T isn't a %T", upstream0, reloadableUpstream{}))
-	}
-
+	upstream := upstream0.(*reloadableUpstream)
 	log.Debugf("%q in name list, t: %v", name, t)
 
 	var reply *dns.Msg
@@ -122,7 +117,7 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 		}
 
 		if r.urlInitialInProgress() {
-			rewriteToMinimalTTLs(reply, uint32(dnsutil.MinimalDefaultTTL / time.Second))
+			rewriteToMinimalTTLs(reply, minimalTTL)
 		}
 		_ = w.WriteMsg(reply)
 		return 0, nil
@@ -225,8 +220,9 @@ var (
 )
 
 const (
-	defaultTimeout = 15000 * time.Millisecond
+	defaultTimeout = 15 * time.Second
 	defaultFailTimeout = 2000 * time.Millisecond
 	failureCheck = 3
+	minimalTTL = uint32(dnsutil.MinimalDefaultTTL / time.Second)
 )
 

@@ -260,7 +260,7 @@ func (uh *UpstreamHost) Exchange(ctx context.Context, state request.Request) (*d
 		pc.c.UDPSize = dns.MinMsgSize
 	}
 
-	_ = pc.c.SetWriteDeadline(time.Now().Add(defaultTimeout))
+	_ = pc.c.SetWriteDeadline(time.Now().Add(maxWriteTimeout))
 	if err := pc.c.WriteMsg(state.Req); err != nil {
 		Close(pc.c)
 		if err == io.EOF && cached {
@@ -269,7 +269,7 @@ func (uh *UpstreamHost) Exchange(ctx context.Context, state request.Request) (*d
 		return nil, err
 	}
 
-	_ = pc.c.SetReadDeadline(time.Now().Add(defaultTimeout))
+	_ = pc.c.SetReadDeadline(time.Now().Add(maxReadTimeout))
 	ret, err := pc.c.ReadMsg()
 	if err != nil {
 		Close(pc.c)
@@ -318,7 +318,7 @@ func (uh *UpstreamHost) send() (error, time.Duration) {
 	ping.MsgHdr.RecursionDesired = uh.transport.recursionDesired
 
 	t := time.Now()
-	// rtt stands for Round Trip Time, it's 0 if Exchange() failed
+	// rtt stands for Round Trip Time, it may 0 if Exchange() failed
 	msg, rtt, err := uh.c.Exchange(ping, uh.addr)
 	if err != nil && rtt == 0 {
 		rtt = time.Since(t)
@@ -476,5 +476,8 @@ const (
 	// Relatively short dial timeout, so we can retry with other upstreams
 	maxDialTimeout = 5 * time.Second
 	cumulativeAvgWeight = 4
+
+	maxWriteTimeout = 2 * time.Second
+	maxReadTimeout = 2 * time.Second
 )
 

@@ -111,8 +111,8 @@ steps:
   commands:
     - uname -a
     - cd /go/src/github.com/leiless/dnsredir/bin
-    - ls -l coredns*
-    - sha256sum coredns* | tee shasum256.txt
+    - ls -l coredns* | xargs -I{} zip -9 {}.zip {}
+    - sha256sum coredns*.zip | tee shasum256.txt
   when:
     event: tag
 - name: github-release
@@ -121,7 +121,7 @@ steps:
     api_key:
       from_secret: github_token
     files:
-      - bin/coredns*
+      - bin/coredns*.zip
       - bin/shasum256.txt
   when:
     event: tag

@@ -19,6 +19,7 @@ steps:
     - go env
     - MOD_ADDR=$(cat go.mod | grep '^module ' | awk '{print $2}')
     - HEAD_COMMIT=$(git describe --dirty --always)
+    - TAG=$(git describe --abbrev=0 --tags)
     - rm -f go.mod go.sum
     - DNSREDIR_DIR=/go/src/github.com/leiless/dnsredir
     - BIN=$DNSREDIR_DIR/bin
@@ -32,7 +33,7 @@ steps:
     - cd $COREDNS_DIR
     - sed -i 's|forward:forward|forward:forward\\\\ndnsredir:dnsredir|g' plugin.cfg
     # Embed plugin HEAD commit
-    - sed -i "s|GITCOMMIT:=|CUSTOM_FLAGS=-X $MOD_ADDR.pluginHeadCommit=$HEAD_COMMIT\\\\nGITCOMMIT:=|g" Makefile
+    - sed -i "s|GITCOMMIT:=|CUSTOM_FLAGS=-X $MOD_ADDR.pluginVersion=$TAG -X $MOD_ADDR.pluginHeadCommit=$HEAD_COMMIT\\\\nGITCOMMIT:=|g" Makefile
     - sed -i 's|$(GITCOMMIT)|$(GITCOMMIT) $(CUSTOM_FLAGS)|g' Makefile
     - git diff
     - ln -s $DNSREDIR_DIR $COREDNS_DIR/plugin/$(basename $DNSREDIR_DIR)

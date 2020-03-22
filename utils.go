@@ -11,12 +11,12 @@ import (
 	"time"
 )
 
-const (
-	pluginName = "dnsredir"
-	pluginVersion = "0.0.1-rc1"
-)
+const pluginName = "dnsredir"
 
-var pluginHeadCommit = "?"
+var (
+	pluginVersion = "?"
+	pluginHeadCommit = "?"
+)
 
 func PluginError(err error) error {
 	return plugin.Error(pluginName, err)

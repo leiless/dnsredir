@@ -19,6 +19,8 @@ steps:
     - go env
     - MOD_ADDR=$(cat go.mod | grep '^module ' | awk '{print $2}')
     - HEAD_COMMIT=$(git describe --dirty --always)
+    - pwd
+    - git log
     - TAG=$(git describe --abbrev=0 --tags)
     - rm -f go.mod go.sum
     - DNSREDIR_DIR=/go/src/github.com/leiless/dnsredir

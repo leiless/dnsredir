@@ -191,27 +191,30 @@ func healthCheck(r *reloadableUpstream, uh *UpstreamHost) {
 func (r *Dnsredir) Name() string { return pluginName }
 
 func (r *Dnsredir) match(name string) (Upstream, time.Duration) {
+	t1 := time.Now()
+
 	if r.Upstreams == nil {
 		panic("Why Dnsredir.Upstreams is nil?!")
 	}
-
-	// TODO: Add a metric value in Prometheus to determine average lookup time
 
 	// Don't check validity of domain name, delegate to upstream host
 	if len(name) > 1 {
 		name = removeTrailingDot(name)
 	}
 
-	t := time.Now()
 	for _, up := range *r.Upstreams {
 		// For maximum performance, we search the first matched item and return directly
 		// Unlike proxy plugin, which try to find longest match
 		if up.Match(name) {
-			return up, time.Since(t)
+			t2 := time.Since(t1)
+			NameLookupDuration.WithLabelValues("match").Observe(float64(t2.Milliseconds()))
+			return up, t2
 		}
 	}
 
-	return nil, time.Since(t)
+	t2 := time.Since(t1)
+	NameLookupDuration.WithLabelValues("mismatch").Observe(float64(t2.Milliseconds()))
+	return nil, t2
 }
 
 var (

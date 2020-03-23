@@ -33,5 +33,12 @@ var (
 		Name: "request_count_total",
 		Help: "Counter of requests made per upstream.",
 	}, []string{"server", "to"})
+
+	RcodeCount = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: plugin.Namespace,
+		Subsystem: pluginName,
+		Name: "response_rcode_count_total",
+		Help: "Rcode counter of requests made per upstream.",
+	}, []string{"server", "to", "rcode"})
 )
 

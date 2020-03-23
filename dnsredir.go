@@ -14,6 +14,7 @@ import (
 	clog "github.com/coredns/coredns/plugin/pkg/log"
 	"github.com/coredns/coredns/request"
 	"github.com/miekg/dns"
+	"strconv"
 	"sync/atomic"
 	"time"
 )
@@ -127,6 +128,12 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 
 		RequestCount.WithLabelValues(server, host.addr).Inc()
 		RequestDuration.WithLabelValues(server, host.addr).Observe(time.Since(start).Seconds())
+
+		rc, ok := dns.RcodeToString[reply.Rcode]
+		if !ok {
+			rc = strconv.Itoa(reply.Rcode)
+		}
+		RcodeCount.WithLabelValues(server, host.addr, rc).Inc()
 		return 0, nil
 	}
 

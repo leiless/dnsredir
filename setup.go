@@ -24,7 +24,7 @@ func setup(c *caddy.Controller) error {
 	})
 
 	c.OnStartup(func() error {
-		metrics.MustRegister(c, NameLookupDuration, RequestDuration, RequestCount)
+		metrics.MustRegister(c, NameLookupDuration, RequestDuration, RequestCount, RcodeCount)
 		return r.OnStartup()
 	})
 

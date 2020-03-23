@@ -9,6 +9,7 @@ import (
 	"errors"
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/debug"
+	"github.com/coredns/coredns/plugin/metrics"
 	"github.com/coredns/coredns/plugin/pkg/dnsutil"
 	clog "github.com/coredns/coredns/plugin/pkg/log"
 	"github.com/coredns/coredns/request"
@@ -64,7 +65,8 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 	state := request.Request{W: w, Req: req}
 	name := state.Name()
 
-	upstream0, t := r.match(name)
+	server := metrics.WithServer(ctx)
+	upstream0, t := r.match(server, name)
 	if upstream0 == nil {
 		log.Debugf("%q not found in name list, t: %v", name, t)
 		return plugin.NextOrFailure(r.Name(), r.Next, ctx, w, req)
@@ -76,6 +78,8 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 	var upstreamErr error
 	deadline := time.Now().Add(defaultTimeout)
 	for time.Now().Before(deadline) {
+		start := time.Now()
+
 		host := upstream.Select()
 		if host == nil {
 			log.Debug(errNoHealthy)
@@ -120,6 +124,9 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 			rewriteToMinimalTTLs(reply, minimalTTL)
 		}
 		_ = w.WriteMsg(reply)
+
+		RequestCount.WithLabelValues(server, host.addr).Inc()
+		RequestDuration.WithLabelValues(server, host.addr).Observe(time.Since(start).Seconds())
 		return 0, nil
 	}
 
@@ -190,7 +197,7 @@ func healthCheck(r *reloadableUpstream, uh *UpstreamHost) {
 
 func (r *Dnsredir) Name() string { return pluginName }
 
-func (r *Dnsredir) match(name string) (Upstream, time.Duration) {
+func (r *Dnsredir) match(server, name string) (Upstream, time.Duration) {
 	t1 := time.Now()
 
 	if r.Upstreams == nil {
@@ -207,13 +214,13 @@ func (r *Dnsredir) match(name string) (Upstream, time.Duration) {
 		// Unlike proxy plugin, which try to find longest match
 		if up.Match(name) {
 			t2 := time.Since(t1)
-			NameLookupDuration.WithLabelValues("match").Observe(float64(t2.Milliseconds()))
+			NameLookupDuration.WithLabelValues(server, "1").Observe(float64(t2.Milliseconds()))
 			return up, t2
 		}
 	}
 
 	t2 := time.Since(t1)
-	NameLookupDuration.WithLabelValues("mismatch").Observe(float64(t2.Milliseconds()))
+	NameLookupDuration.WithLabelValues(server, "0").Observe(float64(t2.Milliseconds()))
 	return nil, t2
 }
 

@@ -19,12 +19,15 @@ var (
 		Help: "Histogram of the time(in milliseconds) each name lookup took.",
 	}, []string{"server", "matched"})
 
+	requestBuckets = []float64{
+		15, 30, 50, 75, 100, 200, 350, 500, 750, 1000, 2000, 4000, 8000,
+	}
 	RequestDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: plugin.Namespace,
 		Subsystem: pluginName,
-		Name: "request_duration_seconds",
-		Buckets: plugin.TimeBuckets,
-		Help: "Histogram of the time(in seconds) each request took.",
+		Name: "request_duration_ms",
+		Buckets: requestBuckets,
+		Help: "Histogram of the time(in milliseconds) each request took.",
 	}, []string{"server", "to"})
 
 	RequestCount = prometheus.NewCounterVec(prometheus.CounterOpts{
@@ -40,5 +43,21 @@ var (
 		Name: "response_rcode_count_total",
 		Help: "Rcode counter of requests made per upstream.",
 	}, []string{"server", "to", "rcode"})
+
+	// XXX: currently server not embedded into hc failure count label
+	HealthCheckFailureCount = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: plugin.Namespace,
+		Subsystem: pluginName,
+		Name: "hc_failure_count_total",
+		Help: "Counter of the number of failed healthchecks.",
+	}, []string{"to"})
+
+	/// XXX: Ditto.
+	HealthCheckAllDownCount = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: plugin.Namespace,
+		Subsystem: pluginName,
+		Name: "hc_all_down_count_total",
+		Help: "Counter of the number of complete failures of the healthchecks.",
+	}, []string{"to"})
 )
 

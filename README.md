@@ -136,7 +136,21 @@ Some of the options take a `DURATION` as argument, **zero time(i.e. `0`) duratio
 
 ## Metrics
 
-TODO
+If monitoring is enabled (via the _prometheus_ plugin) then the following metrics are exported:
+
+* `coredns_dnsredir_name_lookup_duration_ms{server, matched}` - duration per domain name lookup
+
+* `coredns_dnsredir_request_duration_ms{server, to}` - duration per upstream interaction.
+
+* `coredns_dnsredir_request_count_total{server, to}` - query count per upstream.
+
+* `coredns_dnsredir_response_rcode_count_total{server, to, rcode}` - count of RCODEs per upstream.
+
+* `coredns_dnsredir_hc_failure_count_total{to}` - number of failed health checks per upstream.
+
+* `coredns_dnsredir_hc_all_down_count_total{to}` - counter of when all upstreams marked as down.
+
+Where `server` is the _Server Block_ address responsible for the request(and metric). `matched` is the match flag, `"1"` is it's in any name list, `"0"` otherwise.
 
 ## Examples
 

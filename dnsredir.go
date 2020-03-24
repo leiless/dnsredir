@@ -127,7 +127,7 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 		_ = w.WriteMsg(reply)
 
 		RequestCount.WithLabelValues(server, host.addr).Inc()
-		RequestDuration.WithLabelValues(server, host.addr).Observe(time.Since(start).Seconds())
+		RequestDuration.WithLabelValues(server, host.addr).Observe(float64(time.Since(start).Milliseconds()))
 
 		rc, ok := dns.RcodeToString[reply.Rcode]
 		if !ok {

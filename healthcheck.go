@@ -302,6 +302,7 @@ func (uh *UpstreamHost) Check() error {
 	}
 
 	if err, rtt := uh.send(); err != nil {
+		HealthCheckFailureCount.WithLabelValues(uh.addr).Inc()
 		atomic.AddInt32(&uh.fails, 1)
 		log.Warningf("hc: DNS @%v +%v failed  rtt: %v err: %v", uh.addr, proto, rtt, err)
 		return err
@@ -356,6 +357,7 @@ func (uh *UpstreamHost) Down() bool {
 	down := uh.downFunc(uh)
 	if down {
 		log.Debugf("%v marked as down...", uh.addr)
+		HealthCheckAllDownCount.WithLabelValues(uh.addr).Inc()
 	}
 	return down
 }

@@ -202,14 +202,13 @@ func (t *Transport) updateDialTimeout(newDialTime time.Duration) {
 	atomic.AddInt64(&t.avgDialTime, dt / cumulativeAvgWeight)
 }
 
-// see: upstream.go/transToNetwork()
 // Return:
 //	#0	Persistent connection
 //	#1	true if it's a cached connection
 //	#2	error(if any)
 func (uh *UpstreamHost) Dial(proto string) (*persistConn, bool, error) {
 	if uh.proto != "dns" {
-		proto = transToNetwork(uh.proto)
+		proto = protoToNetwork(uh.proto)
 	}
 
 	uh.transport.dial <- proto

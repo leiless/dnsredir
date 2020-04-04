@@ -90,7 +90,7 @@ func NewReloadableUpstreams(c *caddy.Controller) ([]Upstream, error) {
 }
 
 // see: healthcheck.go/UpstreamHost.Dial()
-func transToNetwork(proto string) string {
+func protoToNetwork(proto string) string {
 	if proto == "tls" {
 		return "tcp-tls"
 	}
@@ -157,7 +157,7 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 			}
 		}
 
-		network := transToNetwork(host.proto)
+		network := protoToNetwork(host.proto)
 		if network == "dns" {
 			// Use classic DNS protocol for health checking
 			network = "udp"

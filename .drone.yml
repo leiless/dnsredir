@@ -110,6 +110,7 @@ steps:
   image: alpine
   commands:
     - uname -a
+    - apk add zip
     - cd /go/src/github.com/leiless/dnsredir/bin
     - ls -l coredns* | xargs -I{} zip -9 {}.zip {}
     - sha256sum coredns*.zip | tee shasum256.txt

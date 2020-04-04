@@ -33,11 +33,14 @@ func splitTransportHost(s string) (trans string, addr string) {
 	s = strings.ToLower(s)
 	for _, trans := range knownTrans {
 		if strings.HasPrefix(s, trans + "://") {
+			if trans == "dns" {
+				trans = "udp"
+			}
 			return trans, s[len(trans + "://"):]
 		}
 	}
 	// Have no proceeding transport? assume it's classic DNS protocol
-	return "dns", s
+	return "udp", s
 }
 
 // Taken from parse.HostPortOrFile() with modification
@@ -50,24 +53,24 @@ func HostPort(servers []string) ([]string, error) {
 			// Parse didn't work, it is not an addr:port combo
 			host1, tlsName := stripZoneAndTlsName(host)
 			if net.ParseIP(host1) == nil {
-				return nil, fmt.Errorf("not an IP address: %q", host)
+				return nil, fmt.Errorf("#1 not an IP address: %q", host)
 			}
 
 			var s string
 			switch trans {
-			case "dns":
-				trans = "udp"
-				fallthrough
 			case "udp":
+				fallthrough
 			case "tcp":
 				s = trans + "://" + net.JoinHostPort(host, transport.Port)
 			case "tls":
 				if len(tlsName) != 0 {
 					tlsName = "@" + tlsName
 				}
-				s = trans + "://" + net.JoinHostPort(host, transport.TLSPort) + tlsName
+				s = trans + "://" + net.JoinHostPort(host1, transport.TLSPort) + tlsName
 			case "https":
 				s = trans + "://" + net.JoinHostPort(host, transport.HTTPSPort)
+			default:
+				panic(fmt.Sprintf("Unknown transport %q", trans))
 			}
 			list = append(list, s)
 			continue
@@ -75,9 +78,9 @@ func HostPort(servers []string) ([]string, error) {
 
 		addr1, _ := stripZoneAndTlsName(addr)
 		if net.ParseIP(addr1) == nil {
-			return nil, fmt.Errorf("not an IP address: %q", host)
+			return nil, fmt.Errorf("#2 not an IP address: %q", host)
 		}
-		list = append(list, h)
+		list = append(list, trans + "://" + host)
 	}
 	return list, nil
 }

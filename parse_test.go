@@ -1,11 +1,11 @@
 package dnsredir
 
 import (
-	"fmt"
+	"strings"
 	"testing"
 )
 
-func TestHostPort(t *testing.T) {
+func TestHostPort(T *testing.T) {
 	var servers = []string {
 		"127.0.0.1",
 		"127.0.0.1:5353",
@@ -32,7 +32,10 @@ func TestHostPort(t *testing.T) {
 		"tls://1.2.3.4",
 		"tls://1.2.3.4:5353",
 		"tls://::1",
+		"tls://::1@foobar.net",
+		"tls://[::1]:1234@foobar.net",
 		"tls://::1%eth0",
+		"tls://::1%eth0@foobar.net",
 		"tls://[::1%eth0]:1234",
 		"tls://[::1%eth0]:1234@foobar.net",
 		"https://1.1.1.1",
@@ -44,15 +47,37 @@ func TestHostPort(t *testing.T) {
 	}
 	hosts, err := HostPort(servers)
 	if err != nil {
-		t.Errorf("HostPort() fail, error: %v", err)
+		T.Errorf("HostPort() fail, error: %v", err)
 		return
 	}
 	if len(hosts) != len(servers) {
-		t.Errorf("HostPort() fail, expected size %v, got %v, hosts: %v", len(servers), len(hosts), hosts)
+		T.Errorf("HostPort() fail, expected size %v, got %v, hosts: %v", len(servers), len(hosts), hosts)
 	}
 
 	for i, host := range hosts {
-		fmt.Printf("Host#%v: %v\n", i, host)
+		s := servers[i]
+		if strings.Contains(s, "://") {
+			s = s[strings.Index(s, "://") + len("://"):]
+		}
+
+		// If host contain a TLS server name
+		if strings.Contains(s, "@") {
+			s, t := SplitByByte(s, '@')
+			t = "@" + t
+			if !strings.Contains(host, s) {
+				T.Errorf("Resolved %q doesn't contain %q", host, s)
+				break
+			}
+			if !strings.Contains(host, t) {
+				T.Errorf("Resolved %q doesn't contain %q", host, t)
+				break
+			}
+		} else {
+			if !strings.Contains(host, s) {
+				T.Errorf("Resolved %q doesn't contain %q", host, s)
+				break
+			}
+		}
 	}
 }
 

@@ -7,18 +7,17 @@ import (
 	"strings"
 )
 
-// Strips the IPv6 zone and TLS server name
-// If above two both present, the latter one should always comes after the former one.
-// Return host address and TLS server name(if any)
-func stripZoneAndTlsName(host string) (string, string) {
+// Strips trailing IP zone and/or TLS server name
+// If above two both present, the former one should always comes before the latter one.
+// see: https://www.ietf.org/rfc/rfc4001.txt
+func stripZoneAndTlsName(host string) string {
 	if strings.Contains(host, "%") {
-		i := strings.Index(host, "%")
-		s := host[:i]
-		t := host[i + 1:]
-		_, t = SplitByByte(t, '@')
-		return s, t
+		return host[:strings.Index(host, "%")]
 	}
-	return SplitByByte(host, '@')
+	if strings.Contains(host, "@") {
+		return host[:strings.Index(host, "@")]
+	}
+	return host
 }
 
 var knownTrans = []string {
@@ -51,7 +50,7 @@ func HostPort(servers []string) ([]string, error) {
 		addr, _, err := net.SplitHostPort(host)
 		if err != nil {
 			// Parse didn't work, it is not an addr:port combo
-			host1, tlsName := stripZoneAndTlsName(host)
+			host1 := stripZoneAndTlsName(host)
 			if net.ParseIP(host1) == nil {
 				return nil, fmt.Errorf("#1 not an IP address: %q", host)
 			}
@@ -63,10 +62,11 @@ func HostPort(servers []string) ([]string, error) {
 			case "tcp":
 				s = trans + "://" + net.JoinHostPort(host, transport.Port)
 			case "tls":
+				host, tlsName := SplitByByte(host, '@')
 				if len(tlsName) != 0 {
 					tlsName = "@" + tlsName
 				}
-				s = trans + "://" + net.JoinHostPort(host1, transport.TLSPort) + tlsName
+				s = trans + "://" + net.JoinHostPort(host, transport.TLSPort) + tlsName
 			case "https":
 				s = trans + "://" + net.JoinHostPort(host, transport.HTTPSPort)
 			default:
@@ -76,8 +76,7 @@ func HostPort(servers []string) ([]string, error) {
 			continue
 		}
 
-		addr1, _ := stripZoneAndTlsName(addr)
-		if net.ParseIP(addr1) == nil {
+		if net.ParseIP(stripZoneAndTlsName(addr)) == nil {
 			return nil, fmt.Errorf("#2 not an IP address: %q", host)
 		}
 		list = append(list, trans + "://" + host)

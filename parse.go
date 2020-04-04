@@ -28,7 +28,16 @@ var knownTrans = []string {
 	"https",
 }
 
-func splitTransportHost(s string) (trans string, addr string) {
+func IsKnownTrans(trans string) bool {
+	for _, t := range knownTrans {
+		if trans == t {
+			return true
+		}
+	}
+	return false
+}
+
+func SplitTransportHost(s string) (trans string, addr string) {
 	s = strings.ToLower(s)
 	for _, trans := range knownTrans {
 		if strings.HasPrefix(s, trans + "://") {
@@ -46,12 +55,11 @@ func splitTransportHost(s string) (trans string, addr string) {
 func HostPort(servers []string) ([]string, error) {
 	var list []string
 	for _, h := range servers {
-		trans, host := splitTransportHost(h)
+		trans, host := SplitTransportHost(h)
 		addr, _, err := net.SplitHostPort(host)
 		if err != nil {
 			// Parse didn't work, it is not an addr:port combo
-			host1 := stripZoneAndTlsName(host)
-			if net.ParseIP(host1) == nil {
+			if net.ParseIP(stripZoneAndTlsName(host)) == nil {
 				return nil, fmt.Errorf("#1 not an IP address: %q", host)
 			}
 

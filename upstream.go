@@ -11,7 +11,6 @@ import (
 	"github.com/caddyserver/caddy"
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/plugin"
-	"github.com/coredns/coredns/plugin/pkg/parse"
 	pkgtls "github.com/coredns/coredns/plugin/pkg/tls"
 	"github.com/coredns/coredns/plugin/pkg/transport"
 	"github.com/miekg/dns"
@@ -103,11 +102,6 @@ func transToProto(proto string, t *Transport) string {
 	return proto
 }
 
-// XXX: Currently have no support over DoH and gRPC
-func isKnownTrans(trans string) bool {
-	return trans == transport.DNS || trans == transport.TLS
-}
-
 func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 	u := &reloadableUpstream{
 		NameList: &NameList{
@@ -146,8 +140,8 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 	}
 	for _, host := range u.hosts {
 		addr, tlsServerName := SplitByByte(host.addr, '@')
-		trans, addr := parse.Transport(addr)
-		if !isKnownTrans(trans) {
+		trans, addr := SplitTransportHost(addr)
+		if !IsKnownTrans(trans) {
 			return nil, c.Errf("%q protocol isn't supported currently", trans)
 		}
 		host.addr = addr
@@ -513,28 +507,24 @@ func splitTlsServerNames(args []string) ([]string, []string) {
 }
 
 func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
-	dir := c.Val()
+	//dir := c.Val()
 	args := c.RemainingArgs()
 	if len(args) == 0 {
 		return c.ArgErr()
 	}
 
-	args, tlsServerNames := splitTlsServerNames(args)
-	toHosts, err := parse.HostPortOrFile(args...)
+	toHosts, err := HostPort(args)
 	if err != nil {
 		return err
 	}
-	if len(toHosts) == 0 {
-		return c.Errf("%q parsed from file(s), yet no valid entry was found", dir)
-	}
 
-	for i, host := range toHosts {
-		trans, addr := parse.Transport(host)
-		log.Infof("#%v: Transport: %v \t Address: %v%v", i, trans, addr, tlsServerNames[i])
+	for _, host := range toHosts {
+		trans, addr := SplitTransportHost(host)
+		log.Infof("Transport: %v Address: %v", trans, addr)
 
 		uh := &UpstreamHost{
 			// Not an error, host and tls server name will be separated later
-			addr: host + tlsServerNames[i],
+			addr: host,
 			downFunc: checkDownFunc(u),
 		}
 		u.hosts = append(u.hosts, uh)

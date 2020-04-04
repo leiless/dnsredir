@@ -163,8 +163,7 @@ type UpstreamHostDownFunc func(*UpstreamHost) bool
 
 // UpstreamHost represents a single upstream DNS server
 type UpstreamHost struct {
-	// [PENDING]
-	//protocol string					// DNS protocol, i.e. "udp", "tcp", "tcp-tls"
+	proto string					// DNS protocol, i.e. "udp", "tcp", "tcp-tls"
 	addr string						// IP:PORT
 
 	fails int32					// Fail count
@@ -205,20 +204,14 @@ func (t *Transport) updateDialTimeout(newDialTime time.Duration) {
 	atomic.AddInt64(&t.avgDialTime, dt / cumulativeAvgWeight)
 }
 
-// see: upstream.go/transToProto()
+// see: upstream.go/transToNetwork()
 // Return:
 //	#0	Persistent connection
 //	#1	true if it's a cached connection
 //	#2	error(if any)
 func (uh *UpstreamHost) Dial(proto string) (*persistConn, bool, error) {
-	switch {
-	case uh.transport.tlsConfig != nil:
-		proto = "tcp-tls"
-	case uh.transport.forceTcp:
-		proto = "tcp"
-	case uh.transport.preferUdp:
-		proto = "udp"
-	}
+	// TODO: honor DNS protocol
+	proto = transToNetwork(uh.proto, uh.transport)
 
 	uh.transport.dial <- proto
 	pc := <- uh.transport.ret
@@ -296,15 +289,10 @@ func (uh *UpstreamHost) Exchange(ctx context.Context, state request.Request) (*d
 // Dial timeouts and empty replies are considered fails
 // 	basically anything else constitutes a healthy upstream.
 func (uh *UpstreamHost) Check() error {
-	proto := "udp"
-	if uh.c.Net != "" {
-		proto = uh.c.Net
-	}
-
 	if err, rtt := uh.send(); err != nil {
 		HealthCheckFailureCount.WithLabelValues(uh.addr).Inc()
 		atomic.AddInt32(&uh.fails, 1)
-		log.Warningf("hc: DNS @%v +%v failed  rtt: %v err: %v", uh.addr, proto, rtt, err)
+		log.Warningf("hc: DNS @%v +%v failed  rtt: %v err: %v", uh.addr, uh.proto, rtt, err)
 		return err
 	} else {
 		// Reset failure counter once health check success
@@ -328,12 +316,8 @@ func (uh *UpstreamHost) send() (error, time.Duration) {
 	if err != nil && msg != nil {
 		// Silly check, something sane came back.
 		if msg.Response || msg.Opcode == dns.OpcodeQuery {
-			proto := "udp"
-			if uh.c.Net != "" {
-				proto = uh.c.Net
-			}
 			log.Warningf("hc: Correct DNS @%v +%v malformed response  err: %v msg: %v",
-							uh.addr, proto, err, msg)
+							uh.addr, uh.proto, err, msg)
 			err = nil
 		}
 	}

@@ -90,14 +90,9 @@ func NewReloadableUpstreams(c *caddy.Controller) ([]Upstream, error) {
 }
 
 // see: healthcheck.go/UpstreamHost.Dial()
-func transToProto(proto string, t *Transport) string {
-	switch {
-	case t.tlsConfig != nil:
-		proto = "tcp-tls"
-	case t.forceTcp:
-		proto = "tcp"
-	case t.preferUdp || proto == transport.DNS:
-		proto = "udp"
+func transToNetwork(proto string, t *Transport) string {
+	if proto == "tls" {
+		return "tcp-tls"
 	}
 	return proto
 }
@@ -140,10 +135,6 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 	}
 	for _, host := range u.hosts {
 		addr, tlsServerName := SplitByByte(host.addr, '@')
-		trans, addr := SplitTransportHost(addr)
-		if !IsKnownTrans(trans) {
-			return nil, c.Errf("%q protocol isn't supported currently", trans)
-		}
 		host.addr = addr
 
 		host.transport = newTransport()
@@ -152,7 +143,7 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 		host.transport.preferUdp = u.transport.preferUdp
 		host.transport.recursionDesired = u.transport.recursionDesired
 		host.transport.expire = u.transport.expire
-		if trans == transport.TLS {
+		if host.proto == transport.TLS {
 			// Deep copy
 			host.transport.tlsConfig = new(tls.Config)
 			*host.transport.tlsConfig = *u.transport.tlsConfig
@@ -169,9 +160,9 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 		}
 
 		host.c = &dns.Client{
-			Net: transToProto(trans, host.transport),
+			Net:       transToNetwork(host.proto, host.transport),
 			TLSConfig: host.transport.tlsConfig,
-			Timeout: defaultHcTimeout,
+			Timeout:   defaultHcTimeout,
 		}
 	}
 
@@ -507,7 +498,6 @@ func splitTlsServerNames(args []string) ([]string, []string) {
 }
 
 func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
-	//dir := c.Val()
 	args := c.RemainingArgs()
 	if len(args) == 0 {
 		return c.ArgErr()
@@ -523,8 +513,9 @@ func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 		log.Infof("Transport: %v Address: %v", trans, addr)
 
 		uh := &UpstreamHost{
+			proto: trans,
 			// Not an error, host and tls server name will be separated later
-			addr: host,
+			addr: addr,
 			downFunc: checkDownFunc(u),
 		}
 		u.hosts = append(u.hosts, uh)

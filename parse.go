@@ -25,16 +25,6 @@ var knownTrans = []string {
 	"udp",
 	"tcp",
 	"tls",
-	"https",
-}
-
-func IsKnownTrans(trans string) bool {
-	for _, t := range knownTrans {
-		if trans == t {
-			return true
-		}
-	}
-	return false
 }
 
 func SplitTransportHost(s string) (trans string, addr string) {
@@ -72,8 +62,6 @@ func HostPort(servers []string) ([]string, error) {
 			case "tls":
 				host, tlsName := SplitByByte(host, '@')
 				s = trans + "://" + net.JoinHostPort(host, transport.TLSPort) + tlsName
-			case "https":
-				s = trans + "://" + net.JoinHostPort(host, transport.HTTPSPort)
 			default:
 				panic(fmt.Sprintf("Unknown transport %q", trans))
 			}

@@ -21,7 +21,7 @@ func stripZoneAndTlsName(host string) string {
 }
 
 var knownTrans = []string {
-	"dns",	// Alias of UDP protocol
+	"dns",	// Use protocol specified in incoming DNS requests, i.e. it may UDP, TCP.
 	"udp",
 	"tcp",
 	"tls",
@@ -31,14 +31,11 @@ func SplitTransportHost(s string) (trans string, addr string) {
 	s = strings.ToLower(s)
 	for _, trans := range knownTrans {
 		if strings.HasPrefix(s, trans + "://") {
-			if trans == "dns" {
-				trans = "udp"
-			}
 			return trans, s[len(trans + "://"):]
 		}
 	}
 	// Have no proceeding transport? assume it's classic DNS protocol
-	return "udp", s
+	return "dns", s
 }
 
 // Taken from parse.HostPortOrFile() with modification
@@ -55,6 +52,8 @@ func HostPort(servers []string) ([]string, error) {
 
 			var s string
 			switch trans {
+			case "dns":
+				fallthrough
 			case "udp":
 				fallthrough
 			case "tcp":

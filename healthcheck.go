@@ -210,8 +210,9 @@ func (t *Transport) updateDialTimeout(newDialTime time.Duration) {
 //	#1	true if it's a cached connection
 //	#2	error(if any)
 func (uh *UpstreamHost) Dial(proto string) (*persistConn, bool, error) {
-	// TODO: honor DNS protocol
-	proto = transToNetwork(uh.proto, uh.transport)
+	if uh.proto != "dns" {
+		proto = transToNetwork(uh.proto)
+	}
 
 	uh.transport.dial <- proto
 	pc := <- uh.transport.ret

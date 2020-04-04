@@ -123,14 +123,14 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 		}
 		_ = w.WriteMsg(reply)
 
-		RequestCount.WithLabelValues(server, host.addr).Inc()
-		RequestDuration.WithLabelValues(server, host.addr).Observe(float64(time.Since(start).Milliseconds()))
+		RequestDuration.WithLabelValues(server, host.Name()).Observe(float64(time.Since(start).Milliseconds()))
+		RequestCount.WithLabelValues(server, host.Name()).Inc()
 
 		rc, ok := dns.RcodeToString[reply.Rcode]
 		if !ok {
 			rc = strconv.Itoa(reply.Rcode)
 		}
-		RcodeCount.WithLabelValues(server, host.addr, rc).Inc()
+		RcodeCount.WithLabelValues(server, host.Name(), rc).Inc()
 		return 0, nil
 	}
 

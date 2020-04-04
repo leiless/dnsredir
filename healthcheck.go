@@ -175,6 +175,10 @@ type UpstreamHost struct {
 	transport *Transport
 }
 
+func (uh *UpstreamHost)Name() string {
+	return uh.proto + "://" + uh.addr
+}
+
 // Taken from coredns/plugin/forward/connect.go
 // see: https://en.wikipedia.org/wiki/Moving_average#Cumulative_moving_average
 //
@@ -288,7 +292,7 @@ func (uh *UpstreamHost) Exchange(ctx context.Context, state request.Request) (*d
 // 	basically anything else constitutes a healthy upstream.
 func (uh *UpstreamHost) Check() error {
 	if err, rtt := uh.send(); err != nil {
-		HealthCheckFailureCount.WithLabelValues(uh.addr).Inc()
+		HealthCheckFailureCount.WithLabelValues(uh.Name()).Inc()
 		atomic.AddInt32(&uh.fails, 1)
 		log.Warningf("hc: DNS @%v +%v failed  rtt: %v err: %v", uh.addr, uh.proto, rtt, err)
 		return err
@@ -339,7 +343,7 @@ func (uh *UpstreamHost) Down() bool {
 	down := uh.downFunc(uh)
 	if down {
 		log.Debugf("%v marked as down...", uh.addr)
-		HealthCheckAllDownCount.WithLabelValues(uh.addr).Inc()
+		HealthCheckAllDownCount.WithLabelValues(uh.Name()).Inc()
 	}
 	return down
 }

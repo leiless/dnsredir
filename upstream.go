@@ -165,6 +165,7 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 
 			// TLS server name in tls:// takes precedence over the global one(if any)
 			if len(tlsServerName) != 0 {
+				tlsServerName = tlsServerName[1:]
 				serverName, ok := stringToDomain(tlsServerName)
 				if !ok {
 					return nil, c.Errf("invalid TLS server name %q", tlsServerName)

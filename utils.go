@@ -89,12 +89,12 @@ func stringToDomain(s string) (string, bool) {
 	return "", false
 }
 
-// Return two strings delimited by the `c', which the `c' won't be included
-// If `c' not found in `s', `s' and an empty string will be returned
+// Return two strings delimited by the `c', the second one will including `c' as beginning character
+// If `c' not found in `s', the second string will be empty
 func SplitByByte(s string, c byte) (string, string) {
 	i := strings.IndexByte(s, c)
 	if i >= 0 {
-		return s[:i], s[i+1:]
+		return s[:i], s[i:]
 	}
 	return s, ""
 }

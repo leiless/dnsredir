@@ -63,9 +63,6 @@ func HostPort(servers []string) ([]string, error) {
 				s = trans + "://" + net.JoinHostPort(host, transport.Port)
 			case "tls":
 				host, tlsName := SplitByByte(host, '@')
-				if len(tlsName) != 0 {
-					tlsName = "@" + tlsName
-				}
 				s = trans + "://" + net.JoinHostPort(host, transport.TLSPort) + tlsName
 			case "https":
 				s = trans + "://" + net.JoinHostPort(host, transport.HTTPSPort)

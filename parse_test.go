@@ -63,7 +63,6 @@ func TestHostPort(T *testing.T) {
 		// If host contain a TLS server name
 		if strings.Contains(s, "@") {
 			s, t := SplitByByte(s, '@')
-			t = "@" + t
 			if !strings.Contains(host, s) {
 				T.Errorf("Resolved %q doesn't contain %q", host, s)
 				break

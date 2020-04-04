@@ -98,9 +98,6 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 				log.Debugf("%v: %v", upstreamErr, host.addr)
 				continue
 			}
-			if reply != nil && reply.Truncated && !host.transport.forceTcp && host.transport.preferUdp {
-				log.Warningf("TODO: Retry with TCP since response truncated and prefer_udp configured")
-			}
 			break
 		}
 

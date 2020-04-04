@@ -139,8 +139,6 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 
 		host.transport = newTransport()
 		// Inherit from global transport settings
-		host.transport.forceTcp = u.transport.forceTcp
-		host.transport.preferUdp = u.transport.preferUdp
 		host.transport.recursionDesired = u.transport.recursionDesired
 		host.transport.expire = u.transport.expire
 		if host.proto == transport.TLS {
@@ -363,28 +361,6 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		// Multiple "to"s will be merged together
 		if err := parseTo(c, u); err != nil {
 			return err
-		}
-	case "force_tcp":
-		if c.NextArg() {
-			return c.ArgErr()
-		}
-		u.transport.forceTcp = true
-		// Reset prefer_udp since force_tcp takes precedence
-		if u.transport.preferUdp {
-			u.transport.preferUdp = false
-			log.Warningf("%v: prefer_udp invalidated", dir)
-		}
-		log.Infof("%v: enabled", dir)
-	case "prefer_udp":
-		if c.NextArg() {
-			return c.ArgErr()
-		}
-		if u.transport.forceTcp == false {
-			// Ditto.
-			u.transport.preferUdp = true
-			log.Infof("%v: enabled", dir)
-		} else {
-			log.Warningf("%v: force_tcp already turned on", dir)
 		}
 	case "expire":
 		dur, err := parseDuration(c)

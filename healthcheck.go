@@ -31,8 +31,6 @@ func (pc *persistConn) String() string {
 type Transport struct {
 	avgDialTime int64				// Cumulative moving average dial time in ns(i.e. time.Duration)
 
-	forceTcp  	bool				// forceTcp takes precedence over preferUdp
-	preferUdp 	bool
 	recursionDesired bool			// RD flag
 	expire		time.Duration		// [sic] After this duration a connection is expired
 	tlsConfig	*tls.Config

@@ -455,29 +455,6 @@ func parseDuration(c *caddy.Controller) (time.Duration, error) {
 	return dur, c.Err(err.Error())
 }
 
-// tls://ip[[:port]|[@tls_server_name]]
-// If you combine ':' and '@', ':' must comes first
-// TODO: lame implementation, rewrite this someday
-func splitTlsServerNames(args []string) ([]string, []string) {
-	var tos []string
-	var tlsServerNames []string
-	for _, to := range args {
-		i := strings.IndexByte(to, '@')
-		if i >= 0 {
-			tos = append(tos, to[:i])
-			// '@' will be reserved in place
-			tlsServerNames = append(tlsServerNames, to[i:])
-		} else {
-			tos = append(tos, to)
-			tlsServerNames = append(tlsServerNames, "")
-		}
-	}
-	if len(tos) != len(tlsServerNames) {
-		panic(fmt.Sprintf("Size mismatch  %v vs %v", len(tos), len(tlsServerNames)))
-	}
-	return tos, tlsServerNames
-}
-
 func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 	args := c.RemainingArgs()
 	if len(args) == 0 {

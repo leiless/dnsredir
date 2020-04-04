@@ -42,9 +42,13 @@ dnsredir FROM... {
 
 	The `to` syntax allows you to specify a protocol, a port, etc:
 
-	`[dns://]IP[:PORT]` for plain DNS(without encryption).
+    `[dns://]IP[:PORT]` use protocol specified in incoming DNS requests, it may `UDP` or `TCP`.
 
-	`tls://IP[:PORT][@TLS_SERVER_NAME]` for DNS over TLS, if you combine `:` and `@`, `@` must comes last. Be aware of some DoT servers require TLS server name as a mandatory option.
+    `[udp://]IP:[:PORT]` use `UDP` protocol for DNS query, even if request comes in `TCP`.
+
+    `[tcp://]IP:[:PORT]` use `TCP` protocol for DNS query, even if request comes in `UDP`.
+
+    `tls://IP[:PORT][@TLS_SERVER_NAME]` for DNS over TLS, if you combine `:` and `@`, `@` must comes last. Be aware of some DoT servers require TLS server name as a mandatory option.
 
 An expanded syntax can be utilized to unleash of the power of `dnsredir` plugin:
 
@@ -63,8 +67,6 @@ dnsredir FROM... {
 
 	to TO...
 	expire DURATION
-	force_tcp
-	prefer_udp
 	tls CERT KEY CA
 	tls_servername NAME
 }
@@ -109,12 +111,6 @@ Some of the options take a `DURATION` as argument, **zero time(i.e. `0`) duratio
 * `max_fails` is the maximum number of consecutive health checking failures that are needed before considering an upstream as down. `0` to disable this feature(which the upstream will never be marked as down). Default is `3`.
 
 * `expire` will expire (cached) connections after this time interval. Default is `15s`, minimal is `1s`.
-
-* `force_tcp` uses `TCP` even if the request comes in over `UDP`.
-
-* `prefer_udp` try first using `UDP` even when the request comes in over `TCP`. If response is truncated(`TC` flag set in response) then do another attempt over `TCP`. If both `force_tcp` and `prefer_udp` are specified then `force_tcp` takes precedence.
-
-	**XXX**: not yet implemented, this feature might be deprecated in future.
 
 * `tls CERT KEY CA` define the TLS properties for TLS connection. From 0 to 3 arguments can be specified:
 
@@ -182,7 +178,6 @@ dnsredir accelerated-domains.china.conf {
 	max_fails 0
 	to 114.114.114.114 223.5.5.5 119.29.29.29
 	policy round_robin
-	prefer_udp
 
 	# INLINE domain
 	example.org

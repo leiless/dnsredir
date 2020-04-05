@@ -86,7 +86,7 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 			log.Debug(errNoHealthy)
 			return dns.RcodeServerFailure, errNoHealthy
 		}
-		log.Debugf("Upstream host %v is selected", host.addr)
+		log.Debugf("Upstream host %v is selected", host.Name())
 
 		for {
 			t := time.Now()
@@ -95,7 +95,7 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 			if upstreamErr == errCachedConnClosed {
 				// [sic] Remote side closed conn, can only happen with TCP.
 				// Retry for another connection
-				log.Debugf("%v: %v", upstreamErr, host.addr)
+				log.Debugf("%v: %v", upstreamErr, host.Name())
 				continue
 			}
 			break

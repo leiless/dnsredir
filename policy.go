@@ -106,7 +106,7 @@ func (s *Spray) String() string { return "spray" }
 func (s *Spray) Select(pool UpstreamHostPool) *UpstreamHost {
 	i := rand.Int() % len(pool)
 	randHost := pool[i]
-	log.Warningf("All hosts reported as down, spraying to target: %s", randHost.addr)
+	log.Warningf("All hosts reported as down, spraying to target: %s", randHost.Name())
 	return randHost
 }
 

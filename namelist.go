@@ -69,6 +69,7 @@ func domainToIndex(str string) uint16 {
 	if n == 1 {
 		return (uint16('-') << 8) | uint16(str[0])
 	}
+	// The index will be encoded in big endian
 	return uint16((str[0] << 8) | str[1])
 }
 
@@ -342,8 +343,6 @@ func (n *NameList) parse(r io.Reader) (domainSet, uint64) {
 
 // Return true if NameItem updated
 func (n *NameList) updateItemFromUrl(item *NameItem) bool {
-	names := make(domainSet)
-
 	if item.whichType != NameItemTypeUrl || len(item.url) == 0 {
 		panic("Function call misuse or bad URL config")
 	}
@@ -364,6 +363,7 @@ func (n *NameList) updateItemFromUrl(item *NameItem) bool {
 		return true
 	}
 
+	names := make(domainSet)
 	var totalLines uint64
 	t3 := time.Now()
 	lines := strings.Split(content, "\n")

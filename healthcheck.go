@@ -161,11 +161,11 @@ type UpstreamHostDownFunc func(*UpstreamHost) bool
 
 // UpstreamHost represents a single upstream DNS server
 type UpstreamHost struct {
-	proto string					// DNS protocol, i.e. "udp", "tcp", "tcp-tls"
+	proto string					// DNS protocol, i.e. "udp", "tcp", etc.
 	addr string						// IP:PORT
 
-	fails int32					// Fail count
-	downFunc UpstreamHostDownFunc	// This function should be side-effect save
+	fails int32						// Fail count
+	downFunc UpstreamHostDownFunc	// This function should be side-effect safe
 
 	c *dns.Client					// DNS client used for health check
 
@@ -245,9 +245,9 @@ func (uh *UpstreamHost) Exchange(ctx context.Context, state request.Request) (*d
 		return nil, err
 	}
 	if cached {
-		log.Debugf("Cached connection used for %v", uh.addr)
+		log.Debugf("Cached connection used for %v", uh.Name())
 	} else {
-		log.Debugf("New connection established for %v", uh.addr)
+		log.Debugf("New connection established for %v", uh.Name())
 	}
 
 	pc.c.UDPSize = uint16(state.Size())
@@ -294,7 +294,7 @@ func (uh *UpstreamHost) Check() error {
 	if err, rtt := uh.send(); err != nil {
 		HealthCheckFailureCount.WithLabelValues(uh.Name()).Inc()
 		atomic.AddInt32(&uh.fails, 1)
-		log.Warningf("hc: DNS @%v +%v failed  rtt: %v err: %v", uh.addr, uh.proto, rtt, err)
+		log.Warningf("hc: DNS %v failed  rtt: %v err: %v", uh.Name(), rtt, err)
 		return err
 	} else {
 		// Reset failure counter once health check success
@@ -318,8 +318,7 @@ func (uh *UpstreamHost) send() (error, time.Duration) {
 	if err != nil && msg != nil {
 		// Silly check, something sane came back.
 		if msg.Response || msg.Opcode == dns.OpcodeQuery {
-			log.Warningf("hc: Correct DNS @%v +%v malformed response  err: %v msg: %v",
-							uh.addr, uh.proto, err, msg)
+			log.Warningf("hc: Correct DNS %v malformed response  err: %v msg: %v", uh.Name(), err, msg)
 			err = nil
 		}
 	}
@@ -335,14 +334,13 @@ type UpstreamHostPool []*UpstreamHost
 // 	to some default criteria if necessary.
 func (uh *UpstreamHost) Down() bool {
 	if uh.downFunc == nil {
-		log.Warningf("Upstream host %v have no downFunc, fallback to default", uh.addr)
-		fails := atomic.LoadInt32(&uh.fails)
-		return fails > 0
+		log.Warningf("Upstream host %v have no downFunc, fallback to default", uh.Name())
+		return atomic.LoadInt32(&uh.fails) > 0
 	}
 
 	down := uh.downFunc(uh)
 	if down {
-		log.Debugf("%v marked as down...", uh.addr)
+		log.Debugf("%v marked as down...", uh.Name())
 		HealthCheckAllDownCount.WithLabelValues(uh.Name()).Inc()
 	}
 	return down

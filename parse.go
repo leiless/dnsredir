@@ -46,8 +46,8 @@ func HostPort(servers []string) ([]string, error) {
 		addr, _, err := net.SplitHostPort(host)
 		if err != nil {
 			// Parse didn't work, it is not an addr:port combo
-			if net.ParseIP(stripZoneAndTlsName(host)) == nil {
-				return nil, fmt.Errorf("#1 not an IP address: %q", host)
+			if _, ok := stringToDomain(host); !ok && net.ParseIP(stripZoneAndTlsName(host)) == nil {
+				return nil, fmt.Errorf("#1 not a domain name or an IP address: %q", host)
 			}
 
 			var s string
@@ -68,8 +68,8 @@ func HostPort(servers []string) ([]string, error) {
 			continue
 		}
 
-		if net.ParseIP(stripZoneAndTlsName(addr)) == nil {
-			return nil, fmt.Errorf("#2 not an IP address: %q", host)
+		if _, ok := stringToDomain(addr); !ok && net.ParseIP(stripZoneAndTlsName(addr)) == nil {
+			return nil, fmt.Errorf("#2 not a domain name or an IP address: %q", host)
 		}
 		list = append(list, trans + "://" + host)
 	}

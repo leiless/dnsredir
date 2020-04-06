@@ -10,7 +10,6 @@ import (
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/debug"
 	"github.com/coredns/coredns/plugin/metrics"
-	"github.com/coredns/coredns/plugin/pkg/dnsutil"
 	clog "github.com/coredns/coredns/plugin/pkg/log"
 	"github.com/coredns/coredns/request"
 	"github.com/miekg/dns"
@@ -118,9 +117,6 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 			return 0, nil
 		}
 
-		if r.urlInitialInProgress() {
-			rewriteToMinimalTTLs(reply, minimalTTL)
-		}
 		_ = w.WriteMsg(reply)
 
 		RequestDuration.WithLabelValues(server, host.Name()).Observe(float64(time.Since(start).Milliseconds()))
@@ -138,46 +134,6 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 		panic("Why upstreamErr is nil?! Are you in a debugger or your machine running slow?")
 	}
 	return dns.RcodeServerFailure, upstreamErr
-}
-
-// [optimization]
-// Positive cache once all upstream hosts finished initial name list population from URL
-//	thus we don't need to iterate over all upstream hosts
-var initialFinished int32 = 0
-
-func (r *Dnsredir)urlInitialInProgress() bool {
-	if atomic.LoadInt32(&initialFinished) != 0 {
-		return false
-	}
-
-	for _, u := range *r.Upstreams {
-		up := u.(*reloadableUpstream)
-		if atomic.LoadInt32(&up.initialCount) != 0 {
-			return true
-		}
-	}
-
-	atomic.StoreInt32(&initialFinished, 1)
-	return false
-}
-
-// minimalTTL: TTL in seconds
-// see: dnsutil.MinimalTTL()
-func rewriteToMinimalTTLs(reply *dns.Msg, minimalTTL uint32) {
-	for _, r := range reply.Answer {
-		r.Header().Ttl = MinUint32(r.Header().Ttl, minimalTTL)
-	}
-
-	for _, r := range reply.Ns {
-		r.Header().Ttl = MinUint32(r.Header().Ttl, minimalTTL)
-	}
-
-	for _, r := range reply.Extra {
-		// [sic] OPT records use TTL field for extended rcode and flags
-		if r.Header().Rrtype != dns.TypeOPT {
-			r.Header().Ttl = MinUint32(r.Header().Ttl, minimalTTL)
-		}
-	}
 }
 
 func healthCheck(r *reloadableUpstream, uh *UpstreamHost) {
@@ -237,6 +193,5 @@ const (
 	defaultTimeout = 15 * time.Second
 	defaultFailTimeout = 2000 * time.Millisecond
 	failureCheck = 3
-	minimalTTL = uint32(dnsutil.MinimalDefaultTTL / time.Second)
 )
 

@@ -9,7 +9,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
@@ -195,7 +194,6 @@ type NameList struct {
 	urlReload		time.Duration
 	urlReadTimeout	time.Duration
 	stopUrlReload 	chan struct{}
-	initialCount	int32
 }
 
 // Assume `child' is lower cased and without trailing dot
@@ -403,7 +401,6 @@ func (n *NameList) updateItemFromUrl(item *NameItem) bool {
 // Initial name list population needs a working DNS upstream
 //	thus we need to fallback to it(if any) in case of population failure
 func (n *NameList)initialUpdateFromUrl(item *NameItem) {
-	atomic.AddInt32(&n.initialCount, 1)
 	go func() {
 		// Fast retry in case of unstable network
 		retryIntervals := []time.Duration{
@@ -421,7 +418,6 @@ func (n *NameList)initialUpdateFromUrl(item *NameItem) {
 			time.Sleep(retryIntervals[i])
 			i++
 		}
-		atomic.AddInt32(&n.initialCount, -1)
 	}()
 }
 

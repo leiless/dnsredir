@@ -8,7 +8,10 @@ import (
 	"github.com/coredns/coredns/request"
 	"github.com/miekg/dns"
 	"io"
+	"math/rand"
+	"net"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -206,11 +209,51 @@ func (t *Transport) updateDialTimeout(newDialTime time.Duration) {
 	atomic.AddInt64(&t.avgDialTime, dt / cumulativeAvgWeight)
 }
 
+func dialTimeout0(network, address string, tlsConfig *tls.Config, timeout time.Duration, bootstrap []string) (*dns.Conn, error) {
+	var resolver *net.Resolver
+
+	if len(bootstrap) != 0 {
+		resolver = &net.Resolver{
+			PreferGo: true,
+			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+				var d net.Dialer
+				// Randomly choose a bootstrap DNS to resolve upstream host(if any)
+				addr := bootstrap[rand.Intn(len(bootstrap))]
+				return d.DialContext(ctx, network, addr)
+			},
+		}
+	} else {
+		// Fallback to use system default resolvers, which located at /etc/resolv.conf
+	}
+
+	dialer := &net.Dialer{
+		Timeout: timeout,
+		Resolver: resolver,
+	}
+	client := dns.Client{Net: network, Dialer: dialer, TLSConfig: tlsConfig}
+	return client.Dial(address)
+}
+
+// [sic] DialTimeoutWithTLS acts like DialWithTLS but takes a timeout.
+// Taken from dns.DialTimeoutWithTLS() with modification
+func dialTimeoutWithTLS(network, address string, tlsConfig *tls.Config, timeout time.Duration, bootstrap []string) (*dns.Conn, error) {
+	if !strings.HasSuffix(network, "-tls") {
+		network += "-tls"
+	}
+	return dialTimeout0(network, address, tlsConfig, timeout, bootstrap)
+}
+
+// [sic] DialTimeout acts like Dial but takes a timeout.
+// Taken from dns.DialTimeout() with modification
+func dialTimeout(network, address string, timeout time.Duration, bootstrap []string) (*dns.Conn, error) {
+	return dialTimeout0(network, address, nil, timeout, bootstrap)
+}
+
 // Return:
 //	#0	Persistent connection
 //	#1	true if it's a cached connection
 //	#2	error(if any)
-func (uh *UpstreamHost) Dial(proto string) (*persistConn, bool, error) {
+func (uh *UpstreamHost) Dial(proto string, bootstrap []string) (*persistConn, bool, error) {
 	if uh.proto != "dns" {
 		proto = protoToNetwork(uh.proto)
 	}
@@ -224,14 +267,14 @@ func (uh *UpstreamHost) Dial(proto string) (*persistConn, bool, error) {
 	reqTime := time.Now()
 	timeout := uh.transport.dialTimeout()
 	if proto == "tcp-tls" {
-		conn, err := dns.DialTimeoutWithTLS(proto, uh.addr, uh.transport.tlsConfig, timeout)
+		conn, err := dialTimeoutWithTLS(proto, uh.addr, uh.transport.tlsConfig, timeout, bootstrap)
 		uh.transport.updateDialTimeout(time.Since(reqTime))
 		if err != nil {
 			return nil, false, err
 		}
 		return &persistConn{c: conn}, false, err
 	}
-	conn, err := dns.DialTimeout(proto, uh.addr, timeout)
+	conn, err := dialTimeout(proto, uh.addr, timeout, bootstrap)
 	uh.transport.updateDialTimeout(time.Since(reqTime))
 	if err != nil {
 		return nil, false, err
@@ -239,8 +282,8 @@ func (uh *UpstreamHost) Dial(proto string) (*persistConn, bool, error) {
 	return &persistConn{c:conn}, false, err
 }
 
-func (uh *UpstreamHost) Exchange(ctx context.Context, state request.Request) (*dns.Msg, error) {
-	pc, cached, err := uh.Dial(state.Proto())
+func (uh *UpstreamHost) Exchange(ctx context.Context, state request.Request, bootstrap []string) (*dns.Msg, error) {
+	pc, cached, err := uh.Dial(state.Proto(), bootstrap)
 	if err != nil {
 		return nil, err
 	}

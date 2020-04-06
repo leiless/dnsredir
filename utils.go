@@ -111,7 +111,6 @@ func getUrlContent(url, contentType string, bootstrap []string, timeout time.Dur
 	var transport http.RoundTripper
 
 	if len(bootstrap) != 0 {
-		// Randomly choose a bootstrap DNS to resolve upstream host(if any)
 		resolver := &net.Resolver{
 			PreferGo: true,
 			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {

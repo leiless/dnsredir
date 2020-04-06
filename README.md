@@ -1,5 +1,7 @@
 # dnsredir
 
+[![Build Status](https://cloud.drone.io/api/badges/leiless/dnsredir/status.svg)](https://cloud.drone.io/leiless/dnsredir)
+
 ## Name
 
 *dnsredir* - yet another seems better forward/proxy plugin for CoreDNS, mainly focused on speed and reliable.

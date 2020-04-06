@@ -1,11 +1,14 @@
 package dnsredir
 
 import (
+	"context"
 	"fmt"
 	"github.com/coredns/coredns/plugin"
 	"hash/fnv"
 	"io"
 	"io/ioutil"
+	"math/rand"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -99,11 +102,47 @@ func SplitByByte(s string, c byte) (string, string) {
 	return s, ""
 }
 
+// bootstrap: Bootstrap DNS to resolve domain names(empty array to use system defaults)
+//
 // see:
 //	https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
 //	https://medium.com/@nate510/don-t-use-go-s-default-http-client-4804cb19f779
-func getUrlContent(url, contentType string, timeout time.Duration) (string, error) {
-	c := &http.Client{ Timeout: timeout }
+func getUrlContent(url, contentType string, bootstrap []string, timeout time.Duration) (string, error) {
+	var transport http.RoundTripper
+
+	if len(bootstrap) != 0 {
+		// Randomly choose a bootstrap DNS to resolve upstream host(if any)
+		resolver := &net.Resolver{
+			PreferGo: true,
+			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+				var d net.Dialer
+				// Randomly choose a bootstrap DNS to resolve upstream host(if any)
+				addr := bootstrap[rand.Intn(len(bootstrap))]
+				return d.DialContext(ctx, network, addr)
+			},
+		}
+		dialer := &net.Dialer{
+			Timeout: timeout,
+			Resolver: resolver,
+		}
+		// see: http.DefaultTransport
+		transport = &http.Transport{
+			DialContext:           dialer.DialContext,
+			ExpectContinueTimeout: 1 * time.Second,
+			IdleConnTimeout:       90 * time.Second,
+			MaxIdleConns:          100,
+			MaxIdleConnsPerHost:   10,
+			Proxy:                 http.ProxyFromEnvironment,
+			TLSHandshakeTimeout:   timeout,
+		}
+	} else {
+		// Fallback to use system default resolvers, which located at /etc/resolv.conf
+	}
+
+	c := &http.Client{
+		Transport: transport,	// [sic] If nil, DefaultTransport is used.
+		Timeout:   timeout,		// Q: Should be omit this field if transport isn't nil?
+	}
 	resp, err := c.Get(url)
 	if err != nil {
 		return "", err

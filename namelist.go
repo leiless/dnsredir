@@ -210,9 +210,9 @@ func (n *NameList) Match(child string) bool {
 }
 
 // MT-Unsafe
-func (n *NameList) periodicUpdate() {
+func (n *NameList) periodicUpdate(bootstrap []string) {
 	// Kick off initial name list content population
-	n.updateList(NameItemTypeLast)
+	n.updateList(NameItemTypeLast, bootstrap)
 
 	if n.pathReload > 0 {
 		go func() {
@@ -222,7 +222,7 @@ func (n *NameList) periodicUpdate() {
 				case <-n.stopPathReload:
 					return
 				case <-ticker.C:
-					n.updateList(NameItemTypePath)
+					n.updateList(NameItemTypePath, bootstrap)
 				}
 			}
 		}()
@@ -236,14 +236,14 @@ func (n *NameList) periodicUpdate() {
 				case <-n.stopUrlReload:
 					return
 				case <-ticker.C:
-					n.updateList(NameItemTypeUrl)
+					n.updateList(NameItemTypeUrl, bootstrap)
 				}
 			}
 		}()
 	}
 }
 
-func (n *NameList) updateList(whichType int) {
+func (n *NameList) updateList(whichType int, bootstrap []string) {
 	for _, item := range n.items {
 		if whichType == NameItemTypeLast || whichType == item.whichType {
 			switch item.whichType {
@@ -251,9 +251,9 @@ func (n *NameList) updateList(whichType int) {
 				n.updateItemFromPath(item)
 			case NameItemTypeUrl:
 				if whichType == NameItemTypeLast {
-					n.initialUpdateFromUrl(item)
+					n.initialUpdateFromUrl(item, bootstrap)
 				} else {
-					_ = n.updateItemFromUrl(item)
+					_ = n.updateItemFromUrl(item, bootstrap)
 				}
 			default:
 				panic(fmt.Sprintf("Unexpected NameItem type %v", whichType))
@@ -340,13 +340,13 @@ func (n *NameList) parse(r io.Reader) (domainSet, uint64) {
 }
 
 // Return true if NameItem updated
-func (n *NameList) updateItemFromUrl(item *NameItem) bool {
+func (n *NameList) updateItemFromUrl(item *NameItem, bootstrap []string) bool {
 	if item.whichType != NameItemTypeUrl || len(item.url) == 0 {
 		panic("Function call misuse or bad URL config")
 	}
 
 	t1 := time.Now()
-	content, err := getUrlContent(item.url, "text/plain", n.urlReadTimeout)
+	content, err := getUrlContent(item.url, "text/plain", bootstrap, n.urlReadTimeout)
 	t2 := time.Since(t1)
 	if err != nil {
 		log.Warningf("Failed to update %q, err: %v", item.url, err)
@@ -400,7 +400,7 @@ func (n *NameList) updateItemFromUrl(item *NameItem) bool {
 
 // Initial name list population needs a working DNS upstream
 //	thus we need to fallback to it(if any) in case of population failure
-func (n *NameList)initialUpdateFromUrl(item *NameItem) {
+func (n *NameList)initialUpdateFromUrl(item *NameItem, bootstrap []string) {
 	go func() {
 		// Fast retry in case of unstable network
 		retryIntervals := []time.Duration{
@@ -409,7 +409,7 @@ func (n *NameList)initialUpdateFromUrl(item *NameItem) {
 		}
 		i := 0
 		for {
-			if n.updateItemFromUrl(item) {
+			if n.updateItemFromUrl(item, bootstrap) {
 				break
 			}
 			if i == len(retryIntervals) {

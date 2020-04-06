@@ -62,7 +62,7 @@ func (u *reloadableUpstream) Match(name string) bool {
 }
 
 func (u *reloadableUpstream) Start() error {
-	u.periodicUpdate()
+	u.periodicUpdate(u.bootstrap)
 	u.HealthCheck.Start()
 	return nil
 }

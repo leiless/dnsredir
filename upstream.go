@@ -14,6 +14,7 @@ import (
 	pkgtls "github.com/coredns/coredns/plugin/pkg/tls"
 	"github.com/coredns/coredns/plugin/pkg/transport"
 	"github.com/miekg/dns"
+	"net"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -28,6 +29,8 @@ type reloadableUpstream struct {
 	inline domainSet
 	ignored domainSet
 	*HealthCheck
+	// Bootstrap DNS in IP:Port combo
+	bootstrap []string
 }
 
 // reloadableUpstream implements Upstream interface
@@ -396,6 +399,10 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		}
 		u.transport.tlsConfig.ServerName = serverName
 		log.Infof("%v: %v", dir, serverName)
+	case "bootstrap":
+		if err := parseBootstrap(c, u); err != nil {
+			return err
+		}
 	default:
 		if len(c.RemainingArgs()) != 0 ||!u.inline.Add(dir) {
 			return c.Errf("unknown property: %q", dir)
@@ -481,6 +488,62 @@ func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 		log.Infof("Upstream: %v", uh)
 	}
 
+	return nil
+}
+
+func parseBootstrap(c *caddy.Controller, u *reloadableUpstream) error {
+	dir := c.Val()
+	args := c.RemainingArgs()
+	if len(args) == 0 {
+		return c.ArgErr()
+	}
+
+	var list []string
+	for _, hp := range args {
+		host, port, err := net.SplitHostPort(hp)
+		if err != nil {
+			if strings.Contains(err.Error(), "missing port in address") {
+				host = hp
+				port = "53"
+			} else {
+				return c.Errf("%v: %v", dir, err)
+			}
+		} else {
+			if port, err := strconv.Atoi(port); err != nil || port <= 0 {
+				if err == nil {
+					err =  fmt.Errorf("non-positive port %v", port)
+				}
+				return c.Errf("%v: %v", dir, err)
+			}
+		}
+
+		if strings.HasPrefix(host, "[") {
+			if !strings.HasSuffix(host, "]") {
+				panic(fmt.Sprintf("Why %q doesn't have close bracket?!", host))
+			}
+			// Strip the brackets
+			host = host[1:len(host)-1]
+		}
+
+		// XXX: Doesn't support IPv6 with zone
+		ip := net.ParseIP(host)
+		if ip == nil {
+			return c.Errf("%v: %q isn't a valid IP address", dir, host)
+		}
+		if ip.To4() != nil {
+			hp = ip.String() + ":" + port
+		} else {
+			if ip.To16() == nil {
+				panic(fmt.Sprintf("%v: expected an IPv6 address, got %v", dir, ip))
+			}
+			hp = "[" + ip.String() + "]:" + port
+		}
+
+		list = append(list, hp)
+	}
+
+	u.bootstrap = append(u.bootstrap, list...)
+	log.Infof("%v: %v", dir, list)
 	return nil
 }
 

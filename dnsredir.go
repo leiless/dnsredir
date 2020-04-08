@@ -7,13 +7,17 @@ package dnsredir
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/debug"
 	"github.com/coredns/coredns/plugin/metrics"
 	clog "github.com/coredns/coredns/plugin/pkg/log"
 	"github.com/coredns/coredns/request"
+	goipset "github.com/digineo/go-ipset/v2"
 	"github.com/miekg/dns"
+	"net"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"time"
 )
@@ -118,6 +122,7 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 		}
 
 		_ = w.WriteMsg(reply)
+		addToIpset(upstream, reply)
 
 		RequestDuration.WithLabelValues(server, host.Name()).Observe(float64(time.Since(start).Milliseconds()))
 		RequestCount.WithLabelValues(server, host.Name()).Inc()
@@ -153,6 +158,47 @@ func healthCheck(r *reloadableUpstream, uh *UpstreamHost) {
 			_ = uh.Check()
 		}
 	}(uh)
+}
+
+// Taken from https://github.com/missdeer/ipset/blob/master/reverter.go#L32 with modification
+func addToIpset(r *reloadableUpstream, reply *dns.Msg) {
+	if len(r.ipset[0]) == 0 && len(r.ipset[1]) == 0 {
+		return
+	}
+
+	for _, rr := range reply.Answer {
+		if rr.Header().Rrtype != dns.TypeA && rr.Header().Rrtype != dns.TypeAAAA {
+			continue
+		}
+
+		ss := strings.Split(rr.String(), "\t")
+		if len(ss) != 5 {
+			log.Warningf("Expected 5 entries, got %v: %q", len(ss), rr.String())
+			continue
+		}
+
+		ip := net.ParseIP(ss[4])
+		if ip == nil {
+			log.Warningf("addToIpset(): %q isn't a valid IP address", ss[4])
+			continue
+		}
+
+		var i int
+		if ip.To4() != nil {
+			i = 0
+		} else {
+			if ip.To16() == nil {
+				panic(fmt.Sprintf("Why %q isn't a valid IPv6 address?!", ip))
+			}
+			i = 1
+		}
+		for name := range r.ipset[i] {
+			err := r.ipsetConn.Add(name, goipset.NewEntry(goipset.EntryIP(ip)))
+			if err != nil {
+				log.Errorf("addToIpset(): error occurred when adding %q: %v", ip, err)
+			}
+		}
+	}
 }
 
 func (r *Dnsredir) Name() string { return pluginName }

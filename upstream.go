@@ -14,6 +14,8 @@ import (
 	pkgtls "github.com/coredns/coredns/plugin/pkg/tls"
 	"github.com/coredns/coredns/plugin/pkg/transport"
 	"github.com/miekg/dns"
+	goipset "github.com/digineo/go-ipset/v2"
+	"github.com/ti-mo/netfilter"
 	"net"
 	"os"
 	"path/filepath"
@@ -31,6 +33,8 @@ type reloadableUpstream struct {
 	*HealthCheck
 	// Bootstrap DNS in IP:Port combo
 	bootstrap []string
+	ipset [2]map[string]struct{}
+	ipsetConn *goipset.Conn
 }
 
 // reloadableUpstream implements Upstream interface
@@ -61,16 +65,24 @@ func (u *reloadableUpstream) Match(name string) bool {
 	return true
 }
 
-func (u *reloadableUpstream) Start() error {
+func (u *reloadableUpstream) Start() (err error) {
 	u.periodicUpdate(u.bootstrap)
 	u.HealthCheck.Start()
+	u.ipsetConn, err = goipset.Dial(netfilter.ProtoUnspec, nil)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func (u *reloadableUpstream) Stop() error {
+func (u *reloadableUpstream) Stop() (err error) {
 	close(u.stopPathReload)
 	close(u.stopUrlReload)
 	u.HealthCheck.Stop()
+	err = u.ipsetConn.Close()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -403,6 +415,10 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		if err := parseBootstrap(c, u); err != nil {
 			return err
 		}
+	case "ipset":
+		if err := parseIpset(c, u); err != nil {
+			return err
+		}
 	default:
 		if len(c.RemainingArgs()) != 0 ||!u.inline.Add(dir) {
 			return c.Errf("unknown property: %q", dir)
@@ -544,6 +560,35 @@ func parseBootstrap(c *caddy.Controller, u *reloadableUpstream) error {
 
 	u.bootstrap = append(u.bootstrap, list...)
 	log.Infof("%v: %v", dir, list)
+	return nil
+}
+
+func parseIpset(c *caddy.Controller, u *reloadableUpstream) error {
+	dir := c.Val()
+	args := c.RemainingArgs()
+	if len(args) <= 1 {
+		return c.ArgErr()
+	}
+	ipType, err := strconv.Atoi(args[0])
+	if err != nil {
+		return c.Errf("%v: %v", dir, err)
+	}
+	var i int
+	if ipType == 4 {
+		i = 0
+	} else if ipType == 6 {
+		i = 1
+	} else {
+		return c.Errf("%v: unknown ipset family type: %q", dir, ipType)
+	}
+	if u.ipset[i] == nil {
+		u.ipset[i] = make(map[string]struct{})
+	}
+	names := args[1:]
+	for _, name := range names {
+		u.ipset[i][name] = struct{}{}
+	}
+	log.Infof("%v: IPv%v %v", dir, ipType, names)
 	return nil
 }
 

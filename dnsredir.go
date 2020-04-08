@@ -121,8 +121,10 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 			return 0, nil
 		}
 
-		_ = w.WriteMsg(reply)
+		// Add resolved IPs to ipset before write response to DNS resolver
+		// 	thus iptables and ip6tables can take effect immediately
 		addToIpset(upstream, reply)
+		_ = w.WriteMsg(reply)
 
 		RequestDuration.WithLabelValues(server, host.Name()).Observe(float64(time.Since(start).Milliseconds()))
 		RequestCount.WithLabelValues(server, host.Name()).Inc()

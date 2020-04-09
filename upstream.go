@@ -13,9 +13,8 @@ import (
 	"github.com/coredns/coredns/plugin"
 	pkgtls "github.com/coredns/coredns/plugin/pkg/tls"
 	"github.com/coredns/coredns/plugin/pkg/transport"
-	"github.com/miekg/dns"
 	goipset "github.com/digineo/go-ipset/v2"
-	"github.com/ti-mo/netfilter"
+	"github.com/miekg/dns"
 	"net"
 	"os"
 	"path/filepath"
@@ -65,30 +64,21 @@ func (u *reloadableUpstream) Match(name string) bool {
 	return true
 }
 
-func (u *reloadableUpstream) Start() (err error) {
+func (u *reloadableUpstream) Start() error {
 	u.periodicUpdate(u.bootstrap)
 	u.HealthCheck.Start()
-	if len(u.ipset[0]) != 0 || len(u.ipset[1]) != 0 {
-		u.ipsetConn, err = goipset.Dial(netfilter.ProtoUnspec, nil)
-		if err != nil {
-			return err
-		}
-		if os.Geteuid() != 0 {
-			log.Warningf("ipset needs root user privilege to work")
-		}
+	if err := ipsetSetup(u); err != nil {
+		return err
 	}
 	return nil
 }
 
-func (u *reloadableUpstream) Stop() (err error) {
+func (u *reloadableUpstream) Stop() error {
 	close(u.stopPathReload)
 	close(u.stopUrlReload)
 	u.HealthCheck.Stop()
-	if len(u.ipset[0]) != 0 || len(u.ipset[1]) != 0 {
-		err = u.ipsetConn.Close()
-		if err != nil {
-			return err
-		}
+	if err := ipsetShutdown(u); err != nil {
+		return err
 	}
 	return nil
 }

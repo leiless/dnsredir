@@ -12,7 +12,7 @@ Like the *proxy* plugin, it also supports multiple backends, which each upstream
 
 The health check works by sending `. IN NS` to upstream host, somewhat like a ping packet in `ICMP` protocol. Any response that is not a network error(for example, `REFUSED`, `SERVFAIL`, etc.) is taken as a healthy upstream.
 
-When all upstream hosts are down this plugin can opt to fallback to randomly selecting a upstream host and sending the requests to it as last resort.
+When all upstream hosts are down this plugin can opt fallback to randomly selecting an upstream host and sending the requests to it as last resort.
 
 ## Syntax
 
@@ -71,6 +71,8 @@ dnsredir FROM... {
 	expire DURATION
 	tls CERT KEY CA
 	tls_servername NAME
+
+    ipset 4|6 SETNAME...
 }
 ```
 
@@ -131,6 +133,14 @@ Some of the options take a `DURATION` as argument, **zero time(i.e. `0`) duratio
 	For example, `cloudflare-dns.com` can be used for `1.1.1.1`(Cloudflare), and `quad9.net` can be used for `9.9.9.9`(Quad9).
 
 	Note that this is a global name, it doesn't affect the TLS server names specified in `to TO...`.
+
+* `ipset` specifies resolved IP address from `FROM...` will be added to ipset `SETNAME`s.
+
+    * `4|6` - `4` for `IPv4` set names, `6` for `IPv6` set names.
+
+    * `SETNAME...` - A group of ipset set names.
+
+    Note that this option only effective on Linux.
 
 ## Metrics
 
@@ -223,7 +233,7 @@ Sometimes you modified `Corefile` and yet Caddy server failed to reload the new 
 
 * `.`(i.e. root zone) is matched yet `INLINE` also embedded in _Server Block_(still a conflict).
 
-Also note that some of the properties are cumulative: `INLINE`, `except`, `to`, in which case `INLINE` domains should be put one domain per line.
+Also note that some of the properties are cumulative: `INLINE`, `except`, `to`, `ipset`, in which case `INLINE` domains should be put one domain per line.
 
 Rationale: Strict checking to ensure that user can detect errors ASAP, and make the `Corefile` less confusing.
 

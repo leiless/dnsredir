@@ -68,9 +68,14 @@ func (u *reloadableUpstream) Match(name string) bool {
 func (u *reloadableUpstream) Start() (err error) {
 	u.periodicUpdate(u.bootstrap)
 	u.HealthCheck.Start()
-	u.ipsetConn, err = goipset.Dial(netfilter.ProtoUnspec, nil)
-	if err != nil {
-		return err
+	if len(u.ipset[0]) != 0 || len(u.ipset[1]) != 0 {
+		u.ipsetConn, err = goipset.Dial(netfilter.ProtoUnspec, nil)
+		if err != nil {
+			return err
+		}
+		if os.Geteuid() != 0 {
+			log.Warningf("ipset needs root user privilege to work")
+		}
 	}
 	return nil
 }
@@ -79,9 +84,11 @@ func (u *reloadableUpstream) Stop() (err error) {
 	close(u.stopPathReload)
 	close(u.stopUrlReload)
 	u.HealthCheck.Stop()
-	err = u.ipsetConn.Close()
-	if err != nil {
-		return err
+	if len(u.ipset[0]) != 0 || len(u.ipset[1]) != 0 {
+		err = u.ipsetConn.Close()
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

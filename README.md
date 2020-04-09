@@ -28,7 +28,7 @@ dnsredir FROM... {
 
 * `FROM...` is the file list which contains base domain to match for the request to be redirected. URL can also be used, currently only `HTTPS` is supported(due to security reasons).
 
-    `.`(i.e. root zone) can be used solely to match all incoming requests as a fallback.
+	`.`(i.e. root zone) can be used solely to match all incoming requests as a fallback.
 
 	Two kind of formats are supported currently:
 
@@ -44,13 +44,13 @@ dnsredir FROM... {
 
 	The `to` syntax allows you to specify a protocol, a port, etc:
 
-    `[dns://]IP[:PORT]` use protocol specified in incoming DNS requests, it may `UDP` or `TCP`.
+	`[dns://]IP[:PORT]` use protocol specified in incoming DNS requests, it may `UDP` or `TCP`.
 
-    `[udp://]IP:[:PORT]` use `UDP` protocol for DNS query, even if request comes in `TCP`.
+	`[udp://]IP:[:PORT]` use `UDP` protocol for DNS query, even if request comes in `TCP`.
 
-    `[tcp://]IP:[:PORT]` use `TCP` protocol for DNS query, even if request comes in `UDP`.
+	`[tcp://]IP:[:PORT]` use `TCP` protocol for DNS query, even if request comes in `UDP`.
 
-    `tls://IP[:PORT][@TLS_SERVER_NAME]` for DNS over TLS, if you combine `:` and `@`, `@` must comes last. Be aware of some DoT servers require TLS server name as a mandatory option.
+	`tls://IP[:PORT][@TLS_SERVER_NAME]` for DNS over TLS, if you combine `:` and `@`, `@` must comes last. Be aware of some DoT servers require TLS server name as a mandatory option.
 
 An expanded syntax can be utilized to unleash of the power of `dnsredir` plugin:
 
@@ -72,7 +72,7 @@ dnsredir FROM... {
 	tls CERT KEY CA
 	tls_servername NAME
 
-    ipset 4|6 SETNAME...
+	ipset 4|6 SETNAME...
 }
 ```
 
@@ -84,9 +84,9 @@ Some of the options take a `DURATION` as argument, **zero time(i.e. `0`) duratio
 
 * `url_reload` configure URL reload interval and read timeout:
 
-    * `DURATION` specifies reload interval between each URL in `FROM...`. Default is `5m`, minimal is `10s`.
+	* `DURATION` specifies reload interval between each URL in `FROM...`. Default is `5m`, minimal is `10s`.
 
-    * `[read_timeout]` optional argument to set URL read timeout. Default is `30s`, minimal is `3s`.
+	* `[read_timeout]` optional argument to set URL read timeout. Default is `30s`, minimal is `3s`.
 
 * `INLINE` are the domain names embedded in `Corefile`, they serve as supplementaries. Note that domain names in `FROM...` will still be read. `INLINE` is forbidden if you specify `.`(i.e. root zone) as `FROM...`.
 
@@ -108,9 +108,9 @@ Some of the options take a `DURATION` as argument, **zero time(i.e. `0`) duratio
 
 * `health_check` configure the behaviour of health checking of the upstream hosts:
 
-     * `DURATION` specifies health checking interval. Default is `2s`, minimal is `1s`.
+	 * `DURATION` specifies health checking interval. Default is `2s`, minimal is `1s`.
 
-     * `[no_rec]` optional argument to set `RecursionDesired` flag to `false` for health checking. Default is `true`, i.e. recursion is desired.
+	 * `[no_rec]` optional argument to set `RecursionDesired` flag to `false` for health checking. Default is `true`, i.e. recursion is desired.
 
 * `max_fails` is the maximum number of consecutive health checking failures that are needed before considering an upstream as down. `0` to disable this feature(which the upstream will never be marked as down). Default is `3`.
 
@@ -136,11 +136,11 @@ Some of the options take a `DURATION` as argument, **zero time(i.e. `0`) duratio
 
 * `ipset` specifies resolved IP address from `FROM...` will be added to ipset `SETNAME`s.
 
-    * `4|6` - `4` for `IPv4` set names, `6` for `IPv6` set names.
+	* `4|6` - `4` for `IPv4` set names, `6` for `IPv6` set names.
 
-    * `SETNAME...` - A group of ipset set names.
+	* `SETNAME...` - A group of ipset set names.
 
-    Note that this option only effective on Linux.
+	Note that this option only effective on Linux.
 
 ## Metrics
 

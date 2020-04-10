@@ -13,7 +13,6 @@ import (
 	"github.com/coredns/coredns/plugin"
 	pkgtls "github.com/coredns/coredns/plugin/pkg/tls"
 	"github.com/coredns/coredns/plugin/pkg/transport"
-	goipset "github.com/digineo/go-ipset/v2"
 	"github.com/miekg/dns"
 	"net"
 	"os"
@@ -33,7 +32,7 @@ type reloadableUpstream struct {
 	// Bootstrap DNS in IP:Port combo
 	bootstrap []string
 	ipset [2]map[string]struct{}
-	ipsetConn *goipset.Conn
+	ipsetConn *interface{}
 }
 
 // reloadableUpstream implements Upstream interface

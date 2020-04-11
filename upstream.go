@@ -32,7 +32,7 @@ type reloadableUpstream struct {
 	// Bootstrap DNS in IP:Port combo
 	bootstrap []string
 	ipset [2]map[string]struct{}
-	ipsetConn *interface{}
+	ipsetConn interface{}
 }
 
 // reloadableUpstream implements Upstream interface

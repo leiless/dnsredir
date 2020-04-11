@@ -8,4 +8,5 @@ require (
 	github.com/digineo/go-ipset/v2 v2.2.1
 	github.com/miekg/dns v1.1.28
 	github.com/prometheus/client_golang v1.3.0
+	github.com/ti-mo/netfilter v0.2.0
 )

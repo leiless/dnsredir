@@ -27,7 +27,7 @@ func ipsetSetup(u *reloadableUpstream) (err error) {
 
 func ipsetShutdown(u *reloadableUpstream) (err error) {
 	if len(u.ipset[0]) != 0 || len(u.ipset[1]) != 0 {
-		err = u.ipsetConn.Close()
+		err = u.ipsetConn.(*goipset.Conn).Close()
 		if err != nil {
 			return err
 		}
@@ -68,7 +68,7 @@ func ipsetAddIP(r *reloadableUpstream, reply *dns.Msg) {
 			i = 1
 		}
 		for name := range r.ipset[i] {
-			err := r.ipsetConn.Add(name, goipset.NewEntry(goipset.EntryIP(ip)))
+			err := r.ipsetConn.(*goipset.Conn).Add(name, goipset.NewEntry(goipset.EntryIP(ip)))
 			if err != nil {
 				log.Errorf("addToIpset(): error occurred when adding %q: %v", ip, err)
 			}

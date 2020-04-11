@@ -505,6 +505,16 @@ func makeHttpClient(trans string) *http.Client {
 	}
 }
 
+func getRequestContentType(trans string) string {
+	switch trans {
+	case "json-doh":
+		return "application/dns-json"
+	case "ietf-doh":
+		return "application/dns-message"
+	}
+	return ""
+}
+
 func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 	args := c.RemainingArgs()
 	if len(args) == 0 {
@@ -526,6 +536,7 @@ func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 			addr: addr,
 			downFunc: checkDownFunc(u),
 			httpClient: makeHttpClient(trans),
+			requestContentType: getRequestContentType(trans),
 		}
 		u.hosts = append(u.hosts, uh)
 

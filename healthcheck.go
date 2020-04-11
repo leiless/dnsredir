@@ -179,6 +179,7 @@ type UpstreamHost struct {
 	transport *Transport
 
 	httpClient *http.Client
+	requestContentType string
 }
 
 func (uh *UpstreamHost)Name() string {
@@ -290,8 +291,13 @@ func (uh *UpstreamHost) Dial(proto string, bootstrap []string) (*persistConn, bo
 }
 
 func (uh *UpstreamHost) dohExchange(ctx context.Context, state request.Request, bootstrap []string) (*dns.Msg, error) {
-	// TODO: NYI
-	return nil, nil
+	switch uh.requestContentType {
+	case "application/dns-json":
+		return uh.jsonDnsExchange(ctx, state, bootstrap)
+	case "application/dns-message":
+		// TODO
+	}
+	panic("TODO: NYI")
 }
 
 func (uh *UpstreamHost) Exchange(ctx context.Context, state request.Request, bootstrap []string) (*dns.Msg, error) {

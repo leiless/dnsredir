@@ -4,13 +4,20 @@ package dnsredir
 
 import (
 	"fmt"
+	"github.com/caddyserver/caddy"
 	goipset "github.com/digineo/go-ipset/v2"
 	"github.com/miekg/dns"
 	"github.com/ti-mo/netfilter"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 )
+
+type ipsetHandle struct {
+	set [2]map[string]struct{}
+	conn *goipset.Conn
+}
 
 func parseIpset(c *caddy.Controller, u *reloadableUpstream) error {
 	dir := c.Val()
@@ -30,46 +37,55 @@ func parseIpset(c *caddy.Controller, u *reloadableUpstream) error {
 	} else {
 		return c.Errf("%v: unknown ipset family type: %q", dir, ipType)
 	}
-	if u.ipset[i] == nil {
-		u.ipset[i] = make(map[string]struct{})
+	if u.ipset == nil {
+		u.ipset = &ipsetHandle{}
+	}
+	set := u.ipset.(*ipsetHandle).set
+	if set[i] == nil {
+		set[i] = make(map[string]struct{})
 	}
 	names := args[1:]
 	for _, name := range names {
-		u.ipset[i][name] = struct{}{}
+		set[i][name] = struct{}{}
 	}
 	log.Infof("%v: IPv%v %v", dir, ipType, names)
 	return nil
 }
 
 func ipsetSetup(u *reloadableUpstream) (err error) {
-	if len(u.ipset[0]) != 0 || len(u.ipset[1]) != 0 {
-		u.ipsetConn, err = goipset.Dial(netfilter.ProtoUnspec, nil)
-		if err != nil {
-			return err
-		}
-		if os.Geteuid() != 0 {
-			log.Warningf("ipset needs root user privilege to work")
-		}
+	// In case of plugin block doesn't have ipset option, which u.ipset is nil
+	// panic: interface conversion: interface {} is nil, not *dnsredir.ipsetHandle
+	if u.ipset == nil {
+		return nil
+	}
+	ipset := u.ipset.(*ipsetHandle)
+	ipset.conn, err = goipset.Dial(netfilter.ProtoUnspec, nil)
+	if err != nil {
+		return err
+	}
+	if os.Geteuid() != 0 {
+		log.Warningf("ipset needs root user privilege to work")
 	}
 	return nil
 }
 
 func ipsetShutdown(u *reloadableUpstream) (err error) {
-	if len(u.ipset[0]) != 0 || len(u.ipset[1]) != 0 {
-		err = u.ipsetConn.(*goipset.Conn).Close()
-		if err != nil {
-			return err
-		}
+	if u.ipset == nil {
+		return nil
+	}
+	err = u.ipset.(*ipsetHandle).conn.Close()
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
 // Taken from https://github.com/missdeer/ipset/blob/master/reverter.go#L32 with modification
-func ipsetAddIP(r *reloadableUpstream, reply *dns.Msg) {
-	if len(r.ipset[0]) == 0 && len(r.ipset[1]) == 0 {
+func ipsetAddIP(u *reloadableUpstream, reply *dns.Msg) {
+	if u.ipset == nil {
 		return
 	}
-
+	ipset := u.ipset.(*ipsetHandle)
 	for _, rr := range reply.Answer {
 		if rr.Header().Rrtype != dns.TypeA && rr.Header().Rrtype != dns.TypeAAAA {
 			continue
@@ -96,8 +112,8 @@ func ipsetAddIP(r *reloadableUpstream, reply *dns.Msg) {
 			}
 			i = 1
 		}
-		for name := range r.ipset[i] {
-			err := r.ipsetConn.(*goipset.Conn).Add(name, goipset.NewEntry(goipset.EntryIP(ip)))
+		for name := range ipset.set[i] {
+			err := ipset.conn.Add(name, goipset.NewEntry(goipset.EntryIP(ip)))
 			if err != nil {
 				log.Errorf("addToIpset(): error occurred when adding %q: %v", ip, err)
 			}

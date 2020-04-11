@@ -8,4 +8,5 @@ Corefile
 coredns
 go.sum
 bin/
+.idea/
 

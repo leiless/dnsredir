@@ -10,6 +10,7 @@ import (
 	"io"
 	"math/rand"
 	"net"
+	"net/http"
 	"sort"
 	"strings"
 	"sync"
@@ -176,10 +177,16 @@ type UpstreamHost struct {
 	// Currently, it's the same as HealthCheck.transport since Caddy doesn't over nested blocks
 	// XXX: We may support per-upstream specific transport once Caddy supported nesting blocks in future
 	transport *Transport
+
+	httpClient *http.Client
 }
 
 func (uh *UpstreamHost)Name() string {
 	return uh.proto + "://" + uh.addr
+}
+
+func (uh *UpstreamHost)IsDOH() bool {
+	return strings.HasSuffix(uh.proto, "-doh")
 }
 
 // Taken from coredns/plugin/forward/connect.go
@@ -282,7 +289,16 @@ func (uh *UpstreamHost) Dial(proto string, bootstrap []string) (*persistConn, bo
 	return &persistConn{c:conn}, false, err
 }
 
+func (uh *UpstreamHost) dohExchange(ctx context.Context, state request.Request, bootstrap []string) (*dns.Msg, error) {
+	// TODO: NYI
+	return nil, nil
+}
+
 func (uh *UpstreamHost) Exchange(ctx context.Context, state request.Request, bootstrap []string) (*dns.Msg, error) {
+	if uh.IsDOH() {
+		return uh.dohExchange(ctx, state, bootstrap)
+	}
+
 	pc, cached, err := uh.Dial(state.Proto(), bootstrap)
 	if err != nil {
 		return nil, err

@@ -25,6 +25,8 @@ var knownTrans = []string {
 	"udp",
 	"tcp",
 	"tls",
+	"json-doh",
+	"ietf-doh",
 }
 
 func SplitTransportHost(s string) (trans string, addr string) {
@@ -61,6 +63,10 @@ func HostPort(servers []string) ([]string, error) {
 			case "tls":
 				host, tlsName := SplitByByte(host, '@')
 				s = trans + "://" + net.JoinHostPort(host, transport.TLSPort) + tlsName
+			case "json-doh":
+				fallthrough
+			case "ietf-doh":
+				s = trans + "://" + net.JoinHostPort(host, transport.HTTPSPort)
 			default:
 				panic(fmt.Sprintf("Unknown transport %q", trans))
 			}

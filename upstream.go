@@ -15,6 +15,8 @@ import (
 	"github.com/coredns/coredns/plugin/pkg/transport"
 	"github.com/miekg/dns"
 	"net"
+	"net/http"
+	"net/http/cookiejar"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -473,6 +475,36 @@ func parseDuration(c *caddy.Controller) (time.Duration, error) {
 	return dur, c.Err(err.Error())
 }
 
+func makeHttpClient(trans string) *http.Client {
+	if !strings.HasSuffix(trans, "-doh") {
+		return nil
+	}
+
+	httpTransport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		MaxIdleConnsPerHost:   5,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+
+	// TODO: add no_cookie option to disable cookir jar
+	cookieJar, err := cookiejar.New(nil)
+	if err != nil {
+		panic(fmt.Sprintf("cookiejar.New() failed, error: %v", err))
+	}
+	return &http.Client{
+		Transport:     httpTransport,
+		Jar:           cookieJar,
+	}
+}
+
 func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 	args := c.RemainingArgs()
 	if len(args) == 0 {
@@ -493,6 +525,7 @@ func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 			// Not an error, host and tls server name will be separated later
 			addr: addr,
 			downFunc: checkDownFunc(u),
+			httpClient: makeHttpClient(trans),
 		}
 		u.hosts = append(u.hosts, uh)
 

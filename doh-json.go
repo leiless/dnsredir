@@ -115,6 +115,13 @@ func (uh *UpstreamHost) jsonDnsParseResponse(state request.Request, resp *http.R
 		log.Warningf("DNS error when query %q: %v", state.Name(), respJSON.Comment)
 	}
 
+	// [#1] Fix Cloudflare JSON-DOH HINFO response empty name in SOA Authority
+	if state.Req.Question[0].Qtype == dns.TypeHINFO {
+		if len(respJSON.Authority) == 1 && respJSON.Authority[0].Type == dns.TypeSOA && respJSON.Authority[0].Name == "" {
+			respJSON.Authority[0].Name = "."
+		}
+	}
+
 	udpSize := state.Size()
 	if udpSize < dns.MinMsgSize {
 		udpSize = dns.MinMsgSize

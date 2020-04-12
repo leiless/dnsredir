@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"net/http/cookiejar"
 	"sort"
 	"strings"
 	"sync"
@@ -188,6 +189,61 @@ func (uh *UpstreamHost)Name() string {
 
 func (uh *UpstreamHost)IsDOH() bool {
 	return uh.proto == "https"
+}
+
+func (uh *UpstreamHost)InitDOH(u *reloadableUpstream) {
+	if !strings.HasSuffix(uh.proto, "-doh") {
+		return
+	}
+
+	var resolver *net.Resolver
+	if len(u.bootstrap) != 0 {
+		resolver = &net.Resolver{
+			PreferGo: true,
+			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+				var d net.Dialer
+				// Randomly choose a bootstrap DNS to resolve upstream host(if any)
+				addr := u.bootstrap[rand.Intn(len(u.bootstrap))]
+				return d.DialContext(ctx, network, addr)
+			},
+		}
+	} else {
+		// Fallback to use system default resolvers, which located at /etc/resolv.conf
+	}
+
+	httpTransport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			Resolver: resolver,
+		}).DialContext,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		MaxIdleConnsPerHost:   5,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+
+	// TODO: add no_cookie option to disable cookir jar
+	cookieJar, err := cookiejar.New(nil)
+	if err != nil {
+		panic(fmt.Sprintf("cookiejar.New() failed, error: %v", err))
+	}
+	switch uh.proto {
+	case "json-doh":
+		uh.requestContentType = "application/dns-json"
+	case "ietf-doh":
+		uh.requestContentType = "application/dns-message"
+	default:
+		panic(fmt.Sprintf("Unknown DOH protocol %q", uh.proto))
+	}
+	uh.proto = "https"
+	uh.httpClient = &http.Client{
+		Transport:     httpTransport,
+		Jar:           cookieJar,
+	}
 }
 
 // Taken from coredns/plugin/forward/connect.go

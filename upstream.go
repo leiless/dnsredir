@@ -15,8 +15,6 @@ import (
 	"github.com/coredns/coredns/plugin/pkg/transport"
 	"github.com/miekg/dns"
 	"net"
-	"net/http"
-	"net/http/cookiejar"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -179,6 +177,7 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 			TLSConfig: host.transport.tlsConfig,
 			Timeout:   defaultHcTimeout,
 		}
+		host.InitDOH(u)
 	}
 
 	if err := u.inline.ForEachDomain(func(name string) error {
@@ -475,46 +474,6 @@ func parseDuration(c *caddy.Controller) (time.Duration, error) {
 	return dur, c.Err(err.Error())
 }
 
-func makeHttpClient(trans string) *http.Client {
-	if !strings.HasSuffix(trans, "-doh") {
-		return nil
-	}
-
-	httpTransport := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
-		}).DialContext,
-		ForceAttemptHTTP2:     true,
-		MaxIdleConns:          100,
-		MaxIdleConnsPerHost:   5,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-	}
-
-	// TODO: add no_cookie option to disable cookir jar
-	cookieJar, err := cookiejar.New(nil)
-	if err != nil {
-		panic(fmt.Sprintf("cookiejar.New() failed, error: %v", err))
-	}
-	return &http.Client{
-		Transport:     httpTransport,
-		Jar:           cookieJar,
-	}
-}
-
-func getRequestContentType(trans string) string {
-	switch trans {
-	case "json-doh":
-		return "application/dns-json"
-	case "ietf-doh":
-		return "application/dns-message"
-	}
-	return ""
-}
-
 func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 	args := c.RemainingArgs()
 	if len(args) == 0 {
@@ -530,19 +489,11 @@ func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 		trans, addr := SplitTransportHost(host)
 		log.Infof("Transport: %v Address: %v", trans, addr)
 
-		httpClient := makeHttpClient(trans)
-		requestContentType := getRequestContentType(trans)
-		if strings.HasSuffix(trans, "-doh") {
-			trans = "https"
-		}
-
 		uh := &UpstreamHost{
 			proto: trans,
 			// Not an error, host and tls server name will be separated later
 			addr: addr,
 			downFunc: checkDownFunc(u),
-			httpClient: httpClient,
-			requestContentType: requestContentType,
 		}
 		u.hosts = append(u.hosts, uh)
 

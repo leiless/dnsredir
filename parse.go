@@ -47,9 +47,11 @@ func HostPort(servers []string) ([]string, error) {
 		trans, host := SplitTransportHost(h)
 		addr, _, err := net.SplitHostPort(host)
 		if err != nil {
-			// Parse didn't work, it is not an addr:port combo
-			if _, ok := stringToDomain(host); !ok && net.ParseIP(stripZoneAndTlsName(host)) == nil {
-				return nil, fmt.Errorf("#1 not a domain name or an IP address: %q", host)
+			if !strings.HasSuffix(trans, "-doh") {
+				// Parse didn't work, it is not an addr:port combo
+				if _, ok := stringToDomain(host); !ok && net.ParseIP(stripZoneAndTlsName(host)) == nil {
+					return nil, fmt.Errorf("#1 not a domain name or an IP address: %q", host)
+				}
 			}
 
 			var s string
@@ -66,7 +68,7 @@ func HostPort(servers []string) ([]string, error) {
 			case "json-doh":
 				fallthrough
 			case "ietf-doh":
-				s = trans + "://" + net.JoinHostPort(host, transport.HTTPSPort)
+				s = h
 			default:
 				panic(fmt.Sprintf("Unknown transport %q", trans))
 			}

@@ -530,13 +530,19 @@ func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 		trans, addr := SplitTransportHost(host)
 		log.Infof("Transport: %v Address: %v", trans, addr)
 
+		httpClient := makeHttpClient(trans)
+		requestContentType := getRequestContentType(trans)
+		if strings.HasSuffix(trans, "-doh") {
+			trans = "https"
+		}
+
 		uh := &UpstreamHost{
 			proto: trans,
 			// Not an error, host and tls server name will be separated later
 			addr: addr,
 			downFunc: checkDownFunc(u),
-			httpClient: makeHttpClient(trans),
-			requestContentType: getRequestContentType(trans),
+			httpClient: httpClient,
+			requestContentType: requestContentType,
 		}
 		u.hosts = append(u.hosts, uh)
 

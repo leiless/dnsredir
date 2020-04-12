@@ -64,7 +64,7 @@ func (uh *UpstreamHost) jsonDnsExchange(ctx context.Context, state request.Reque
 	if err != nil {
 		return nil, err
 	}
-	defer Close(req.Response.Body)
+	defer Close(resp.Body)
 
 	contentType := strings.SplitN(resp.Header.Get("Content-Type"), ";", 2)[0]
 	switch contentType {
@@ -88,7 +88,7 @@ func (uh *UpstreamHost) jsonDnsExchange(ctx context.Context, state request.Reque
 func (uh *UpstreamHost) jsonDnsParseResponse(state request.Request, resp *http.Response, contentType string) (*dns.Msg, error) {
 	if resp.StatusCode != http.StatusOK {
 		if contentType != uh.requestContentType {
-			return nil, fmt.Errorf("DOH upstream %v error: bad status: %v content type: %v",
+			return nil, fmt.Errorf("upstream %v error: bad status: %v content type: %v",
 				uh.Name(), resp.StatusCode, contentType)
 		}
 	}
@@ -111,7 +111,8 @@ func (uh *UpstreamHost) jsonDnsParseResponse(state request.Request, resp *http.R
 	if udpSize < dns.MinMsgSize {
 		udpSize = dns.MinMsgSize
 	}
-	reply := jsonDNS.Unmarshal(state.Req, &respJSON, uint16(udpSize), 0)
+	reply := jsonDNS.PrepareReply(state.Req)
+	reply = jsonDNS.Unmarshal(reply, &respJSON, uint16(udpSize), 0)
 	return reply, nil
 }
 

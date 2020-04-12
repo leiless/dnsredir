@@ -187,7 +187,7 @@ func (uh *UpstreamHost)Name() string {
 }
 
 func (uh *UpstreamHost)IsDOH() bool {
-	return strings.HasSuffix(uh.proto, "-doh")
+	return uh.proto == "https"
 }
 
 // Taken from coredns/plugin/forward/connect.go
@@ -356,6 +356,11 @@ func (uh *UpstreamHost) Exchange(ctx context.Context, state request.Request, boo
 // Dial timeouts and empty replies are considered fails
 // 	basically anything else constitutes a healthy upstream.
 func (uh *UpstreamHost) Check() error {
+	// TODO: support over DOH
+	if uh.IsDOH() {
+		return nil
+	}
+
 	if err, rtt := uh.send(); err != nil {
 		HealthCheckFailureCount.WithLabelValues(uh.Name()).Inc()
 		atomic.AddInt32(&uh.fails, 1)

@@ -61,7 +61,7 @@ func (uh *UpstreamHost) jsonDnsExchange(ctx context.Context, state request.Reque
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Accept", "application/dns-json, application/json")
 	userAgent := fmt.Sprintf("coredns-%v %v %v", pluginName, pluginVersion, pluginVersion)
 	req.Header.Set("User-Agent", userAgent)
 
@@ -73,11 +73,14 @@ func (uh *UpstreamHost) jsonDnsExchange(ctx context.Context, state request.Reque
 
 	contentType := strings.SplitN(resp.Header.Get("Content-Type"), ";", 2)[0]
 	switch contentType {
+	case "application/dns-json":
+		fallthrough
 	case "application/json":
 		return uh.jsonDnsParseResponse(state, resp, contentType)
 	case "application/dns-message":
 		// TODO
 	default:
+		log.Warningf("Met unknown Content-Type: %q", contentType)
 		switch uh.requestContentType {
 		case "application/dns-json":
 			return uh.jsonDnsParseResponse(state, resp, contentType)

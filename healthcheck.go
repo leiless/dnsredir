@@ -202,7 +202,7 @@ func (uh *UpstreamHost)InitDOH(u *reloadableUpstream) {
 			PreferGo: true,
 			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
 				var d net.Dialer
-				// Randomly choose a bootstrap DNS to resolve upstream host(if any)
+				// Randomly choose a bootstrap DNS to resolve upstream host
 				addr := u.bootstrap[rand.Intn(len(u.bootstrap))]
 				return d.DialContext(ctx, network, addr)
 			},
@@ -214,7 +214,7 @@ func (uh *UpstreamHost)InitDOH(u *reloadableUpstream) {
 	httpTransport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
-			Timeout:   30 * time.Second,
+			Timeout:   8 * time.Second,
 			KeepAlive: 30 * time.Second,
 			Resolver: resolver,
 		}).DialContext,
@@ -222,11 +222,11 @@ func (uh *UpstreamHost)InitDOH(u *reloadableUpstream) {
 		MaxIdleConns:          100,
 		MaxIdleConnsPerHost:   5,
 		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
+		TLSHandshakeTimeout:   8 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 	}
 
-	// TODO: add no_cookie option to disable cookir jar
+	// TODO: add no_cookie option to disable cookie jar
 	cookieJar, err := cookiejar.New(nil)
 	if err != nil {
 		panic(fmt.Sprintf("cookiejar.New() failed, error: %v", err))
@@ -281,7 +281,7 @@ func dialTimeout0(network, address string, tlsConfig *tls.Config, timeout time.D
 			PreferGo: true,
 			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
 				var d net.Dialer
-				// Randomly choose a bootstrap DNS to resolve upstream host(if any)
+				// Randomly choose a bootstrap DNS to resolve upstream host
 				addr := bootstrap[rand.Intn(len(bootstrap))]
 				return d.DialContext(ctx, network, addr)
 			},

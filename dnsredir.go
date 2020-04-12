@@ -114,7 +114,7 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 			formerr := new(dns.Msg)
 			formerr.SetRcode(state.Req, dns.RcodeFormatError)
 			_ = w.WriteMsg(formerr)
-			return 0, nil
+			return dns.RcodeSuccess, nil
 		}
 
 		// Add resolved IPs to ipset before write response to DNS resolver
@@ -130,7 +130,7 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 			rc = strconv.Itoa(reply.Rcode)
 		}
 		RcodeCount.WithLabelValues(server, host.Name(), rc).Inc()
-		return 0, nil
+		return dns.RcodeSuccess, nil
 	}
 
 	if upstreamErr == nil {

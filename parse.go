@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/coredns/coredns/plugin/pkg/transport"
 	"net"
+	"net/url"
 	"strings"
 )
 
@@ -47,7 +48,11 @@ func HostPort(servers []string) ([]string, error) {
 		trans, host := SplitTransportHost(h)
 		addr, _, err := net.SplitHostPort(host)
 		if err != nil {
-			if !strings.HasSuffix(trans, "-doh") {
+			if strings.HasSuffix(trans, "-doh") {
+				if _, err := url.ParseRequestURI(h); err != nil {
+					return nil, fmt.Errorf("failed to parse %q: %v", h, err)
+				}
+			} else {
 				// Parse didn't work, it is not an addr:port combo
 				if _, ok := stringToDomain(host); !ok && net.ParseIP(stripZoneAndTlsName(host)) == nil {
 					return nil, fmt.Errorf("#1 not a domain name or an IP address: %q", host)

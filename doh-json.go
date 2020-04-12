@@ -51,6 +51,11 @@ func (uh *UpstreamHost) jsonDnsExchange(ctx context.Context, state request.Reque
 		// Disable DNSSEC validation
 		reqURL += "&cd=1"
 	}
+	if opt := r.IsEdns0(); opt != nil {
+		if opt.Do() {
+			reqURL += "&do=1"
+		}
+	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {

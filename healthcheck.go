@@ -346,19 +346,19 @@ func (uh *UpstreamHost) Dial(proto string, bootstrap []string) (*persistConn, bo
 	return &persistConn{c:conn}, false, err
 }
 
-func (uh *UpstreamHost) dohExchange(ctx context.Context, state request.Request, bootstrap []string) (*dns.Msg, error) {
+func (uh *UpstreamHost) dohExchange(ctx context.Context, state *request.Request) (*dns.Msg, error) {
 	switch uh.requestContentType {
 	case "application/dns-json":
-		return uh.jsonDnsExchange(ctx, state, bootstrap)
+		return uh.jsonDnsExchange(ctx, state)
 	case "application/dns-message":
 		// TODO
 	}
 	panic("TODO: NYI")
 }
 
-func (uh *UpstreamHost) Exchange(ctx context.Context, state request.Request, bootstrap []string) (*dns.Msg, error) {
+func (uh *UpstreamHost) Exchange(ctx context.Context, state *request.Request, bootstrap []string) (*dns.Msg, error) {
 	if uh.IsDOH() {
-		return uh.dohExchange(ctx, state, bootstrap)
+		return uh.dohExchange(ctx, state)
 	}
 
 	pc, cached, err := uh.Dial(state.Proto(), bootstrap)
@@ -412,11 +412,6 @@ func (uh *UpstreamHost) Exchange(ctx context.Context, state request.Request, boo
 // Dial timeouts and empty replies are considered fails
 // 	basically anything else constitutes a healthy upstream.
 func (uh *UpstreamHost) Check() error {
-	// TODO: support over DOH
-	if uh.IsDOH() {
-		return nil
-	}
-
 	if err, rtt := uh.send(); err != nil {
 		HealthCheckFailureCount.WithLabelValues(uh.Name()).Inc()
 		atomic.AddInt32(&uh.fails, 1)
@@ -430,13 +425,36 @@ func (uh *UpstreamHost) Check() error {
 }
 
 func (uh *UpstreamHost) send() (error, time.Duration) {
-	ping := &dns.Msg{}
-	ping.SetQuestion(".", dns.TypeNS)
-	ping.MsgHdr.RecursionDesired = uh.transport.recursionDesired
+	if uh.IsDOH() {
+		return uh.dohSend()
+	}
+	return uh.udpWireFormatSend()
+}
 
+func (uh *UpstreamHost) dohSend() (error, time.Duration) {
+	req := &dns.Msg{}
+	req.SetQuestion(".", dns.TypeNS)
+	req.MsgHdr.RecursionDesired = uh.transport.recursionDesired
+	state := &request.Request{Req: req}
+	t := time.Now()
+	msg, err := uh.dohExchange(context.Background(), state)
+	rtt := time.Since(t)
+	if err != nil && msg != nil {
+		if msg.Response || msg.Opcode == dns.OpcodeQuery {
+			log.Warningf("hc: Correct DNS %v malformed response  err: %v msg: %v", uh.Name(), err, msg)
+			err = nil
+		}
+	}
+	return err, rtt
+}
+
+func (uh *UpstreamHost) udpWireFormatSend() (error, time.Duration) {
+	req := &dns.Msg{}
+	req.SetQuestion(".", dns.TypeNS)
+	req.MsgHdr.RecursionDesired = uh.transport.recursionDesired
 	t := time.Now()
 	// rtt stands for Round Trip Time, it may 0 if Exchange() failed
-	msg, rtt, err := uh.c.Exchange(ping, uh.addr)
+	msg, rtt, err := uh.c.Exchange(req, uh.addr)
 	if err != nil && rtt == 0 {
 		rtt = time.Since(t)
 	}
@@ -448,7 +466,6 @@ func (uh *UpstreamHost) send() (error, time.Duration) {
 			err = nil
 		}
 	}
-
 	return err, rtt
 }
 

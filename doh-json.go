@@ -18,7 +18,7 @@ import (
 	"strings"
 )
 
-func (uh *UpstreamHost) jsonDnsExchange(ctx context.Context, state request.Request, bootstrap []string) (*dns.Msg, error) {
+func (uh *UpstreamHost) jsonDnsExchange(ctx context.Context, state *request.Request) (*dns.Msg, error) {
 	r := state.Req
 	if r.Response {
 		return nil, fmt.Errorf("received a response packet")
@@ -93,7 +93,7 @@ func (uh *UpstreamHost) jsonDnsExchange(ctx context.Context, state request.Reque
 	panic("TODO: NYI")
 }
 
-func (uh *UpstreamHost) jsonDnsParseResponse(state request.Request, resp *http.Response, contentType string) (*dns.Msg, error) {
+func (uh *UpstreamHost) jsonDnsParseResponse(state *request.Request, resp *http.Response, contentType string) (*dns.Msg, error) {
 	if resp.StatusCode != http.StatusOK {
 		if contentType != uh.requestContentType {
 			return nil, fmt.Errorf("upstream %v error: bad status: %v content type: %v",
@@ -122,7 +122,16 @@ func (uh *UpstreamHost) jsonDnsParseResponse(state request.Request, resp *http.R
 		}
 	}
 
-	udpSize := state.Size()
+	var udpSize int
+	if state.W != nil {
+		udpSize = state.Size()
+	} else {
+		// see: healthcheck.go#UpstreamHost.dohSend()
+		q := state.Req.Question[0]
+		if q.Name != "." || q.Qtype != dns.TypeNS {
+			panic(fmt.Sprintf("Expected query is \"IN NS .\" when state.W is nil, got %v", q))
+		}
+	}
 	if udpSize < dns.MinMsgSize {
 		udpSize = dns.MinMsgSize
 	}

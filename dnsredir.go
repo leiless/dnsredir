@@ -62,7 +62,7 @@ func (r *Dnsredir) OnShutdown() error {
 }
 
 func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.Msg) (int, error) {
-	state := request.Request{W: w, Req: req}
+	state := &request.Request{W: w, Req: req}
 	name := state.Name()
 
 	server := metrics.WithServer(ctx)

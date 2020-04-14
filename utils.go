@@ -21,6 +21,9 @@ var (
 	pluginHeadCommit = "?"
 )
 
+var userAgent = fmt.Sprintf("coredns-%v %v %v", pluginName, pluginVersion, pluginHeadCommit)
+const headerAccept = "application/dns-message, application/dns-udpwireformat, application/dns-json, application/json"
+
 func PluginError(err error) error {
 	return plugin.Error(pluginName, err)
 }

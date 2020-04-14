@@ -60,8 +60,7 @@ func (uh *UpstreamHost) jsonDnsExchange(ctx context.Context, state *request.Requ
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Accept", "application/dns-json, application/json")
-	userAgent := fmt.Sprintf("coredns-%v %v %v", pluginName, pluginVersion, pluginVersion)
+	req.Header.Set("Accept", headerAccept)
 	req.Header.Set("User-Agent", userAgent)
 	return uh.httpClient.Do(req)
 }

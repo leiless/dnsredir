@@ -73,24 +73,25 @@ func (uh *UpstreamHost) jsonDnsExchange(ctx context.Context, state *request.Requ
 
 	contentType := strings.SplitN(resp.Header.Get("Content-Type"), ";", 2)[0]
 	switch contentType {
-	case "application/dns-json":
-		fallthrough
 	case "application/json":
+		fallthrough
+	case "application/dns-json":
 		return uh.jsonDnsParseResponse(state, resp, contentType)
 	case "application/dns-message":
-		// TODO
+		fallthrough
+	case "application/dns-udpwireformat":
+		return uh.ietfDnsParseResponse(state, resp, contentType)
 	default:
 		log.Warningf("Met unknown Content-Type: %q", contentType)
 		switch uh.requestContentType {
 		case "application/dns-json":
 			return uh.jsonDnsParseResponse(state, resp, contentType)
 		case "application/dns-message":
-			// TODO
+			return uh.ietfDnsParseResponse(state, resp, contentType)
 		default:
 			panic(fmt.Sprintf("Unknown request Content-Type: %q", uh.requestContentType))
 		}
 	}
-	panic("TODO: NYI")
 }
 
 func (uh *UpstreamHost) jsonDnsParseResponse(state *request.Request, resp *http.Response, contentType string) (*dns.Msg, error) {

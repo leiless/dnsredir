@@ -351,9 +351,9 @@ func (uh *UpstreamHost) dohExchange(ctx context.Context, state *request.Request)
 	case "application/dns-json":
 		return uh.jsonDnsExchange(ctx, state)
 	case "application/dns-message":
-		// TODO
+		return uh.ietfDnsExchange(ctx, state)
 	}
-	panic("TODO: NYI")
+	panic(fmt.Sprintf("Unexpected DOH Content-Type: %q", uh.requestContentType))
 }
 
 func (uh *UpstreamHost) Exchange(ctx context.Context, state *request.Request, bootstrap []string) (*dns.Msg, error) {

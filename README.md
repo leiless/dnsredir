@@ -6,7 +6,7 @@
 
 *dnsredir* - yet another seems better forward/proxy plugin for CoreDNS, mainly focused on speed and reliable.
 
-*dnsredir* plugin works just like the *forward* plugin which re-uses already opened sockets to the upstreams. Currently, it supports `UDP`, `TCP`, and `DNS-over-TLS` and uses in continuous health checking.
+*dnsredir* plugin works just like the *forward* plugin which re-uses already opened sockets to the upstreams. Currently, it supports `UDP`, `TCP`, `DNS-over-TLS`, and `DNS-over-HTTPS` and uses in continuous health checking.
 
 Like the *proxy* plugin, it also supports multiple backends, which each upstream also supports multiple TLS server names. Load balancing features including multiple policies, health checks and failovers.
 
@@ -50,7 +50,11 @@ dnsredir FROM... {
 
 	`[tcp://]IP:[:PORT]` use `TCP` protocol for DNS query, even if request comes in `UDP`.
 
-	`tls://IP[:PORT][@TLS_SERVER_NAME]` for DNS over TLS, if you combine `:` and `@`, `@` must comes last. Be aware of some DoT servers require TLS server name as a mandatory option.
+	`tls://IP[:PORT][@TLS_SERVER_NAME]` for DNS over TLS, if you combine `:` and `@`, `@` must come last. Be aware of some DoT servers require TLS server name as a mandatory option.
+
+	`json-doh://URL` use [JSON](https://developers.google.com/speed/public-dns/docs/doh/json) `DNS over HTTPS` for DNS query.
+
+	`ietf-doh://URL` use IETF([RFC 8484](https://tools.ietf.org/html/rfc8484)) `DNS over HTTPS` for DNS query.
 
 An expanded syntax can be utilized to unleash of the power of `dnsredir` plugin:
 
@@ -71,6 +75,7 @@ dnsredir FROM... {
 	expire DURATION
 	tls CERT KEY CA
 	tls_servername NAME
+	bootstrap BOOTSTRAP...
 
 	ipset 4|6 SETNAME...
 }
@@ -133,6 +138,8 @@ Some of the options take a `DURATION` as argument, **zero time(i.e. `0`) duratio
 	For example, `cloudflare-dns.com` can be used for `1.1.1.1`(Cloudflare), and `quad9.net` can be used for `9.9.9.9`(Quad9).
 
 	Note that this is a global name, it doesn't affect the TLS server names specified in `to TO...`.
+
+* `bootstrap` specifies the bootstrap DNS servers(must be valid IP address) to resolve domain names in `to TO...`(if any).
 
 * `ipset` specifies resolved IP address from `FROM...` will be added to ipset `SETNAME`s.
 

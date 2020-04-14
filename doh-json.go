@@ -15,10 +15,9 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 )
 
-func (uh *UpstreamHost) jsonDnsExchange(ctx context.Context, state *request.Request) (*dns.Msg, error) {
+func (uh *UpstreamHost) jsonDnsExchange(ctx context.Context, state *request.Request) (*http.Response, error) {
 	r := state.Req
 	if r.Response {
 		return nil, fmt.Errorf("received a response packet")
@@ -64,34 +63,7 @@ func (uh *UpstreamHost) jsonDnsExchange(ctx context.Context, state *request.Requ
 	req.Header.Set("Accept", "application/dns-json, application/json")
 	userAgent := fmt.Sprintf("coredns-%v %v %v", pluginName, pluginVersion, pluginVersion)
 	req.Header.Set("User-Agent", userAgent)
-
-	resp, err := uh.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer Close(resp.Body)
-
-	contentType := strings.SplitN(resp.Header.Get("Content-Type"), ";", 2)[0]
-	switch contentType {
-	case "application/json":
-		fallthrough
-	case "application/dns-json":
-		return uh.jsonDnsParseResponse(state, resp, contentType)
-	case "application/dns-message":
-		fallthrough
-	case "application/dns-udpwireformat":
-		return uh.ietfDnsParseResponse(state, resp, contentType)
-	default:
-		log.Warningf("Met unknown Content-Type: %q", contentType)
-		switch uh.requestContentType {
-		case "application/dns-json":
-			return uh.jsonDnsParseResponse(state, resp, contentType)
-		case "application/dns-message":
-			return uh.ietfDnsParseResponse(state, resp, contentType)
-		default:
-			panic(fmt.Sprintf("Unknown request Content-Type: %q", uh.requestContentType))
-		}
-	}
+	return uh.httpClient.Do(req)
 }
 
 func (uh *UpstreamHost) jsonDnsParseResponse(state *request.Request, resp *http.Response, contentType string) (*dns.Msg, error) {

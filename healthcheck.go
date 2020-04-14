@@ -347,13 +347,45 @@ func (uh *UpstreamHost) Dial(proto string, bootstrap []string) (*persistConn, bo
 }
 
 func (uh *UpstreamHost) dohExchange(ctx context.Context, state *request.Request) (*dns.Msg, error) {
+	var (
+		resp *http.Response
+		err error
+	)
+
 	switch uh.requestContentType {
 	case "application/dns-json":
-		return uh.jsonDnsExchange(ctx, state)
+		resp, err = uh.jsonDnsExchange(ctx, state)
 	case "application/dns-message":
-		return uh.ietfDnsExchange(ctx, state)
+		resp, err = uh.ietfDnsExchange(ctx, state)
+	default:
+		panic(fmt.Sprintf("Unexpected DOH Content-Type: %q", uh.requestContentType))
 	}
-	panic(fmt.Sprintf("Unexpected DOH Content-Type: %q", uh.requestContentType))
+	if err != nil {
+		return nil, err
+	}
+	defer Close(resp.Body)
+
+	contentType := strings.SplitN(resp.Header.Get("Content-Type"), ";", 2)[0]
+	switch contentType {
+	case "application/json":
+		fallthrough
+	case "application/dns-json":
+		return uh.jsonDnsParseResponse(state, resp, contentType)
+	case "application/dns-message":
+		fallthrough
+	case "application/dns-udpwireformat":
+		return uh.ietfDnsParseResponse(state, resp, contentType)
+	default:
+		log.Warningf("Met unknown Content-Type: %q", contentType)
+		switch uh.requestContentType {
+		case "application/dns-json":
+			return uh.jsonDnsParseResponse(state, resp, contentType)
+		case "application/dns-message":
+			return uh.ietfDnsParseResponse(state, resp, contentType)
+		default:
+			panic(fmt.Sprintf("Unknown request Content-Type: %q", uh.requestContentType))
+		}
+	}
 }
 
 func (uh *UpstreamHost) Exchange(ctx context.Context, state *request.Request, bootstrap []string) (*dns.Msg, error) {

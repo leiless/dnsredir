@@ -102,6 +102,10 @@ func (uh *UpstreamHost) ietfDnsParseResponse(state *request.Request, resp *http.
 	if err := reply.Unpack(body); err != nil {
 		return nil, err
 	}
+	if reply.Id == 0 {
+		// Correct previously zeroed-out DNS request ID
+		reply.Id = state.Req.Id
+	}
 	return reply, nil
 }
 

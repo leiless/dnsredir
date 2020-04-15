@@ -192,7 +192,7 @@ func (uh *UpstreamHost)IsDOH() bool {
 }
 
 func (uh *UpstreamHost)InitDOH(u *reloadableUpstream) {
-	if !strings.HasSuffix(uh.proto, "-doh") {
+	if !strings.HasSuffix(uh.proto, "doh") {
 		return
 	}
 
@@ -236,6 +236,8 @@ func (uh *UpstreamHost)InitDOH(u *reloadableUpstream) {
 		uh.requestContentType = mimeTypeDnsJson
 	case "ietf-doh":
 		uh.requestContentType = mimeTypeDnsMessage
+	case "doh":
+		uh.requestContentType = mimeTypeDohAny
 	default:
 		panic(fmt.Sprintf("Unknown DOH protocol %q", uh.proto))
 	}
@@ -352,13 +354,23 @@ func (uh *UpstreamHost) dohExchange(ctx context.Context, state *request.Request)
 		err error
 	)
 
-	switch uh.requestContentType {
+	requestContentType := uh.requestContentType
+	if requestContentType == mimeTypeDohAny {
+		// The DOH upstream host support both JSON and RFC-8484, randomly choose one.
+		if rand.Intn(2) == 0 {
+			requestContentType = mimeTypeDnsJson
+		} else {
+			requestContentType = mimeTypeDnsMessage
+		}
+	}
+
+	switch requestContentType {
 	case mimeTypeDnsJson:
-		resp, err = uh.jsonDnsExchange(ctx, state)
+		resp, err = uh.jsonDnsExchange(ctx, state, requestContentType)
 	case mimeTypeDnsMessage:
-		resp, err = uh.ietfDnsExchange(ctx, state)
+		resp, err = uh.ietfDnsExchange(ctx, state, requestContentType)
 	default:
-		panic(fmt.Sprintf("Unexpected DOH Content-Type: %q", uh.requestContentType))
+		panic(fmt.Sprintf("Unexpected DOH Content-Type: %q", requestContentType))
 	}
 	if err != nil {
 		return nil, err
@@ -370,20 +382,20 @@ func (uh *UpstreamHost) dohExchange(ctx context.Context, state *request.Request)
 	case mimeTypeJson:
 		fallthrough
 	case mimeTypeDnsJson:
-		return uh.jsonDnsParseResponse(state, resp, contentType)
+		return uh.jsonDnsParseResponse(state, resp, contentType, requestContentType)
 	case mimeTypeDnsMessage:
 		fallthrough
 	case mimeTypeDnsUdpWireFormat:
-		return uh.ietfDnsParseResponse(state, resp, contentType)
+		return uh.ietfDnsParseResponse(state, resp, contentType, requestContentType)
 	default:
 		log.Warningf("Met unknown Content-Type: %q", contentType)
-		switch uh.requestContentType {
+		switch requestContentType {
 		case mimeTypeDnsJson:
-			return uh.jsonDnsParseResponse(state, resp, contentType)
+			return uh.jsonDnsParseResponse(state, resp, contentType, requestContentType)
 		case mimeTypeDnsMessage:
-			return uh.ietfDnsParseResponse(state, resp, contentType)
+			return uh.ietfDnsParseResponse(state, resp, contentType, requestContentType)
 		default:
-			panic(fmt.Sprintf("Unknown request Content-Type: %q", uh.requestContentType))
+			panic(fmt.Sprintf("Unknown request Content-Type: %q", requestContentType))
 		}
 	}
 }

@@ -17,7 +17,7 @@ import (
 	"strconv"
 )
 
-func (uh *UpstreamHost) jsonDnsExchange(ctx context.Context, state *request.Request) (*http.Response, error) {
+func (uh *UpstreamHost) jsonDnsExchange(ctx context.Context, state *request.Request, requestContentType string) (*http.Response, error) {
 	r := state.Req
 	if r.Response {
 		return nil, fmt.Errorf("received a response packet")
@@ -45,7 +45,7 @@ func (uh *UpstreamHost) jsonDnsExchange(ctx context.Context, state *request.Requ
 	}
 
 	reqURL := fmt.Sprintf("%v?ct=%v&name=%v&type=%v",
-		uh.Name(), uh.requestContentType, url.QueryEscape(q.Name), url.QueryEscape(QType))
+		uh.Name(), requestContentType, url.QueryEscape(q.Name), url.QueryEscape(QType))
 	if r.CheckingDisabled {
 		// Disable DNSSEC validation
 		reqURL += "&cd=1"
@@ -65,9 +65,9 @@ func (uh *UpstreamHost) jsonDnsExchange(ctx context.Context, state *request.Requ
 	return uh.httpClient.Do(req)
 }
 
-func (uh *UpstreamHost) jsonDnsParseResponse(state *request.Request, resp *http.Response, contentType string) (*dns.Msg, error) {
+func (uh *UpstreamHost) jsonDnsParseResponse(state *request.Request, resp *http.Response, contentType string, requestContentType string) (*dns.Msg, error) {
 	if resp.StatusCode != http.StatusOK {
-		if contentType != uh.requestContentType {
+		if contentType != requestContentType {
 			return nil, fmt.Errorf("upstream %v error: bad status: %v content type: %v",
 				uh.Name(), resp.StatusCode, contentType)
 		}

@@ -15,7 +15,7 @@ import (
 	"net/http"
 )
 
-func (uh *UpstreamHost) ietfDnsExchange(ctx context.Context, state *request.Request) (*http.Response, error) {
+func (uh *UpstreamHost) ietfDnsExchange(ctx context.Context, state *request.Request, requestContentType string) (*http.Response, error) {
 	r := state.Req
 	reqId := r.Id
 	// [sic]
@@ -31,7 +31,7 @@ func (uh *UpstreamHost) ietfDnsExchange(ctx context.Context, state *request.Requ
 	r.Id = reqId
 
 	reqBase64 := base64.RawURLEncoding.EncodeToString(reqBytes)
-	reqURL := fmt.Sprintf("%v?ct=%v&dns=%v", uh.Name(), uh.requestContentType, reqBase64)
+	reqURL := fmt.Sprintf("%v?ct=%v&dns=%v", uh.Name(), requestContentType, reqBase64)
 
 	var req *http.Request
 	// see:
@@ -54,9 +54,9 @@ func (uh *UpstreamHost) ietfDnsExchange(ctx context.Context, state *request.Requ
 	return uh.httpClient.Do(req)
 }
 
-func (uh *UpstreamHost) ietfDnsParseResponse(state *request.Request, resp *http.Response, contentType string) (*dns.Msg, error) {
+func (uh *UpstreamHost) ietfDnsParseResponse(state *request.Request, resp *http.Response, contentType string, requestContentType string) (*dns.Msg, error) {
 	if resp.StatusCode != http.StatusOK {
-		if contentType != uh.requestContentType {
+		if contentType != requestContentType {
 			return nil, fmt.Errorf("upstream %v error: bad status: %v content type: %v",
 				uh.Name(), resp.StatusCode, contentType)
 		}

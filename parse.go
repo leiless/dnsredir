@@ -28,6 +28,7 @@ var knownTrans = []string {
 	"tls",
 	"json-doh",
 	"ietf-doh",
+	"doh",
 }
 
 func SplitTransportHost(s string) (trans string, addr string) {
@@ -48,7 +49,7 @@ func HostPort(servers []string) ([]string, error) {
 		trans, host := SplitTransportHost(h)
 		addr, _, err := net.SplitHostPort(host)
 		if err != nil {
-			if strings.HasSuffix(trans, "-doh") {
+			if strings.HasSuffix(trans, "doh") {
 				if _, err := url.ParseRequestURI(h); err != nil {
 					return nil, fmt.Errorf("failed to parse %q: %v", h, err)
 				}
@@ -73,6 +74,8 @@ func HostPort(servers []string) ([]string, error) {
 			case "json-doh":
 				fallthrough
 			case "ietf-doh":
+				fallthrough
+			case "doh":
 				s = h
 			default:
 				panic(fmt.Sprintf("Unknown transport %q", trans))

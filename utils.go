@@ -24,11 +24,12 @@ var (
 var userAgent = fmt.Sprintf("coredns-%v %v %v", pluginName, pluginVersion, pluginHeadCommit)
 
 const (
-	mimeTypeJson = "application/json"
-	mimeTypeDnsJson = "application/dns-json"
-	mimeTypeDnsMessage = "application/dns-message"
+	mimeTypeDohAny           = "?/?"	// Dummy MIME type
+	mimeTypeJson             = "application/json"
+	mimeTypeDnsJson          = "application/dns-json"
+	mimeTypeDnsMessage       = "application/dns-message"
 	mimeTypeDnsUdpWireFormat = "application/dns-udpwireformat"
-	headerAccept = mimeTypeDnsMessage + ", " + mimeTypeDnsJson + ", " + mimeTypeDnsUdpWireFormat + ", " + mimeTypeJson
+	headerAccept             = mimeTypeDnsMessage + ", " + mimeTypeDnsJson + ", " + mimeTypeDnsUdpWireFormat + ", " + mimeTypeJson
 )
 
 func PluginError(err error) error {

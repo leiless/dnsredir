@@ -56,6 +56,26 @@ dnsredir FROM... {
 
 	`ietf-doh://URL` use IETF([RFC 8484](https://tools.ietf.org/html/rfc8484)) `DNS over HTTPS` for DNS query.
 
+	`doh://URL` randomly choose JSON or IETF `DNS over HTTPS` for DNS query, make sure the upstream host support both of type.
+
+	Example:
+
+	```
+	dns://1.1.1.1
+	8.8.8.8
+	tcp://9.9.9.9
+	udp://2606:4700:4700::1111
+
+	tls://1.1.1.1@one.one.one.one
+	tls://8.8.8.8
+	tls://dns.quad9.net
+
+	doh://cloudflare-dns.com/dns-query
+	json-doh://1.1.1.1/dns-query
+	json-doh://dns.google/resolve
+	ietf-doh://dns.quad9.net/dns-query
+	```
+
 An expanded syntax can be utilized to unleash of the power of `dnsredir` plugin:
 
 ```Corefile

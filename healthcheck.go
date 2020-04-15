@@ -233,9 +233,9 @@ func (uh *UpstreamHost)InitDOH(u *reloadableUpstream) {
 	}
 	switch uh.proto {
 	case "json-doh":
-		uh.requestContentType = "application/dns-json"
+		uh.requestContentType = mimeTypeDnsJson
 	case "ietf-doh":
-		uh.requestContentType = "application/dns-message"
+		uh.requestContentType = mimeTypeDnsMessage
 	default:
 		panic(fmt.Sprintf("Unknown DOH protocol %q", uh.proto))
 	}
@@ -353,9 +353,9 @@ func (uh *UpstreamHost) dohExchange(ctx context.Context, state *request.Request)
 	)
 
 	switch uh.requestContentType {
-	case "application/dns-json":
+	case mimeTypeDnsJson:
 		resp, err = uh.jsonDnsExchange(ctx, state)
-	case "application/dns-message":
+	case mimeTypeDnsMessage:
 		resp, err = uh.ietfDnsExchange(ctx, state)
 	default:
 		panic(fmt.Sprintf("Unexpected DOH Content-Type: %q", uh.requestContentType))
@@ -367,20 +367,20 @@ func (uh *UpstreamHost) dohExchange(ctx context.Context, state *request.Request)
 
 	contentType := strings.SplitN(resp.Header.Get("Content-Type"), ";", 2)[0]
 	switch contentType {
-	case "application/json":
+	case mimeTypeJson:
 		fallthrough
-	case "application/dns-json":
+	case mimeTypeDnsJson:
 		return uh.jsonDnsParseResponse(state, resp, contentType)
-	case "application/dns-message":
+	case mimeTypeDnsMessage:
 		fallthrough
-	case "application/dns-udpwireformat":
+	case mimeTypeDnsUdpWireFormat:
 		return uh.ietfDnsParseResponse(state, resp, contentType)
 	default:
 		log.Warningf("Met unknown Content-Type: %q", contentType)
 		switch uh.requestContentType {
-		case "application/dns-json":
+		case mimeTypeDnsJson:
 			return uh.jsonDnsParseResponse(state, resp, contentType)
-		case "application/dns-message":
+		case mimeTypeDnsMessage:
 			return uh.ietfDnsParseResponse(state, resp, contentType)
 		default:
 			panic(fmt.Sprintf("Unknown request Content-Type: %q", uh.requestContentType))

@@ -96,6 +96,7 @@ dnsredir FROM... {
 	tls CERT KEY CA
 	tls_servername NAME
 	bootstrap BOOTSTRAP...
+	no_ipv6
 
 	ipset 4|6 SETNAME...
 }
@@ -160,6 +161,8 @@ Some of the options take a `DURATION` as argument, **zero time(i.e. `0`) duratio
 	Note that this is a global name, it doesn't affect the TLS server names specified in `to TO...`.
 
 * `bootstrap` specifies the bootstrap DNS servers(must be valid IP address) to resolve domain names in `to TO...`(if any).
+
+* `no_ipv6` specifies don't try to resolve `IPv6` addresses for domain names in `bootstrap`, in other words, use `IPv4` only.
 
 * `ipset` specifies resolved IP address from `FROM...` will be added to ipset `SETNAME`s.
 

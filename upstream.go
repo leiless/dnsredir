@@ -32,6 +32,7 @@ type reloadableUpstream struct {
 	// Bootstrap DNS in IP:Port combo
 	bootstrap []string
 	ipset interface{}
+	noIPv6 bool
 }
 
 // reloadableUpstream implements Upstream interface
@@ -415,6 +416,13 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		if err := parseIpset(c, u); err != nil {
 			return err
 		}
+	case "no_ipv6":
+		args := c.RemainingArgs()
+		if len(args) != 0 {
+			return c.ArgErr()
+		}
+		u.noIPv6 = true
+		log.Infof("%v: %v", dir, u.noIPv6)
 	default:
 		if len(c.RemainingArgs()) != 0 ||!u.inline.Add(dir) {
 			return c.Errf("unknown property: %q", dir)

@@ -211,19 +211,28 @@ func (uh *UpstreamHost)InitDOH(u *reloadableUpstream) {
 		// Fallback to use system default resolvers, which located at /etc/resolv.conf
 	}
 
+	dialer := &net.Dialer{
+		Timeout:   8 * time.Second,
+		KeepAlive: 30 * time.Second,
+		Resolver: resolver,
+	}
 	httpTransport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   8 * time.Second,
-			KeepAlive: 30 * time.Second,
-			Resolver: resolver,
-		}).DialContext,
+		DialContext: dialer.DialContext,
 		ForceAttemptHTTP2:     true,
 		MaxIdleConns:          100,
 		MaxIdleConnsPerHost:   5,
 		IdleConnTimeout:       90 * time.Second,
 		TLSHandshakeTimeout:   8 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
+	}
+	if u.noIPv6 {
+		httpTransport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			if strings.HasPrefix(network, "tcp") {
+				network = "tcp4"
+			}
+			return dialer.DialContext(ctx, network, addr)
+		}
 	}
 
 	// TODO: add no_cookie option to disable cookie jar

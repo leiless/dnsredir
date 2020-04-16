@@ -162,7 +162,7 @@ Some of the options take a `DURATION` as argument, **zero time(i.e. `0`) duratio
 
 * `bootstrap` specifies the bootstrap DNS servers(must be valid IP address) to resolve domain names in `to TO...`(if any).
 
-* `no_ipv6` specifies don't try to resolve `IPv6` addresses for domain names in `bootstrap`, in other words, use `IPv4` only.
+* `no_ipv6` specifies don't try to resolve `IPv6` addresses for DNS exchange in `bootstrap`, in other words, use `IPv4` only.
 
 * `ipset` specifies resolved IP address from `FROM...` will be added to ipset `SETNAME`s.
 

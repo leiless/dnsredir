@@ -89,7 +89,7 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 
 		for {
 			t := time.Now()
-			reply, upstreamErr = host.Exchange(ctx, state, upstream.bootstrap)
+			reply, upstreamErr = host.Exchange(ctx, state, upstream.bootstrap, upstream.noIPv6)
 			log.Debugf("rtt: %v", time.Since(t))
 			if upstreamErr == errCachedConnClosed {
 				// [sic] Remote side closed conn, can only happen with TCP.

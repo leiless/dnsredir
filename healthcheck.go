@@ -235,7 +235,6 @@ func (uh *UpstreamHost)InitDOH(u *reloadableUpstream) {
 		}
 	}
 
-	// TODO: add no_cookie option to disable cookie jar
 	cookieJar, err := cookiejar.New(nil)
 	if err != nil {
 		panic(fmt.Sprintf("cookiejar.New() failed, error: %v", err))

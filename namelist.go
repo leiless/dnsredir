@@ -56,8 +56,8 @@ func (d *domainSet) Len() uint64 {
 	return n
 }
 
-func domainToIndex(str string) uint16 {
-	n := len(str)
+func domainToIndex(s string) uint16 {
+	n := len(s)
 	if n == 0 {
 		panic(fmt.Sprintf("Unexpected empty string?!"))
 	}
@@ -66,10 +66,10 @@ func domainToIndex(str string) uint16 {
 	//	Since a valid domain segment will never begin with '-'
 	//	So it can maintain balance between buckets
 	if n == 1 {
-		return (uint16('-') << 8) | uint16(str[0])
+		return (uint16('-') << 8) | uint16(s[0])
 	}
 	// The index will be encoded in big endian
-	return uint16((str[0] << 8) | str[1])
+	return (uint16(s[0]) << 8) | uint16(s[1])
 }
 
 // Return true if name added successfully, false otherwise

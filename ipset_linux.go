@@ -40,13 +40,13 @@ func parseIpset(c *caddy.Controller, u *reloadableUpstream) error {
 	if u.ipset == nil {
 		u.ipset = &ipsetHandle{}
 	}
-	set := u.ipset.(*ipsetHandle).set
-	if set[i] == nil {
-		set[i] = make(map[string]struct{})
+	h := u.ipset.(*ipsetHandle)
+	if h.set[i] == nil {
+		h.set[i] = make(map[string]struct{})
 	}
 	names := args[1:]
 	for _, name := range names {
-		set[i][name] = struct{}{}
+		h.set[i][name] = struct{}{}
 	}
 	log.Infof("%v: IPv%v %v", dir, ipType, names)
 	return nil

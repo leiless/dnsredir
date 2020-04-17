@@ -3,52 +3,36 @@
 package dnsredir
 
 import (
-	"fmt"
 	"github.com/caddyserver/caddy"
 	goipset "github.com/digineo/go-ipset/v2"
 	"github.com/miekg/dns"
 	"github.com/ti-mo/netfilter"
 	"net"
 	"os"
-	"strconv"
 	"strings"
 )
 
 type ipsetHandle struct {
-	set [2]map[string]struct{}
+	set map[string]struct{}
 	conn *goipset.Conn
 }
 
 func parseIpset(c *caddy.Controller, u *reloadableUpstream) error {
 	dir := c.Val()
-	args := c.RemainingArgs()
-	if len(args) <= 1 {
+	names := c.RemainingArgs()
+	if len(names) == 0 {
 		return c.ArgErr()
 	}
-	ipType, err := strconv.Atoi(args[0])
-	if err != nil {
-		return c.Errf("%v: %v", dir, err)
-	}
-	var i int
-	if ipType == 4 {
-		i = 0
-	} else if ipType == 6 {
-		i = 1
-	} else {
-		return c.Errf("%v: unknown ipset family type: %q", dir, ipType)
-	}
 	if u.ipset == nil {
-		u.ipset = &ipsetHandle{}
+		u.ipset = &ipsetHandle{
+			set: make(map[string]struct{}),
+		}
 	}
 	h := u.ipset.(*ipsetHandle)
-	if h.set[i] == nil {
-		h.set[i] = make(map[string]struct{})
-	}
-	names := args[1:]
 	for _, name := range names {
-		h.set[i][name] = struct{}{}
+		h.set[name] = struct{}{}
 	}
-	log.Infof("%v: IPv%v %v", dir, ipType, names)
+	log.Infof("%v: %v", dir, names)
 	return nil
 }
 
@@ -87,7 +71,8 @@ func ipsetAddIP(u *reloadableUpstream, reply *dns.Msg) {
 	}
 	ipset := u.ipset.(*ipsetHandle)
 	for _, rr := range reply.Answer {
-		if rr.Header().Rrtype != dns.TypeA && rr.Header().Rrtype != dns.TypeAAAA {
+		rrType := rr.Header().Rrtype
+		if rrType != dns.TypeA && rrType != dns.TypeAAAA {
 			continue
 		}
 
@@ -99,23 +84,29 @@ func ipsetAddIP(u *reloadableUpstream, reply *dns.Msg) {
 
 		ip := net.ParseIP(ss[4])
 		if ip == nil {
-			log.Warningf("addToIpset(): %q isn't a valid IP address", ss[4])
+			log.Warningf("ipsetAddIP(): %q isn't a valid IP address", ss[4])
 			continue
 		}
 
-		var i int
-		if ip.To4() != nil {
-			i = 0
-		} else {
-			if ip.To16() == nil {
-				panic(fmt.Sprintf("Why %q isn't a valid IPv6 address?!", ip))
-			}
-			i = 1
-		}
-		for name := range ipset.set[i] {
-			err := ipset.conn.Add(name, goipset.NewEntry(goipset.EntryIP(ip)))
+		for name := range ipset.set {
+			p, err := ipset.conn.Header(name)
 			if err != nil {
-				log.Errorf("addToIpset(): error occurred when adding %q: %v", ip, err)
+				log.Error("ipsetAddIP(): cannot get ipset %q header: %v", name, err)
+			}
+
+			var typeMatch bool
+			if uint(p.Family.Value) == uint(netfilter.ProtoIPv4) {
+				typeMatch = rrType == dns.TypeA
+			} else if uint(p.Family.Value) == uint(netfilter.ProtoIPv6) {
+				typeMatch = rrType == dns.TypeAAAA
+			}
+			if !typeMatch {
+				continue
+			}
+
+			err = ipset.conn.Add(name, goipset.NewEntry(goipset.EntryIP(ip)))
+			if err != nil {
+				log.Errorf("ipsetAddIP(): cannot add %q to ipset %q: %v", ip, name, err)
 			}
 		}
 	}

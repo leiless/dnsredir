@@ -98,7 +98,7 @@ dnsredir FROM... {
 	bootstrap BOOTSTRAP...
 	no_ipv6
 
-	ipset 4|6 SETNAME...
+	ipset SETNAME...
 }
 ```
 
@@ -164,13 +164,9 @@ Some of the options take a `DURATION` as argument, **zero time(i.e. `0`) duratio
 
 * `no_ipv6` specifies don't try to resolve `IPv6` addresses for DNS exchange in `bootstrap`, in other words, use `IPv4` only.
 
-* `ipset` specifies resolved IP address from `FROM...` will be added to ipset `SETNAME`s.
+* `ipset` specifies resolved IP address from `FROM...` will be added to ipset `SETNAME...`.
 
-	* `4|6` - `4` for `IPv4` set names, `6` for `IPv6` set names.
-
-	* `SETNAME...` - A group of ipset set names.
-
-	Note that this option only effective on Linux.
+	Note that only `IPv4`, `IPv6` protocol family are supported, and this option only effective on Linux.
 
 ## Metrics
 

@@ -86,13 +86,7 @@ func (uh *UpstreamHost) jsonDnsParseResponse(state *request.Request, resp *http.
 	if respJSON.Status != dns.RcodeSuccess && respJSON.Comment != "" {
 		log.Warningf("DNS error when query %q: %v", state.Name(), respJSON.Comment)
 	}
-
-	// [#1] Fix Cloudflare JSON-DOH HINFO response empty name in SOA Authority
-	if state.Req.Question[0].Qtype == dns.TypeHINFO {
-		if len(respJSON.Authority) == 1 && respJSON.Authority[0].Type == dns.TypeSOA && respJSON.Authority[0].Name == "" {
-			respJSON.Authority[0].Name = "."
-		}
-	}
+	fixEmptyNames(&respJSON)
 
 	var udpSize int
 	if state.W != nil {
@@ -110,5 +104,21 @@ func (uh *UpstreamHost) jsonDnsParseResponse(state *request.Request, resp *http.
 	reply := jsonDNS.PrepareReply(state.Req)
 	reply = jsonDNS.Unmarshal(reply, &respJSON, uint16(udpSize), 0)
 	return reply, nil
+}
+
+// [#2] Fix DNS response empty []RR.Name in DOH JSON API
+// Additional section won't be rectified
+// see: https://stackoverflow.com/questions/52136176/what-is-additional-section-in-dns-and-how-it-works
+func fixEmptyNames(respJSON *jsonDNS.Response) {
+	for i := range respJSON.Answer {
+		if respJSON.Answer[i].Name == "" {
+			respJSON.Answer[i].Name = "."
+		}
+	}
+	for i := range respJSON.Authority {
+		if respJSON.Authority[i].Name == "" {
+			respJSON.Authority[i].Name = "."
+		}
+	}
 }
 

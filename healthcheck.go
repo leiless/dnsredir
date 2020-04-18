@@ -404,7 +404,6 @@ func (uh *UpstreamHost) dohExchange(ctx context.Context, state *request.Request)
 	case mimeTypeDnsUdpWireFormat:
 		return uh.ietfDnsParseResponse(state, resp, contentType, requestContentType)
 	default:
-		log.Warningf("Met unknown Content-Type: %q", contentType)
 		switch requestContentType {
 		case mimeTypeDnsJson:
 			return uh.jsonDnsParseResponse(state, resp, contentType, requestContentType)

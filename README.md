@@ -10,7 +10,7 @@
 
 Like the *proxy* plugin, it also supports multiple backends, which each upstream also supports multiple TLS server names. Load balancing features including multiple policies, health checks and failovers.
 
-The health check works by sending `. IN NS` to upstream host, somewhat like a ping packet in `ICMP` protocol. Any response that is not a network error(for example, `REFUSED`, `SERVFAIL`, etc.) is taken as a healthy upstream.
+The health check works by sending `. IN NS` to upstream host. Any response that is not a network error(for example, `REFUSED`, `SERVFAIL`, etc.) is taken as a healthy upstream.
 
 When all upstream hosts are down this plugin can opt fallback to randomly selecting an upstream host and sending the requests to it as last resort.
 
@@ -166,7 +166,9 @@ Some of the options take a `DURATION` as argument, **zero time(i.e. `0`) duratio
 
 * `ipset` specifies resolved IP address from `FROM...` will be added to ipset `SETNAME...`.
 
-	Note that only `IPv4`, `IPv6` protocol family are supported, and this option only effective on Linux.
+	Note that only `IPv4`, `IPv6` protocol families are supported, and this option only effective on Linux.
+
+	`SETNAME...` must be present, otherwise add IP will be failed.
 
 ## Metrics
 
@@ -185,59 +187,6 @@ If monitoring is enabled (via the _prometheus_ plugin) then the following metric
 * `coredns_dnsredir_hc_all_down_count_total{to}` - counter of when all upstreams marked as down.
 
 Where `server` is the _Server Block_ address responsible for the request(and metric). `matched` is the match flag, `"1"` is it's in any name list, `"0"` otherwise.
-
-## Examples
-
-Redirect all requests to Cloudflare DNS:
-
-```Corefile
-dnsredir . {
-	to tls://1.1.1.1 tls://1.0.0.1
-	tls_servername one.one.one.one
-}
-```
-
-Redirect all requests to with different upstreams:
-
-```Corefile
-dnsredir . {
-	# 1.1.1.1 uses the global TLS server name
-	# 8.8.8.8 and 9.9.9.9 uses its own TLS server name
-	to tls://1.1.1.1 tls://8.8.8.8@dns.google tls://9.9.9.9@quad9.net
-	tls_servername cloudflare-dns.com
-}
-```
-
-Redirect domains listed in file and fallback to Google DNS:
-
-```Corefile
-dnsredir accelerated-domains.china.conf {
-	reload 3s
-	max_fails 0
-	to 114.114.114.114 223.5.5.5 119.29.29.29
-	policy round_robin
-
-	# INLINE domain
-	example.org
-	example.gov
-}
-
-dnsredir google.china.conf apple.china.conf {
-	reload 10s
-	to tls://223.5.5.5 dns://101.6.6.6 tls://223.6.6.6
-	# TLS upstreams use the global TLS server name
-	tls_servername alidns.com
-	except adservice.google.com doubleclick.net
-}
-
-dnsredir . {
-	to tls://8.8.8.8@8888.google tls://2001:4860:4860::64@dns.google
-	policy sequential
-	spray
-}
-```
-
-**TODO**: add more examples
 
 ## Caveats
 
@@ -263,19 +212,80 @@ Also note that some of the properties are cumulative: `INLINE`, `except`, `to`, 
 
 Rationale: Strict checking to ensure that user can detect errors ASAP, and make the `Corefile` less confusing.
 
+If you think you found a bug in `dnsredir`, please [issue a bug report](issues). Enhancements are also welcomed.
+
 ## Courtesy
 
-Implementation and documentation of this plugin mainly inspired by [*forward*](https://coredns.io/plugins/forward/) plugin, [*proxy*](https://coredns.io/explugins/proxy/) plugin, [*hosts*](https://coredns.io/plugins/hosts/) plugin.
+Implementation and documentation of this plugin mainly inspired by [*forward*](https://coredns.io/plugins/forward/), [*proxy*](https://coredns.io/explugins/proxy/), [*hosts*](https://coredns.io/plugins/hosts/) plugin.
+
+Part of the code inspired by [*m13253/dns-over-https*](https://github.com/m13253/dns-over-https), [*missdeer/ipset*](https://github.com/missdeer/ipset).
+
+## Examples
+
+Redirect all requests to Cloudflare DNS:
+
+```Corefile
+dnsredir . {
+	to tls://1.1.1.1 tls://1.0.0.1
+	tls_servername one.one.one.one
+
+    # Or use domain name directly, which we don't need to specify TLS server name any more
+    to tls://one.one.one.one
+    # Bootstrap DNS server used to resolve one.one.one.one
+    bootstrap 192.168.10.1
+}
+```
+
+Redirect all requests to with different upstreams:
+
+```Corefile
+dnsredir . {
+	# 1.1.1.1 uses the global TLS server name
+	# 8.8.8.8 and 9.9.9.9 uses its own TLS server name
+	to tls://1.1.1.1 tls://8.8.8.8@dns.google tls://9.9.9.9@quad9.net
+	tls_servername cloudflare-dns.com
+}
+```
+
+Redirect domains listed in file and fallback to Google DNS:
+
+```Corefile
+dnsredir accelerated-domains.china.conf {
+	reload 3s
+	max_fails 0
+	to 114.114.114.114 223.5.5.5 udp://119.29.29.29
+	policy round_robin
+
+	# INLINE domain
+	example.org
+	example.net
+}
+
+dnsredir google.china.conf apple.china.conf {
+	reload 10s
+	to tls://dns.rubyfish.cn dns://101.6.6.6
+	except adservice.google.com doubleclick.net
+}
+
+dnsredir . {
+	to tls://8.8.8.8@8888.google tls://2001:4860:4860::64@dns.google
+	policy sequential
+	spray
+}
+```
+
+Add resolved domain name IPs in list file to ipset `cn4` and `cn6`:
+
+```Corefile
+dnsredir user_custom.conf {
+    to 192.168.10.1 192.168.20.1
+    ipset cn4 cn6
+}
+```
+
+[Sample Corefile for dnsredir plugin](https://gist.github.com/leiless/5fbdeafb69d56fe737ba639ded9ac124) contain a full-featured `Corefile`, although it mainly targets for China mainland users, you can also use it as a cross reference to write your own `Corefile`.
 
 ## LICENSE
 
 *dnsredir* uses the same [LICENSE](LICENSE) as with [CoreDNS](https://github.com/coredns/coredns).
-
-## See also
-
-[CoreDNS github repository](https://github.com/coredns/coredns)
-
-[forward plugin](https://github.com/coredns/coredns/tree/master/plugin/forward)
-
-[proxy plugin](https://github.com/coredns/proxy)
 

@@ -110,7 +110,7 @@ Some of the options take a `DURATION` as argument, **zero time(i.e. `0`) duratio
 
 * `url_reload` configure URL reload interval and read timeout:
 
-	* `DURATION` specifies reload interval between each URL in `FROM...`. Default is `5m`, minimal is `10s`.
+	* `DURATION` specifies reload interval between each URL in `FROM...`. Default is `30m`, minimal is `15s`.
 
 	* `[read_timeout]` optional argument to set URL read timeout. Default is `30s`, minimal is `3s`.
 

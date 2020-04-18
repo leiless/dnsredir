@@ -576,7 +576,7 @@ const (
 	defaultMaxFails       = 3
 
 	defaultPathReloadInterval = 2 * time.Second
-	defaultUrlReloadInterval  = 5 * time.Minute
+	defaultUrlReloadInterval  = 30 * time.Minute
 	defaultUrlReadTimeout = 30 * time.Second
 
 	defaultHcInterval     = 2000 * time.Millisecond
@@ -585,7 +585,7 @@ const (
 
 const (
 	minPathReloadInterval = 1 * time.Second
-	minUrlReloadInterval  = 10 * time.Second
+	minUrlReloadInterval  = 15 * time.Second
 	minUrlReadTimeout = 3 * time.Second
 
 	minHcInterval     = 1 * time.Second

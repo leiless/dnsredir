@@ -180,3 +180,16 @@ func stringHash(str string) uint64 {
 	return h.Sum64()
 }
 
+func hostPortIsIpPort(hostport string) bool {
+	host, _, err := net.SplitHostPort(hostport)
+	if err != nil {
+		return false
+	}
+	if net.ParseIP(host) != nil {
+		return true
+	}
+	// Strip the zone, see: coredns/plugin/pkg/parse/host.go#stripZone()
+	i := strings.IndexByte(host, '%')
+	return i > 0 && net.ParseIP(host[:i]) != nil
+}
+

@@ -157,7 +157,10 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 			host.transport.tlsConfig = new(tls.Config)
 			host.transport.tlsConfig.Certificates = u.transport.tlsConfig.Certificates
 			host.transport.tlsConfig.RootCAs = u.transport.tlsConfig.RootCAs
-			host.transport.tlsConfig.ServerName = u.transport.tlsConfig.ServerName
+			// Don't set TLS server name if addr host part is already a domain name
+			if hostPortIsIpPort(addr) {
+				host.transport.tlsConfig.ServerName = u.transport.tlsConfig.ServerName
+			}
 
 			// TLS server name in tls:// takes precedence over the global one(if any)
 			if len(tlsServerName) != 0 {

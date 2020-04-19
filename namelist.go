@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/coredns/coredns/plugin"
+	"golang.org/x/net/idna"
 	"io"
 	"os"
 	"strings"
@@ -75,21 +76,29 @@ func domainToIndex(s string) uint16 {
 // Return true if name added successfully, false otherwise
 func (d *domainSet) Add(str string) bool {
 	// To reduce memory, we don't use full qualified name
-	if name, ok := stringToDomain(str); ok {
-		// To speed up name lookup, we utilized two-way hash
-		// The first one is the first two ASCII characters of the domain name
-		// The second one is the real domain set
-		// Which works somewhat like ordinary English dictionary lookup
-		s := (*d)[domainToIndex(name)]
-		if s == nil {
-			// MT-Unsafe: Initialize real domain set on demand
-			s = make(stringSet)
-			(*d)[domainToIndex(name)] = s
+
+	name, ok := stringToDomain(str)
+	if !ok {
+		var err error
+		name, err = idna.ToASCII(str)
+		// idna.ToASCII("") return no error
+		if err != nil || len(name) == 0 {
+			return false
 		}
-		s.Add(name)
-		return true
 	}
-	return false
+
+	// To speed up name lookup, we utilized two-way hash
+	// The first one is the first two ASCII characters of the domain name
+	// The second one is the real domain set
+	// Which works somewhat like ordinary English dictionary lookup
+	s := (*d)[domainToIndex(name)]
+	if s == nil {
+		// MT-Unsafe: Initialize real domain set on demand
+		s = make(stringSet)
+		(*d)[domainToIndex(name)] = s
+	}
+	s.Add(name)
+	return true
 }
 
 // for loop will exit in advance if f() return error

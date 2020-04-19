@@ -30,7 +30,7 @@ steps:
     # Do a shallow clone, silent "You are in 'detached HEAD' state..."
     - git clone --branch $TAG_NAME --depth 1 $COREDNS_URL $COREDNS_DIR 2> /dev/null
     - cd $COREDNS_DIR
-    - sed -i 's|forward:forward|forward:forward\\\\ndnsredir:dnsredir|g' plugin.cfg
+    - sed -i 's|forward:forward|dnsredir:dnsredir\\\\nforward:forward|g' plugin.cfg
     # Embed plugin HEAD commit
     - MOD_ADDR=github.com/coredns/coredns/plugin/dnsredir
     - sed -i "s|GITCOMMIT:=|CUSTOM_FLAGS=-X $MOD_ADDR.pluginVersion=$TAG -X $MOD_ADDR.pluginHeadCommit=$HEAD_COMMIT\\\\nGITCOMMIT:=|g" Makefile

@@ -91,7 +91,7 @@ func ipsetAddIP(u *reloadableUpstream, reply *dns.Msg) {
 		for name := range ipset.set {
 			p, err := ipset.conn.Header(name)
 			if err != nil {
-				log.Error("ipsetAddIP(): cannot get ipset %q header: %v", name, err)
+				log.Errorf("ipsetAddIP(): cannot get ipset %q header: %v", name, err)
 				continue
 			}
 

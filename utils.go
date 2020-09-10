@@ -142,11 +142,18 @@ func getUrlContent(url, contentType string, bootstrap []string, timeout time.Dur
 		// Fallback to use system default resolvers, which located at /etc/resolv.conf
 	}
 
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return "", err
+	}
+	// Set a fake user agent in case of access denied error
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:80.0) Gecko/20100101 Firefox/80.0")
+
 	c := &http.Client{
 		Transport: transport,	// [sic] If nil, DefaultTransport is used.
 		Timeout:   timeout,		// Q: Should be omit this field if transport isn't nil?
 	}
-	resp, err := c.Get(url)
+	resp, err := c.Do(req)
 	if err != nil {
 		return "", err
 	}

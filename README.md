@@ -2,6 +2,7 @@
 
 [![Build Status](https://cloud.drone.io/api/badges/leiless/dnsredir/status.svg)](https://cloud.drone.io/leiless/dnsredir)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20macOS-cc6600.svg)](release)
+[![Corefile](https://img.shields.io/badge/try-Corefile-bb33ff)](https://git.io/JJZ3N)
 [![License](https://img.shields.io/badge/license-Apache%202-blue)](LICENSE)
 
 ## Name

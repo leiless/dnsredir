@@ -167,9 +167,9 @@ Some of the options take a `DURATION` as argument, **zero time(i.e. `0`) duratio
 
 * `no_ipv6` specifies don't try to resolve `IPv6` addresses for DNS exchange in `bootstrap`, in other words, use `IPv4` only.
 
-* `ipset` specifies resolved IP address from `FROM...` will be added to ipset `SETNAME...`.
+* `ipset`(need *root* user privilege) specifies resolved IP address from `FROM...` will be added to ipset `SETNAME...`.
 
-    Note that only `IPv4`, `IPv6` protocol families are supported, and this option only effective on Linux.
+    Note that only `IPv4`, `IPv6` protocol families are supported, and this option **only effective** on Linux.
 
     `SETNAME...` must be present, otherwise add IP will be failed.
 
@@ -217,7 +217,7 @@ Rationale: Strict checking to ensure that user can detect errors ASAP, and make 
 
 If you think you found a bug in `dnsredir`, please [issue a bug report](issues). Enhancements are also welcomed.
 
-## Courtesy
+## Acknowledges
 
 Implementation and documentation of this plugin mainly inspired by [*forward*](https://coredns.io/plugins/forward/), [*proxy*](https://coredns.io/explugins/proxy/), [*hosts*](https://coredns.io/plugins/hosts/) plugin.
 

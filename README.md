@@ -217,7 +217,7 @@ Rationale: Strict checking to ensure that user can detect errors ASAP, and make 
 
 If you think you found a bug in `dnsredir`, please [issue a bug report](issues). Enhancements are also welcomed.
 
-## Acknowledges
+## Acknowledgments
 
 Implementation and documentation of this plugin mainly inspired by [*forward*](https://coredns.io/plugins/forward/), [*proxy*](https://coredns.io/explugins/proxy/), [*hosts*](https://coredns.io/plugins/hosts/) plugin.
 

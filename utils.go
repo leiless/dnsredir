@@ -1,9 +1,11 @@
 package dnsredir
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/coredns/coredns/plugin"
+	"golang.org/x/net/html"
 	"hash/fnv"
 	"io"
 	"io/ioutil"
@@ -106,6 +108,11 @@ func SplitByByte(s string, c byte) (string, string) {
 	return s, ""
 }
 
+func isContentType(contentType string, h *http.Header) bool {
+	t := h.Get("Content-Type")
+	return t == contentType || strings.Contains(t, contentType + ";")
+}
+
 // bootstrap: Bootstrap DNS to resolve domain names(empty array to use system defaults)
 //
 // see:
@@ -163,10 +170,19 @@ func getUrlContent(url, contentType string, bootstrap []string, timeout time.Dur
 		return "", fmt.Errorf("bad status code: %v", resp.StatusCode)
 	}
 
-	contentType1 := resp.Header.Get("Content-Type")
-	if len(contentType) != 0 {
-		if contentType1 != contentType && !strings.Contains(contentType1, contentType + ";") {
-			return "", fmt.Errorf("bad Content-Type, expect: %q got: %q", contentType, contentType1)
+	if len(contentType) != 0 && !isContentType(contentType, &resp.Header) {
+		u := strings.ToLower(url)
+		// Dirty patch to fix t.cn not redirecting problem
+		// see: https://github.com/leiless/dnsredir/issues/4
+		if strings.HasPrefix(u, "https://t.cn/") && isContentType("text/html", &resp.Header) {
+			if url, err := tcnFix(url, resp.Body); err != nil {
+				return "", err
+			} else {
+				return getUrlContent(url, contentType, bootstrap, timeout)
+			}
+		} else {
+			s := "Content-Type"
+			return "", fmt.Errorf("bad %v, expect: %q got: %q", s, contentType, resp.Header.Get(s))
 		}
 	}
 
@@ -176,6 +192,42 @@ func getUrlContent(url, contentType string, bootstrap []string, timeout time.Dur
 	}
 	// We don't use http.DetectContentType()
 	return string(content), nil
+}
+
+func tcnFix(url string, r io.Reader) (string, error) {
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		return "", err
+	}
+
+	h, err := html.Parse(bytes.NewReader(b))
+
+	var fixFunc func(*html.Node) (string, bool)
+	fixFunc = func(n *html.Node) (string, bool) {
+		if n.Type == html.ElementNode && n.Data == "p" {
+			for _, a := range n.Attr {
+				if a.Key =="class" && a.Val == "link" {
+					if n.FirstChild != nil {
+						if u := strings.ToLower(n.FirstChild.Data); strings.HasPrefix(u, "https://") {
+							return n.FirstChild.Data, true
+						}
+					}
+					break
+				}
+			}
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			if url, found := fixFunc(c); found {
+				return url, true
+			}
+		}
+		return "", false
+	}
+
+	if url, found := fixFunc(h); found {
+		return url, nil
+	}
+	return "", fmt.Errorf("cannot fix t.cn not redirecting problem, page source of %v may changed", url)
 }
 
 func stringHash(str string) uint64 {

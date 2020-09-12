@@ -13,7 +13,7 @@ import (
 )
 
 type ipsetHandle struct {
-	set map[string]struct{}
+	set StringSet
 	conn *goipset.Conn
 }
 
@@ -25,12 +25,12 @@ func parseIpset(c *caddy.Controller, u *reloadableUpstream) error {
 	}
 	if u.ipset == nil {
 		u.ipset = &ipsetHandle{
-			set: make(map[string]struct{}),
+			set: make(StringSet),
 		}
 	}
 	h := u.ipset.(*ipsetHandle)
 	for _, name := range names {
-		h.set[name] = struct{}{}
+		h.set.Add(name)
 	}
 	log.Infof("%v: %v", dir, names)
 	return nil

@@ -13,21 +13,8 @@ import (
 	"time"
 )
 
-type stringSet map[string]struct{}
 // uint16 used to store first two ASCII characters
-type domainSet map[uint16]stringSet
-
-func (s *stringSet) Add(str string) {
-	(*s)[str] = struct{}{}
-}
-
-func (s *stringSet) Contains(str string) bool {
-	if s == nil {
-		return false
-	}
-	_, ok := (*s)[str]
-	return ok
-}
+type domainSet map[uint16]StringSet
 
 func (d domainSet) String() string {
 	var sb strings.Builder
@@ -94,7 +81,7 @@ func (d *domainSet) Add(str string) bool {
 	s := (*d)[domainToIndex(name)]
 	if s == nil {
 		// MT-Unsafe: Initialize real domain set on demand
-		s = make(stringSet)
+		s = make(StringSet)
 		(*d)[domainToIndex(name)] = s
 	}
 	s.Add(name)

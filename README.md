@@ -167,7 +167,7 @@ Some of the options take a `DURATION` as argument, **zero time(i.e. `0`) duratio
 
 * `no_ipv6` specifies don't try to resolve `IPv6` addresses for DNS exchange in `bootstrap`, in other words, use `IPv4` only.
 
-* `ipset`(need *root* user privilege) specifies resolved IP address from `FROM...` will be added to ipset `SETNAME...`.
+* `ipset`(needs *root* user privilege) specifies resolved IP address from `FROM...` will be added to ipset `SETNAME...`.
 
     Note that only `IPv4`, `IPv6` protocol families are supported, and this option **only effective** on Linux.
 

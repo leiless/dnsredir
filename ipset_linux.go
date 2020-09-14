@@ -42,13 +42,13 @@ func ipsetSetup(u *reloadableUpstream) (err error) {
 	if u.ipset == nil {
 		return nil
 	}
+	if os.Geteuid() != 0 {
+		log.Warningf("ipset needs root user privilege to work")
+	}
 	ipset := u.ipset.(*ipsetHandle)
 	ipset.conn, err = goipset.Dial(netfilter.ProtoUnspec, nil)
 	if err != nil {
 		return err
-	}
-	if os.Geteuid() != 0 {
-		log.Warningf("ipset needs root user privilege to work")
 	}
 	return nil
 }
@@ -57,11 +57,7 @@ func ipsetShutdown(u *reloadableUpstream) (err error) {
 	if u.ipset == nil {
 		return nil
 	}
-	err = u.ipset.(*ipsetHandle).conn.Close()
-	if err != nil {
-		return err
-	}
-	return nil
+	return u.ipset.(*ipsetHandle).conn.Close()
 }
 
 // Taken from https://github.com/missdeer/ipset/blob/master/reverter.go#L32 with modification

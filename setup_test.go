@@ -2,7 +2,7 @@ package dnsredir
 
 import (
 	"fmt"
-	"github.com/caddyserver/caddy"
+	"github.com/coredns/caddy"
 	"strings"
 	"testing"
 )

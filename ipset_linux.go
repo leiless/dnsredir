@@ -3,7 +3,7 @@
 package dnsredir
 
 import (
-	"github.com/caddyserver/caddy"
+	"github.com/coredns/caddy"
 	goipset "github.com/digineo/go-ipset/v2"
 	"github.com/miekg/dns"
 	"github.com/ti-mo/netfilter"

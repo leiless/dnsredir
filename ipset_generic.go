@@ -3,7 +3,7 @@
 package dnsredir
 
 import (
-	"github.com/caddyserver/caddy"
+	"github.com/coredns/caddy"
 	"github.com/miekg/dns"
 	"runtime"
 	"sync/atomic"

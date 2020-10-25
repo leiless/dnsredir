@@ -80,6 +80,7 @@ func addAddr(dev int, name, anchor string, ip net.IP) (bool, error) {
 	} else {
 		return false, os.ErrInvalid
 	}
+	// see: https://stackoverflow.com/questions/35673161/convert-go-byte-to-a-c-char
 	rc := int(C.pf_add_addr(C.int(dev), C.CString(name), C.CString(anchor), (unsafe.Pointer)(&addr[0]), C.ulong(len(addr))))
 	if rc < 0 {
 		return false, translateNegatedErrno(rc)

@@ -2,7 +2,7 @@
 
 package pf
 
-// #cgo CFLAGS: -Wall -Wextra -I.
+// #cgo CFLAGS: -Wall -Wextra -Wno-unused-parameter -I.
 // #include <string.h>		// strerror(3)
 // #include <unistd.h>		// close(2)
 // #include <errno.h>		// error constants
@@ -14,7 +14,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"unsafe"
 )
 
 const errorBufSize = uint(256)
@@ -80,8 +79,10 @@ func addAddr(dev int, name, anchor string, ip net.IP) (bool, error) {
 	} else {
 		return false, os.ErrInvalid
 	}
-	// see: https://stackoverflow.com/questions/35673161/convert-go-byte-to-a-c-char
-	rc := int(C.pf_add_addr(C.int(dev), C.CString(name), C.CString(anchor), (unsafe.Pointer)(&addr[0]), C.ulong(len(addr))))
+	// see:
+	//	https://golang.org/cmd/cgo/#hdr-Go_references_to_C
+	//	https://stackoverflow.com/questions/35673161/convert-go-byte-to-a-c-char
+	rc := int(C.pf_add_addr(C.int(dev), C.CString(name), C.CString(anchor), C.CBytes(addr), C.ulong(len(addr))))
 	if rc < 0 {
 		return false, translateNegatedErrno(rc)
 	}

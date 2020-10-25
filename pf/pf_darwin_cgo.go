@@ -6,6 +6,7 @@ package pf
 // #include <string.h>		// strerror(3)
 // #include <unistd.h>		// close(2)
 // #include <errno.h>		// error constants
+// #include <stdlib.h>		// malloc(3), free(3)
 // #include "pf_darwin.h"
 import "C"
 import (
@@ -13,6 +14,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"unsafe"
 )
 
 const errorBufSize = uint(256)
@@ -36,7 +38,7 @@ func translateNegatedErrno(errno int) error {
 	switch errno {
 	case C.EINVAL:
 		return os.ErrInvalid
-	case C.ACCES:
+	case C.EACCES:
 		return os.ErrPermission
 	case C.EEXIST:
 		return os.ErrExist
@@ -56,7 +58,7 @@ func openDevPf(oflag int) (int, error) {
 }
 
 func closeDevPf(dev int) error {
-	return translateNegatedErrno(C.close_dev_pf(C.int(dev)))
+	return translateNegatedErrno(int(C.close_dev_pf(C.int(dev))))
 }
 
 // Return 	true, nil if added successfully
@@ -78,7 +80,7 @@ func addAddr(dev int, name, anchor string, ip net.IP) (bool, error) {
 	} else {
 		return false, os.ErrInvalid
 	}
-	rc := int(C.pf_add_addr(C.int(dev), C.CString(name), C.CString(anchor), C.uchar(addr), C.ulonglong(len(addr))))
+	rc := int(C.pf_add_addr(C.int(dev), C.CString(name), C.CString(anchor), (unsafe.Pointer)(&addr[0]), C.ulong(len(addr))))
 	if rc < 0 {
 		return false, translateNegatedErrno(rc)
 	}

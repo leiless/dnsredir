@@ -120,7 +120,7 @@ static int pfr_add_tables(
     return 0;
 }
 
-int pf_add_addr(int dev, const char *table_name, const char *anchor, const uint8_t *addr_buf, size_t n)
+int pf_add_addr(int dev, const char *table_name, const char *anchor, const void *addr_buf, size_t n)
 {
     BUILD_BUG_ON(sizeof(struct in_addr) != 4u);
     BUILD_BUG_ON(sizeof(struct in6_addr) != 16u);

@@ -97,6 +97,7 @@ func AddIP(u *dnsredir.ReloadableUpstream, reply *dns.Msg) {
 
 		for t := range pf.set {
 			_ = t
+			// TODO: add IP
 		}
 	}
 }

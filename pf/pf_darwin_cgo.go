@@ -11,6 +11,7 @@ import "C"
 import (
 	"errors"
 	"fmt"
+	"net"
 	"os"
 )
 
@@ -56,4 +57,30 @@ func openDevPf(oflag int) (int, error) {
 
 func closeDevPf(dev int) error {
 	return translateNegatedErrno(C.close_dev_pf(C.int(dev)))
+}
+
+// Return 	true, nil if added successfully
+//			false, nil if given name[:anchor] already exists
+func addTable(dev int, name, anchor string) (bool, error) {
+	rc := int(C.pf_add_table(C.int(dev), C.CString(name), C.CString(anchor)))
+	if rc < 0 {
+		return false, translateNegatedErrno(rc)
+	}
+	return rc != 0, nil
+}
+
+func addAddr(dev int, name, anchor string, ip net.IP) (bool, error) {
+	var addr net.IP
+	if a := ip.To4(); a != nil {
+		addr = a
+	} else if a := ip.To16(); a != nil {
+		addr = a
+	} else {
+		return false, os.ErrInvalid
+	}
+	rc := int(C.pf_add_addr(C.int(dev), C.CString(name), C.CString(anchor), C.uchar(addr), C.ulonglong(len(addr))))
+	if rc < 0 {
+		return false, translateNegatedErrno(rc)
+	}
+	return rc != 0, nil
 }

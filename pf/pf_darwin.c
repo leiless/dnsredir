@@ -16,6 +16,8 @@
 #define ASSERTF_DEF_ONCE
 #include "assertf.h"        // assert*
 
+#include "pf_darwin.h"
+
 /**
  * Add IP/IP-CIDR addresses to a given table.
  *
@@ -118,56 +120,13 @@ static int pfr_add_tables(
     return 0;
 }
 
-typedef struct {
-    union {
-        struct in_addr v4;
-        struct in6_addr v6;
-    };
-    uint8_t family;
-    uint8_t mask;
-} ip_cidr_t;
-
-static int parse_ip_cidr(const char *ip_cidr, int family, ip_cidr_t *out)
+int pf_add_addr(int dev, const char *table_name, const char *anchor, const uint8_t *addr_buf, size_t n)
 {
-    assert_nonnull(ip_cidr);
-    assert_nonnull(out);
+    BUILD_BUG_ON(sizeof(struct in_addr) != 4u);
+    BUILD_BUG_ON(sizeof(struct in6_addr) != 16u);
 
-    struct in6_addr addr;
-    // [ref] Note: the buffer pointed to by netp should be zeroed out before calling inet_net_pton()
-    // see: https://man7.org/linux/man-pages/man3/inet_net_pton.3.html#DESCRIPTION
-    bzero(&addr, sizeof(addr));
-    int mask = inet_net_pton(family, ip_cidr, &addr, sizeof(addr));
-    if (mask >= 0) {
-        assert_le(mask, 255, %d);
-
-        if (family == PF_INET) {
-            assert_le(mask, 32, %d);
-        } else {
-            assert_le(mask, 128, %d);
-            assert_eq(family, PF_INET6, %d);
-        }
-
-        if (family == PF_INET) {
-            memcpy(&out->v4, &addr, sizeof(out->v4));
-        } else {
-            out->v6 = addr;
-        }
-
-        out->family = family;
-        out->mask = mask;
-
-        return 0;
-    }
-
-    return -1;
-}
-
-/**
- * NOTE: IP-CIDR is not supported in `addr_str` of current implementation.
- */
-int pf_add_addr(int dev, const char *table_name, const char *anchor, const char *addr_str, int family)
-{
-    if (table_name == NULL || addr_str == NULL) return -EINVAL;
+    if (table_name == NULL || addr_buf == NULL) return -EINVAL;
+    if (n != 4 && n != 16) return -EINVAL;
 
     struct pfr_table tbl;
     bzero(&tbl, sizeof(tbl));
@@ -179,24 +138,15 @@ int pf_add_addr(int dev, const char *table_name, const char *anchor, const char 
         if (size >= sizeof(tbl.pfrt_anchor)) return -ENAMETOOLONG;
     }
 
-    ip_cidr_t ip;
-    if (parse_ip_cidr(addr_str, family, &ip) < 0) return -errno;
-
     struct pfr_addr addr;
     bzero(&addr, sizeof(addr));
-    if (ip.family == PF_INET) {
-        addr.pfra_ip4addr = ip.v4;
-    } else {
-        addr.pfra_ip6addr = ip.v6;
-        assert_eq(ip.family, PF_INET6, %d);
-    }
-    addr.pfra_af = ip.family;
-    addr.pfra_net = ip.mask;
+    memcpy(&addr.pfra_u, addr_buf, n);
+    addr.pfra_af = (n == 4 ? PF_INET : PF_INET6);
+    addr.pfra_net = n << 3u;
 
     int nadd = 0;
     if (pfr_add_addrs(dev, &tbl, &addr, 1, &nadd, PFR_FLAG_ATOMIC) < 0) return -errno;
     assert_ge(nadd, 0, %d);
-    if (nadd == 0) return -EEXIST;
     return nadd;
 }
 
@@ -218,7 +168,6 @@ int pf_add_table(int dev, const char *table_name, const char *anchor)
     int nadd = 0;
     if (pfr_add_tables(dev, &tbl, 1, &nadd, PFR_FLAG_ATOMIC) < 0) return -errno;
     assert_ge(nadd, 0, %d);
-    if (nadd == 0) return -EEXIST;
     return nadd;
 }
 

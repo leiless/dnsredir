@@ -158,7 +158,7 @@ func NewNameItemsWithForms(forms []string) ([]*NameItem, error) {
 		if j := strings.Index(from, "://"); j > 0 {
 			proto := strings.ToLower(from[:j])
 			if proto == "http" {
-				log.Warningf("Due to security reasons, URL %q is prohibited", from)
+				Log.Warningf("Due to security reasons, URL %q is prohibited", from)
 				continue
 			}
 			if proto != "https" {
@@ -263,9 +263,9 @@ func (n *NameList) updateItemFromPath(item *NameItem) {
 	if err != nil {
 		if os.IsNotExist(err) {
 			// File not exist already reported at setup stage
-			log.Debugf("%v", err)
+			Log.Debugf("%v", err)
 		} else {
-			log.Warningf("%v", err)
+			Log.Warningf("%v", err)
 		}
 		return
 	}
@@ -283,13 +283,13 @@ func (n *NameList) updateItemFromPath(item *NameItem) {
 		}
 	} else {
 		// Proceed parsing anyway
-		log.Warningf("%v", err)
+		Log.Warningf("%v", err)
 	}
 
 	t1 := time.Now()
 	names, totalLines := n.parse(file)
 	t2 := time.Since(t1)
-	log.Debugf("Parsed %v  time spent: %v name added: %v / %v",
+	Log.Debugf("Parsed %v  time spent: %v name added: %v / %v",
 		file.Name(), t2, names.Len(), totalLines)
 
 	item.Lock()
@@ -328,7 +328,7 @@ func (n *NameList) parse(r io.Reader) (domainSet, uint64) {
 		// Thus server=/<domain>/<ip>, server=/<domain>/, server=/<domain>/# won't be honored
 
 		if !names.Add(f[1]) {
-			log.Warningf("%q isn't a domain name", f[1])
+			Log.Warningf("%q isn't a domain name", f[1])
 		}
 	}
 
@@ -345,7 +345,7 @@ func (n *NameList) updateItemFromUrl(item *NameItem, bootstrap []string) bool {
 	content, err := getUrlContent(item.url, "text/plain", bootstrap, n.urlReadTimeout)
 	t2 := time.Since(t1)
 	if err != nil {
-		log.Warningf("Failed to update %q, err: %v", item.url, err)
+		Log.Warningf("Failed to update %q, err: %v", item.url, err)
 		return false
 	}
 
@@ -379,11 +379,11 @@ func (n *NameList) updateItemFromUrl(item *NameItem, bootstrap []string) bool {
 		}
 
 		if !names.Add(f[1]) {
-			log.Warningf("%q isn't a domain name", f[1])
+			Log.Warningf("%q isn't a domain name", f[1])
 		}
 	}
 	t4 := time.Since(t3)
-	log.Debugf("Fetched %v, time spent: %v %v, added: %v / %v, hash: %#x",
+	Log.Debugf("Fetched %v, time spent: %v %v, added: %v / %v, hash: %#x",
 				item.url, t2, t4, names.Len(), totalLines, contentHash1)
 
 	item.Lock()

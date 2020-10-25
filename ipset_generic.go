@@ -11,23 +11,23 @@ import (
 
 var warnedOnce int32
 
-func parseIpset(c *caddy.Controller, u *reloadableUpstream) error {
+func parseIpset(c *caddy.Controller, u *ReloadableUpstream) error {
 	dir := c.Val()
 	if atomic.CompareAndSwapInt32(&warnedOnce, 0, 1) {
-		log.Warningf("%v: this option isn't available on %v", dir, runtime.GOOS)
+		Log.Warningf("%v: this option isn't available on %v", dir, runtime.GOOS)
 	}
 	return nil
 }
 
-func ipsetSetup(u *reloadableUpstream) error {
+func ipsetSetup(u *ReloadableUpstream) error {
 	return nil
 }
 
-func ipsetShutdown(u *reloadableUpstream) error {
+func ipsetShutdown(u *ReloadableUpstream) error {
 	return nil
 }
 
-func ipsetAddIP(r *reloadableUpstream, reply *dns.Msg) {
+func ipsetAddIP(r *ReloadableUpstream, reply *dns.Msg) {
 
 }
 

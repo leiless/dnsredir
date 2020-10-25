@@ -1,0 +1,11 @@
+/**
+ * Created: Oct 25, 2020.
+ * License: MIT.
+ */
+
+#pragma once
+
+int pf_add_addr(int, const char *, const char *, const char *, int);
+int pf_add_table(int, const char *, const char *);
+int open_dev_pf(int);
+int close_dev_pf(int);

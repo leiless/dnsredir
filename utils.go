@@ -13,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -34,6 +35,14 @@ const (
 	headerAccept             = mimeTypeDnsMessage + ", " + mimeTypeDnsJson + ", " + mimeTypeDnsUdpWireFormat + ", " + mimeTypeJson
 )
 
+type Once int32
+
+func (o *Once) Do(f func()) {
+	if o != nil && atomic.CompareAndSwapInt32((*int32)(o), 0, 1) {
+		f()
+	}
+}
+
 func PluginError(err error) error {
 	return plugin.Error(pluginName, err)
 }
@@ -42,7 +51,7 @@ func PluginError(err error) error {
 func Close(c io.Closer) {
 	err := c.Close()
 	if err != nil {
-		log.Warningf("%v", err)
+		Log.Warningf("%v", err)
 	}
 }
 

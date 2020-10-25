@@ -4,7 +4,7 @@ import "sync/atomic"
 
 // Default downFunc used in dnsredir plugin
 // Taken from https://github.com/coredns/proxy/proxy/down.go
-var checkDownFunc = func(u *reloadableUpstream) UpstreamHostDownFunc {
+var checkDownFunc = func(u *ReloadableUpstream) UpstreamHostDownFunc {
 	return func(uh *UpstreamHost) bool {
 		fails := atomic.LoadInt32(&uh.fails)
 		return fails >= u.maxFails && u.maxFails > 0

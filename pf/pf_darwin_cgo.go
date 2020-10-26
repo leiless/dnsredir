@@ -3,29 +3,14 @@
 package pf
 
 // #cgo CFLAGS: -Wall -Wextra -Wno-unused-parameter -I.
-// #include <string.h>		// strerror(3)
-// #include <unistd.h>		// close(2)
-// #include <errno.h>		// error constants
-// #include <stdlib.h>		// malloc(3), free(3)
+// #include <stdlib.h>		// free(3)
 // #include "pf_darwin.h"
 import "C"
 import (
-	"errors"
 	"fmt"
 	"net"
 	"os"
 )
-
-const errorBufSize = uint(256)
-
-func strerror(errno int) string {
-	size := C.ulong(C.sizeof_char * errorBufSize)
-	buf := C.malloc(size)
-	defer C.free(buf)
-	// We don't care the return value, since the buf will always be filled.
-	_ = C.strerror_r(C.int(errno), (*C.char)(buf), size)
-	return C.GoString((*C.char)(buf))
-}
 
 // User should reply on the error number instead of the description.
 func translateNegatedErrno(errno int) error {
@@ -35,19 +20,8 @@ func translateNegatedErrno(errno int) error {
 	if errno > 0 {
 		panic(fmt.Sprintf("expected a negated errno value, got: %v", errno))
 	}
-	// Rectify errno
-	errno = -errno
-	switch errno {
-	case C.EINVAL:
-		return os.ErrInvalid
-	case C.EACCES:
-		return os.ErrPermission
-	case C.EEXIST:
-		return os.ErrExist
-	case C.ENOENT:
-		return os.ErrNotExist
-	default:
-		return errors.New(fmt.Sprintf("errno: %v desc: %v", errno, strerror(errno)))
+	return &ErrnoError{
+		Errno: -errno,		// Rectify errno
 	}
 }
 

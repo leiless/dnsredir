@@ -6,28 +6,29 @@ import (
 	"github.com/coredns/caddy"
 	"github.com/miekg/dns"
 	"runtime"
-	"sync/atomic"
 )
 
-var warnedOnce int32
+var ipsetOnce Once
 
-func parseIpset(c *caddy.Controller, u *reloadableUpstream) error {
-	dir := c.Val()
-	if atomic.CompareAndSwapInt32(&warnedOnce, 0, 1) {
-		log.Warningf("%v: this option isn't available on %v", dir, runtime.GOOS)
-	}
+func ipsetParse(c *caddy.Controller, u *reloadableUpstream) error {
+	_ = u
+	ipsetOnce.Do(func() {
+		dir := c.Val()
+		log.Warningf("%v is not available on %v", dir, runtime.GOOS)
+	})
 	return nil
 }
 
 func ipsetSetup(u *reloadableUpstream) error {
+	_ = u
 	return nil
 }
 
 func ipsetShutdown(u *reloadableUpstream) error {
+	_ = u
 	return nil
 }
 
 func ipsetAddIP(r *reloadableUpstream, reply *dns.Msg) {
-
+	_, _ = r, reply
 }
-

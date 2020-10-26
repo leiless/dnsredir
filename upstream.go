@@ -419,7 +419,7 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 			return err
 		}
 	case "ipset":
-		if err := parseIpset(c, u); err != nil {
+		if err := ipsetParse(c, u); err != nil {
 			return err
 		}
 	case "pf":
@@ -596,4 +596,3 @@ const (
 	minHcInterval     = 1 * time.Second
 	minExpireInterval = 1 * time.Second
 )
-

@@ -11,11 +11,11 @@ import (
 	"runtime"
 )
 
-var once Once
+var pfOnce Once
 
 func pfParse(c *caddy.Controller, u *reloadableUpstream) error {
 	_ = u
-	once.Do(func() {
+	pfOnce.Do(func() {
 		dir := c.Val()
 		log.Warningf("%v is not available on %v", dir, runtime.GOOS)
 	})

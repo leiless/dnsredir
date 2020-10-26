@@ -6,21 +6,23 @@ package pf
 import "C"
 import "fmt"
 
-type ErrnoError struct {
-	Errno int
-}
+type ErrnoError int
 
 const errorBufSize = uint(256)
 
-func strerror(errno int) string {
+func (e ErrnoError) strerror() string {
 	size := C.ulong(C.sizeof_char * errorBufSize)
 	buf := C.malloc(size)
 	defer C.free(buf)
 	// We don't care the return value, since the buf will always be filled.
-	_ = C.strerror_r(C.int(errno), (*C.char)(buf), size)
+	_ = C.strerror_r(C.int(int(e)), (*C.char)(buf), size)
 	return C.GoString((*C.char)(buf))
 }
 
-func (e *ErrnoError) Error() string {
-	return fmt.Sprintf("errno: %v desc: %v", e.Errno, strerror(e.Errno))
+func (e ErrnoError) Errno() int {
+	return int(e)
+}
+
+func (e ErrnoError) Error() string {
+	return fmt.Sprintf("errno: %v desc: %v", e, e.strerror())
 }

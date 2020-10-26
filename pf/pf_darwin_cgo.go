@@ -20,9 +20,7 @@ func translateNegatedErrno(errno int) error {
 	if errno > 0 {
 		panic(fmt.Sprintf("expected a negated errno value, got: %v", errno))
 	}
-	return &ErrnoError{
-		Errno: -errno,		// Rectify errno
-	}
+	return ErrnoError(errno)
 }
 
 func openDevPf(oflag int) (int, error) {

@@ -17,7 +17,7 @@ type ipsetHandle struct {
 	conn *goipset.Conn
 }
 
-func parseIpset(c *caddy.Controller, u *reloadableUpstream) error {
+func ipsetParse(c *caddy.Controller, u *reloadableUpstream) error {
 	dir := c.Val()
 	names := c.RemainingArgs()
 	if len(names) == 0 {

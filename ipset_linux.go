@@ -32,7 +32,7 @@ func parseIpset(c *caddy.Controller, u *ReloadableUpstream) error {
 	for _, name := range names {
 		h.set.Add(name)
 	}
-	Log.Infof("%v: %v", dir, names)
+	log.Infof("%v: %v", dir, names)
 	return nil
 }
 
@@ -43,7 +43,7 @@ func ipsetSetup(u *ReloadableUpstream) (err error) {
 		return nil
 	}
 	if os.Geteuid() != 0 {
-		Log.Warningf("ipset needs root user privilege to work")
+		log.Warningf("ipset needs root user privilege to work")
 	}
 	ipset := u.ipset.(*ipsetHandle)
 	ipset.conn, err = goipset.Dial(netfilter.ProtoUnspec, nil)
@@ -75,20 +75,20 @@ func ipsetAddIP(u *ReloadableUpstream, reply *dns.Msg) {
 
 		ss := strings.Split(rr.String(), "\t")
 		if len(ss) != 5 {
-			Log.Warningf("Expected 5 entries, got %v: %q", len(ss), rr.String())
+			log.Warningf("Expected 5 entries, got %v: %q", len(ss), rr.String())
 			continue
 		}
 
 		ip := net.ParseIP(ss[4])
 		if ip == nil {
-			Log.Warningf("ipsetAddIP(): %q isn't a valid IP address", ss[4])
+			log.Warningf("ipsetAddIP(): %q isn't a valid IP address", ss[4])
 			continue
 		}
 
 		for name := range ipset.set {
 			p, err := ipset.conn.Header(name)
 			if err != nil {
-				Log.Errorf("ipsetAddIP(): cannot get ipset %q header: %v", name, err)
+				log.Errorf("ipsetAddIP(): cannot get ipset %q header: %v", name, err)
 				continue
 			}
 
@@ -104,7 +104,7 @@ func ipsetAddIP(u *ReloadableUpstream, reply *dns.Msg) {
 
 			err = ipset.conn.Add(name, goipset.NewEntry(goipset.EntryIP(ip)))
 			if err != nil {
-				Log.Errorf("ipsetAddIP(): cannot add %q to ipset %q: %v", ip, name, err)
+				log.Errorf("ipsetAddIP(): cannot add %q to ipset %q: %v", ip, name, err)
 			}
 		}
 	}

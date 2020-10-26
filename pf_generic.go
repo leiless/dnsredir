@@ -17,7 +17,7 @@ func pfParse(c *caddy.Controller, u *ReloadableUpstream) error {
 	_ = u
 	once.Do(func() {
 		dir := c.Val()
-		Log.Warningf("%v is not available on %v", dir, runtime.GOOS)
+		log.Warningf("%v is not available on %v", dir, runtime.GOOS)
 	})
 	return nil
 }

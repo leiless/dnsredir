@@ -27,7 +27,7 @@ func stringToTransportType(s string) transportType {
 		return typeTls
 	}
 
-	Log.Warningf("Unknown protocol %q, fallback to UDP", s)
+	log.Warningf("Unknown protocol %q, fallback to UDP", s)
 	return typeUdp
 }
 

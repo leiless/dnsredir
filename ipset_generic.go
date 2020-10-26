@@ -14,7 +14,7 @@ var warnedOnce int32
 func parseIpset(c *caddy.Controller, u *ReloadableUpstream) error {
 	dir := c.Val()
 	if atomic.CompareAndSwapInt32(&warnedOnce, 0, 1) {
-		Log.Warningf("%v: this option isn't available on %v", dir, runtime.GOOS)
+		log.Warningf("%v: this option isn't available on %v", dir, runtime.GOOS)
 	}
 	return nil
 }

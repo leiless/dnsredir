@@ -51,7 +51,7 @@ func PluginError(err error) error {
 func Close(c io.Closer) {
 	err := c.Close()
 	if err != nil {
-		Log.Warningf("%v", err)
+		log.Warningf("%v", err)
 	}
 }
 

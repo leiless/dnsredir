@@ -129,7 +129,7 @@ func (t *Transport) cleanup(all bool) {
 			return stack[i].used.After(staleTime)
 		})
 		t.conns[transType] = stack[firstGood:]
-		Log.Debugf("Going to cleanup expired connection(s): %v count: %v", stack[0].c.RemoteAddr(), firstGood)
+		log.Debugf("Going to cleanup expired connection(s): %v count: %v", stack[0].c.RemoteAddr(), firstGood)
 		// now, the connections being passed to closeConns() are not reachable from
 		// transport methods anymore. So, it's safe to close them in a separate goroutine
 		go closeConns(stack[:firstGood])
@@ -425,9 +425,9 @@ func (uh *UpstreamHost) Exchange(ctx context.Context, state *request.Request, bo
 		return nil, err
 	}
 	if cached {
-		Log.Debugf("Cached connection used for %v", uh.Name())
+		log.Debugf("Cached connection used for %v", uh.Name())
 	} else {
-		Log.Debugf("New connection established for %v", uh.Name())
+		log.Debugf("New connection established for %v", uh.Name())
 	}
 
 	pc.c.UDPSize = uint16(state.Size())
@@ -474,7 +474,7 @@ func (uh *UpstreamHost) Check() error {
 	if err, rtt := uh.send(); err != nil {
 		HealthCheckFailureCount.WithLabelValues(uh.Name()).Inc()
 		atomic.AddInt32(&uh.fails, 1)
-		Log.Warningf("hc: DNS %v failed  rtt: %v err: %v", uh.Name(), rtt, err)
+		log.Warningf("hc: DNS %v failed  rtt: %v err: %v", uh.Name(), rtt, err)
 		return err
 	} else {
 		// Reset failure counter once health check success
@@ -500,7 +500,7 @@ func (uh *UpstreamHost) dohSend() (error, time.Duration) {
 	rtt := time.Since(t)
 	if err != nil && msg != nil {
 		if msg.Response || msg.Opcode == dns.OpcodeQuery {
-			Log.Warningf("hc: Correct DNS %v malformed response  err: %v msg: %v", uh.Name(), err, msg)
+			log.Warningf("hc: Correct DNS %v malformed response  err: %v msg: %v", uh.Name(), err, msg)
 			err = nil
 		}
 	}
@@ -521,7 +521,7 @@ func (uh *UpstreamHost) udpWireFormatSend() (error, time.Duration) {
 	if err != nil && msg != nil {
 		// Silly check, something sane came back.
 		if msg.Response || msg.Opcode == dns.OpcodeQuery {
-			Log.Warningf("hc: Correct DNS %v malformed response  err: %v msg: %v", uh.Name(), err, msg)
+			log.Warningf("hc: Correct DNS %v malformed response  err: %v msg: %v", uh.Name(), err, msg)
 			err = nil
 		}
 	}
@@ -536,13 +536,13 @@ type UpstreamHostPool []*UpstreamHost
 // 	to some default criteria if necessary.
 func (uh *UpstreamHost) Down() bool {
 	if uh.downFunc == nil {
-		Log.Warningf("Upstream host %v have no downFunc, fallback to default", uh.Name())
+		log.Warningf("Upstream host %v have no downFunc, fallback to default", uh.Name())
 		return atomic.LoadInt32(&uh.fails) > 0
 	}
 
 	down := uh.downFunc(uh)
 	if down {
-		Log.Debugf("%v marked as down...", uh.Name())
+		log.Debugf("%v marked as down...", uh.Name())
 		HealthCheckAllDownCount.WithLabelValues(uh.Name()).Inc()
 	}
 	return down

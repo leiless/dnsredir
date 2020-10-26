@@ -18,7 +18,7 @@ import (
 	"time"
 )
 
-var Log = clog.NewWithPlugin(pluginName)
+var log = clog.NewWithPlugin(pluginName)
 
 type Dnsredir struct {
 	Next plugin.Handler
@@ -68,11 +68,11 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 	server := metrics.WithServer(ctx)
 	upstream0, t := r.match(server, name)
 	if upstream0 == nil {
-		Log.Debugf("%q not found in name list, t: %v", name, t)
+		log.Debugf("%q not found in name list, t: %v", name, t)
 		return plugin.NextOrFailure(r.Name(), r.Next, ctx, w, req)
 	}
 	upstream := upstream0.(*ReloadableUpstream)
-	Log.Debugf("%q in name list, t: %v", name, t)
+	log.Debugf("%q in name list, t: %v", name, t)
 
 	var reply *dns.Msg
 	var upstreamErr error
@@ -82,19 +82,19 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 
 		host := upstream.Select()
 		if host == nil {
-			Log.Debug(errNoHealthy)
+			log.Debug(errNoHealthy)
 			return dns.RcodeServerFailure, errNoHealthy
 		}
-		Log.Debugf("Upstream host %v is selected", host.Name())
+		log.Debugf("Upstream host %v is selected", host.Name())
 
 		for {
 			t := time.Now()
 			reply, upstreamErr = host.Exchange(ctx, state, upstream.bootstrap, upstream.noIPv6)
-			Log.Debugf("rtt: %v", time.Since(t))
+			log.Debugf("rtt: %v", time.Since(t))
 			if upstreamErr == errCachedConnClosed {
 				// [sic] Remote side closed conn, can only happen with TCP.
 				// Retry for another connection
-				Log.Debugf("%v: %v", upstreamErr, host.Name())
+				log.Debugf("%v: %v", upstreamErr, host.Name())
 				continue
 			}
 			break
@@ -102,7 +102,7 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 
 		if upstreamErr != nil {
 			if upstream.maxFails != 0 {
-				Log.Warningf("Exchange() failed  error: %v", upstreamErr)
+				log.Warningf("Exchange() failed  error: %v", upstreamErr)
 				healthCheck(upstream, host)
 			}
 			continue

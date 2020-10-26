@@ -84,7 +84,7 @@ func (uh *UpstreamHost) jsonDnsParseResponse(state *request.Request, resp *http.
 		return nil, err
 	}
 	if respJSON.Status != dns.RcodeSuccess && respJSON.Comment != "" {
-		Log.Warningf("DNS error when query %q: %v", state.Name(), respJSON.Comment)
+		log.Warningf("DNS error when query %q: %v", state.Name(), respJSON.Comment)
 	}
 	fixEmptyNames(&respJSON)
 

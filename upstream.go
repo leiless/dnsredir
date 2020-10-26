@@ -48,7 +48,7 @@ func (u *ReloadableUpstream) Match(name string) bool {
 
 		ignored := u.ignored.Match(name)
 		if ignored {
-			Log.Debugf("#0 Skip %q since it's ignored", name)
+			log.Debugf("#0 Skip %q since it's ignored", name)
 		}
 		return !ignored
 	}
@@ -58,7 +58,7 @@ func (u *ReloadableUpstream) Match(name string) bool {
 	}
 
 	if u.ignored.Match(name) {
-		Log.Debugf("#1 Skip %q since it's ignored", name)
+		log.Debugf("#1 Skip %q since it's ignored", name)
 		return false
 	}
 	return true
@@ -202,11 +202,11 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 			return nil, c.Errf("INLINE %q is forbidden since %q will match all requests", u.inline, ".")
 		}
 		if u.pathReload != 0 {
-			Log.Debugf("Reset path_reload %v to zero since %q is matched", u.pathReload, ".")
+			log.Debugf("Reset path_reload %v to zero since %q is matched", u.pathReload, ".")
 			u.pathReload = 0
 		}
 		if u.urlReload != 0 {
-			Log.Debugf("Reset url_reload %v to zero since %q is matched", u.urlReload, ".")
+			log.Debugf("Reset url_reload %v to zero since %q is matched", u.urlReload, ".")
 			u.urlReload = 0
 		}
 	} else {
@@ -223,17 +223,17 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 			}
 		}
 		if !hasPath {
-			Log.Debugf("Reset path_reload %v to zero since no path found", u.pathReload)
+			log.Debugf("Reset path_reload %v to zero since no path found", u.pathReload)
 			u.NameList.pathReload = 0
 		}
 		if !hasUrl {
-			Log.Debugf("Reset url_reload %v to zero since no url found", u.urlReload)
+			log.Debugf("Reset url_reload %v to zero since no url found", u.urlReload)
 			u.NameList.urlReload = 0
 		}
 	}
 
 	if u.inline.Len() != 0 {
-		Log.Infof("inline: %v", u.inline)
+		log.Infof("inline: %v", u.inline)
 	}
 
 	return u, nil
@@ -248,7 +248,7 @@ func parseFrom(c *caddy.Controller, u *ReloadableUpstream) error {
 
 	if n == 1 && forms[0] == "." {
 		u.matchAny = true
-		Log.Infof("Match any")
+		log.Infof("Match any")
 		return nil
 	}
 
@@ -265,12 +265,12 @@ func parseFrom(c *caddy.Controller, u *ReloadableUpstream) error {
 		st, err := os.Stat(from)
 		if err != nil {
 			if os.IsNotExist(err) {
-				Log.Warningf("File %q doesn't exist", from)
+				log.Warningf("File %q doesn't exist", from)
 			} else {
 				return err
 			}
 		} else if st != nil && !st.Mode().IsRegular() {
-			Log.Warningf("File %q isn't a regular file", from)
+			log.Warningf("File %q isn't a regular file", from)
 		}
 	}
 
@@ -279,7 +279,7 @@ func parseFrom(c *caddy.Controller, u *ReloadableUpstream) error {
 		return err
 	}
 	u.items = items
-	Log.Infof("FROM...: %v", forms)
+	log.Infof("FROM...: %v", forms)
 	return nil
 }
 
@@ -294,7 +294,7 @@ func parseBlock(c *caddy.Controller, u *ReloadableUpstream) error {
 			return c.Errf("%v: minimal interval is %v", dir, minPathReloadInterval)
 		}
 		u.pathReload = dur
-		Log.Infof("%v: %v", dir, u.pathReload)
+		log.Infof("%v: %v", dir, u.pathReload)
 	case "url_reload":
 		args := c.RemainingArgs()
 		n := len(args)
@@ -319,7 +319,7 @@ func parseBlock(c *caddy.Controller, u *ReloadableUpstream) error {
 			u.urlReadTimeout = dur
 		}
 		u.urlReload = dur
-		Log.Infof("%v: %v %v", dir, u.urlReload, u.urlReadTimeout)
+		log.Infof("%v: %v %v", dir, u.urlReload, u.urlReadTimeout)
 	case "except":
 		// Multiple "except"s will be merged together
 		args := c.RemainingArgs()
@@ -328,16 +328,16 @@ func parseBlock(c *caddy.Controller, u *ReloadableUpstream) error {
 		}
 		for _, name := range args {
 			if !u.ignored.Add(name) {
-				Log.Warningf("%q isn't a domain name", name)
+				log.Warningf("%q isn't a domain name", name)
 			}
 		}
-		Log.Infof("%v: %v", dir, u.ignored)
+		log.Infof("%v: %v", dir, u.ignored)
 	case "spray":
 		if len(c.RemainingArgs()) != 0 {
 			return c.ArgErr()
 		}
 		u.spray = &Spray{}
-		Log.Infof("%v: enabled", dir)
+		log.Infof("%v: enabled", dir)
 	case "policy":
 		arr := c.RemainingArgs()
 		if len(arr) != 1 {
@@ -348,14 +348,14 @@ func parseBlock(c *caddy.Controller, u *ReloadableUpstream) error {
 			return c.Errf("unknown policy: %q", arr[0])
 		}
 		u.policy = policy
-		Log.Infof("%v: %v", dir, arr[0])
+		log.Infof("%v: %v", dir, arr[0])
 	case "max_fails":
 		n, err := parseInt32(c)
 		if err != nil {
 			return err
 		}
 		u.maxFails = n
-		Log.Infof("%v: %v", dir, n)
+		log.Infof("%v: %v", dir, n)
 	case "health_check":
 		args := c.RemainingArgs()
 		n := len(args)
@@ -374,7 +374,7 @@ func parseBlock(c *caddy.Controller, u *ReloadableUpstream) error {
 		}
 		u.checkInterval = dur
 		u.transport.recursionDesired = n == 1
-		Log.Infof("%v: %v %v", dir, u.checkInterval, u.transport.recursionDesired)
+		log.Infof("%v: %v %v", dir, u.checkInterval, u.transport.recursionDesired)
 	case "to":
 		// Multiple "to"s will be merged together
 		if err := parseTo(c, u); err != nil {
@@ -389,7 +389,7 @@ func parseBlock(c *caddy.Controller, u *ReloadableUpstream) error {
 			return c.Errf("%v: minimal interval is %v", dir, minExpireInterval)
 		}
 		u.transport.expire = dur
-		Log.Infof("%v: %v", dir, dur)
+		log.Infof("%v: %v", dir, dur)
 	case "tls":
 		args := c.RemainingArgs()
 		if len(args) > 3 {
@@ -402,7 +402,7 @@ func parseBlock(c *caddy.Controller, u *ReloadableUpstream) error {
 		// Merge server name if tls_servername set previously
 		tlsConfig.ServerName = u.transport.tlsConfig.ServerName
 		u.transport.tlsConfig = tlsConfig
-		Log.Infof("%v: %v", dir, args)
+		log.Infof("%v: %v", dir, args)
 	case "tls_servername":
 		args := c.RemainingArgs()
 		if len(args) != 1 {
@@ -413,7 +413,7 @@ func parseBlock(c *caddy.Controller, u *ReloadableUpstream) error {
 			return c.Errf("%v: %q isn't a valid domain name", dir, args[0])
 		}
 		u.transport.tlsConfig.ServerName = serverName
-		Log.Infof("%v: %v", dir, serverName)
+		log.Infof("%v: %v", dir, serverName)
 	case "bootstrap":
 		if err := parseBootstrap(c, u); err != nil {
 			return err
@@ -432,7 +432,7 @@ func parseBlock(c *caddy.Controller, u *ReloadableUpstream) error {
 			return c.ArgErr()
 		}
 		u.noIPv6 = true
-		Log.Infof("%v: %v", dir, u.noIPv6)
+		log.Infof("%v: %v", dir, u.noIPv6)
 	default:
 		if len(c.RemainingArgs()) != 0 ||!u.inline.Add(dir) {
 			return c.Errf("unknown property: %q", dir)
@@ -505,7 +505,7 @@ func parseTo(c *caddy.Controller, u *ReloadableUpstream) error {
 
 	for _, host := range toHosts {
 		trans, addr := SplitTransportHost(host)
-		Log.Infof("Transport: %v Address: %v", trans, addr)
+		log.Infof("Transport: %v Address: %v", trans, addr)
 
 		uh := &UpstreamHost{
 			proto: trans,
@@ -515,7 +515,7 @@ func parseTo(c *caddy.Controller, u *ReloadableUpstream) error {
 		}
 		u.hosts = append(u.hosts, uh)
 
-		Log.Infof("Upstream: %v", uh)
+		log.Infof("Upstream: %v", uh)
 	}
 
 	return nil
@@ -573,7 +573,7 @@ func parseBootstrap(c *caddy.Controller, u *ReloadableUpstream) error {
 	}
 
 	u.bootstrap = append(u.bootstrap, list...)
-	Log.Infof("%v: %v", dir, list)
+	log.Infof("%v: %v", dir, list)
 	return nil
 }
 

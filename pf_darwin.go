@@ -44,7 +44,7 @@ func pfParse(c *caddy.Controller, u *ReloadableUpstream) error {
 			return err
 		}
 	}
-	Log.Infof("%v: %v", dir, handle.set)
+	log.Infof("%v: %v", dir, handle.set)
 	return nil
 }
 
@@ -53,7 +53,7 @@ func pfSetup(u *ReloadableUpstream) error {
 		return nil
 	}
 	if os.Geteuid() != 0 {
-		Log.Warningf("pf needs root user privilege to work")
+		log.Warningf("pf needs root user privilege to work")
 	}
 	handle := u.Pf.(*pfHandle)
 	if dev, err := pf.OpenDevPf(os.O_WRONLY); err != nil {
@@ -91,19 +91,19 @@ func pfAddIP(u *ReloadableUpstream, reply *dns.Msg) {
 
 		ss := strings.Split(rr.String(), "\t")
 		if len(ss) != 5 {
-			Log.Warningf("Expected 5 entries, got %v: %q", len(ss), rr.String())
+			log.Warningf("Expected 5 entries, got %v: %q", len(ss), rr.String())
 			continue
 		}
 
 		ip := net.ParseIP(ss[4])
 		if ip == nil {
-			Log.Warningf("ipsetAddIP(): %q isn't a valid IP address", ss[4])
+			log.Warningf("ipsetAddIP(): %q isn't a valid IP address", ss[4])
 			continue
 		}
 
 		for t := range handle.set {
 			if _, err := pf.AddAddr(handle.dev, t.Name, t.Anchor, ip); err != nil {
-				Log.Errorf("pf.AddIP(): cannot add %v to %v: %v", ip, t, err)
+				log.Errorf("pf.AddIP(): cannot add %v to %v: %v", ip, t, err)
 			}
 		}
 	}

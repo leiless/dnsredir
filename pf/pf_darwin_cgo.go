@@ -27,6 +27,7 @@ func strerror(errno int) string {
 	return C.GoString((*C.char)(buf))
 }
 
+// User should reply on the error number instead of the description.
 func translateNegatedErrno(errno int) error {
 	if errno == 0 {
 		return nil
@@ -34,6 +35,8 @@ func translateNegatedErrno(errno int) error {
 	if errno > 0 {
 		panic(fmt.Sprintf("expected a negated errno value, got: %v", errno))
 	}
+	// Rectify errno
+	errno = -errno
 	switch errno {
 	case C.EINVAL:
 		return os.ErrInvalid

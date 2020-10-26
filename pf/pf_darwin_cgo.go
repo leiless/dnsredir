@@ -14,7 +14,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"unsafe"
 )
 
 const errorBufSize = uint(256)
@@ -65,9 +64,9 @@ func closeDevPf(dev int) error {
 //			false, nil if given name[:anchor] already exists
 func addTable(dev int, name, anchor string) (bool, error) {
 	cname := C.CString(name)
-	defer C.free(unsafe.Pointer(cname))
+	defer C.free(cname)
 	canchor := C.CString(anchor)
-	defer C.free(unsafe.Pointer(canchor))
+	defer C.free(canchor)
 
 	rc := int(C.pf_add_table(C.int(dev), cname, canchor))
 	if rc < 0 {
@@ -87,9 +86,9 @@ func addAddr(dev int, name, anchor string, ip net.IP) (bool, error) {
 	}
 
 	cname := C.CString(name)
-	defer C.free(unsafe.Pointer(cname))
+	defer C.free(cname)
 	canchor := C.CString(anchor)
-	defer C.free(unsafe.Pointer(canchor))
+	defer C.free(canchor)
 	caddr := C.CBytes(addr)
 	defer C.free(caddr)
 

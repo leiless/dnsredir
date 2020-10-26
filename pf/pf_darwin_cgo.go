@@ -4,7 +4,7 @@ package pf
 
 // #cgo CFLAGS: -Wall -Wextra -Wno-unused-parameter -I.
 // #include <stdlib.h>		// free(3)
-// #include "pf_darwin.h"
+// #include "pf.h"
 import "C"
 import (
 	"fmt"

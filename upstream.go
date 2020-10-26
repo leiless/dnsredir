@@ -70,6 +70,9 @@ func (u *reloadableUpstream) Start() error {
 	if err := ipsetSetup(u); err != nil {
 		return err
 	}
+	if err := pfSetup(u); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -78,6 +81,9 @@ func (u *reloadableUpstream) Stop() error {
 	close(u.stopUrlReload)
 	u.HealthCheck.Stop()
 	if err := ipsetShutdown(u); err != nil {
+		return err
+	}
+	if err := pfShutdown(u); err != nil {
 		return err
 	}
 	return nil

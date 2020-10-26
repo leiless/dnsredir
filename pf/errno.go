@@ -6,7 +6,7 @@ package pf
 // #include <string.h>		// strerror_r(3)
 // #include <stdlib.h>		// malloc(3), free(3)
 import "C"
-import "fmt"
+import "strconv"
 
 type ErrnoError int
 
@@ -25,6 +25,10 @@ func (e ErrnoError) Errno() int {
 	return int(e)
 }
 
+// see:
+//	runtime: goroutine stack exceeds 1000000000-byte limit in simple task #34251
+// 	https://github.com/golang/go/issues/34251#issuecomment-530672361
+//	os.SyscallError#Error()
 func (e ErrnoError) Error() string {
-	return fmt.Sprintf("errno: %v desc: %v", e, e.strerror())
+	return "errno: " + strconv.FormatInt(int64(e), 10) + " desc: " + e.strerror()
 }

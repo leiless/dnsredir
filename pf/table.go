@@ -1,3 +1,5 @@
+// +build darwin
+
 package pf
 
 import (
@@ -8,19 +10,19 @@ import (
 )
 
 type table struct {
-	name string
-	anchor string		// anchor can be empty
+	Name   string
+	Anchor string // Anchor can be empty
 }
 
 func (t *table) String() string {
-	if t.anchor != "" {
-		return fmt.Sprintf("%v:%v", t.name, t.anchor)
+	if t.Anchor != "" {
+		return fmt.Sprintf("%v:%v", t.Name, t.Anchor)
 	}
-	return t.name
+	return t.Name
 }
 
 // XXX: not thread safe
-type tableSet map[table]struct{}
+type TableSet map[table]struct{}
 
 // see: XNU #include <net/pfvar.h>
 const (
@@ -28,7 +30,7 @@ const (
 	maxAnchorNameSize = 1024
 )
 
-func (s *tableSet) Add(name string, anchorArg ...string) error {
+func (s *TableSet) Add(name string, anchorArg ...string) error {
 	if name == "" || len(name) >= maxTableNameSize {
 		return errors.New("table name is empty or too long")
 	}
@@ -42,8 +44,8 @@ func (s *tableSet) Add(name string, anchorArg ...string) error {
 		}
 	}
 	t := table{
-		name:   name,
-		anchor: anchor,
+		Name:   name,
+		Anchor: anchor,
 	}
 	if _, found := (*s)[t]; found {
 		return os.ErrExist
@@ -52,16 +54,16 @@ func (s *tableSet) Add(name string, anchorArg ...string) error {
 	return nil
 }
 
-func (s *tableSet) String() string {
+func (s *TableSet) String() string {
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("[%T ", *s))
 	i := 0
 	n := len(*s)
 	for t := range *s {
-		if t.anchor != "" {
-			sb.WriteString(fmt.Sprintf("%v:%v", t.name, t.anchor))
+		if t.Anchor != "" {
+			sb.WriteString(fmt.Sprintf("%v:%v", t.Name, t.Anchor))
 		} else {
-			sb.WriteString(t.name)
+			sb.WriteString(t.Name)
 		}
 		if i++; i != n {
 			sb.WriteByte(' ')

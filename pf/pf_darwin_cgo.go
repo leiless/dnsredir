@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"unsafe"
 )
 
 // User should reply on the error number instead of the description.
@@ -23,7 +24,7 @@ func translateNegatedErrno(errno int) error {
 	return ErrnoError(errno)
 }
 
-func openDevPf(oflag int) (int, error) {
+func OpenDevPf(oflag int) (int, error) {
 	fd := int(C.open_dev_pf(C.int(oflag)))
 	if fd < 0 {
 		return 0, translateNegatedErrno(fd)
@@ -31,17 +32,17 @@ func openDevPf(oflag int) (int, error) {
 	return fd, nil
 }
 
-func closeDevPf(dev int) error {
+func CloseDevPf(dev int) error {
 	return translateNegatedErrno(int(C.close_dev_pf(C.int(dev))))
 }
 
 // Return 	true, nil if added successfully
 //			false, nil if given name[:anchor] already exists
-func addTable(dev int, name, anchor string) (bool, error) {
+func AddTable(dev int, name, anchor string) (bool, error) {
 	cname := C.CString(name)
-	defer C.free(cname)
+	defer C.free(unsafe.Pointer(cname))
 	canchor := C.CString(anchor)
-	defer C.free(canchor)
+	defer C.free(unsafe.Pointer(canchor))
 
 	rc := int(C.pf_add_table(C.int(dev), cname, canchor))
 	if rc < 0 {
@@ -50,7 +51,7 @@ func addTable(dev int, name, anchor string) (bool, error) {
 	return rc != 0, nil
 }
 
-func addAddr(dev int, name, anchor string, ip net.IP) (bool, error) {
+func AddAddr(dev int, name, anchor string, ip net.IP) (bool, error) {
 	var addr net.IP
 	if a := ip.To4(); a != nil {
 		addr = a
@@ -61,9 +62,9 @@ func addAddr(dev int, name, anchor string, ip net.IP) (bool, error) {
 	}
 
 	cname := C.CString(name)
-	defer C.free(cname)
+	defer C.free(unsafe.Pointer(cname))
 	canchor := C.CString(anchor)
-	defer C.free(canchor)
+	defer C.free(unsafe.Pointer(canchor))
 	caddr := C.CBytes(addr)
 	defer C.free(caddr)
 

@@ -16,7 +16,7 @@
 #define ASSERTF_DEF_ONCE
 #include "assertf.h"        // assert*
 
-#include "pf_darwin.h"
+#include "pf.h"
 
 /**
  * Add IP/IP-CIDR addresses to a given table.

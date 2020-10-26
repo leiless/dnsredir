@@ -1,10 +1,10 @@
 // +build darwin
 
-package pf
+package dnsredir
 
 import (
 	"github.com/coredns/caddy"
-	"github.com/leiless/dnsredir"
+	"github.com/leiless/dnsredir/pf"
 	"github.com/miekg/dns"
 	"net"
 	"os"
@@ -12,11 +12,9 @@ import (
 )
 
 type pfHandle struct {
-	set tableSet
+	set pf.TableSet
 	dev int		// File descriptor to the /dev/pf
 }
-
-var log = dnsredir.Log
 
 // arg in format of NAME[:ANCHOR]
 func splitNameAnchor(arg string) (string, string) {
@@ -27,7 +25,7 @@ func splitNameAnchor(arg string) (string, string) {
 	return arg[:i], arg[i + 1:]
 }
 
-func Parse(c *caddy.Controller, u *dnsredir.ReloadableUpstream) error {
+func pfParse(c *caddy.Controller, u *ReloadableUpstream) error {
 	dir := c.Val()
 	list := c.RemainingArgs()
 	if len(list) == 0 {
@@ -35,36 +33,36 @@ func Parse(c *caddy.Controller, u *dnsredir.ReloadableUpstream) error {
 	}
 	if u.Pf == nil {
 		u.Pf = &pfHandle{
-			set: make(tableSet),
+			set: make(pf.TableSet),
 			dev: -1,
 		}
 	}
-	pf := u.Pf.(*pfHandle)
+	handle := u.Pf.(*pfHandle)
 	for _, arg := range list {
 		name, anchor := splitNameAnchor(arg)
-		if err := pf.set.Add(name, anchor); err != nil && !os.IsExist(err) {
+		if err := handle.set.Add(name, anchor); err != nil && !os.IsExist(err) {
 			return err
 		}
 	}
-	log.Infof("%v: %v", dir, pf.set)
+	Log.Infof("%v: %v", dir, handle.set)
 	return nil
 }
 
-func Setup(u *dnsredir.ReloadableUpstream) error {
+func pfSetup(u *ReloadableUpstream) error {
 	if u.Pf == nil {
 		return nil
 	}
 	if os.Geteuid() != 0 {
-		log.Warningf("pf needs root user privilege to work")
+		Log.Warningf("pf needs root user privilege to work")
 	}
-	pf := u.Pf.(*pfHandle)
-	if dev, err := openDevPf(os.O_WRONLY); err != nil {
+	handle := u.Pf.(*pfHandle)
+	if dev, err := pf.OpenDevPf(os.O_WRONLY); err != nil {
 		return err
 	} else {
-		pf.dev = dev
+		handle.dev = dev
 		// Try to create the table at pf setup stage.
-		for t := range pf.set {
-			if _, err := addTable(pf.dev, t.name, t.anchor); err != nil {
+		for t := range handle.set {
+			if _, err := pf.AddTable(handle.dev, t.Name, t.Anchor); err != nil {
 				return err
 			}
 		}
@@ -72,20 +70,20 @@ func Setup(u *dnsredir.ReloadableUpstream) error {
 	}
 }
 
-func Shutdown(u *dnsredir.ReloadableUpstream) error {
+func pfShutdown(u *ReloadableUpstream) error {
 	if u.Pf == nil {
 		return nil
 	}
-	pf := u.Pf.(*pfHandle)
-	return closeDevPf(pf.dev)
+	handle := u.Pf.(*pfHandle)
+	return pf.CloseDevPf(handle.dev)
 }
 
-func AddIP(u *dnsredir.ReloadableUpstream, reply *dns.Msg) {
+func pfAddIP(u *ReloadableUpstream, reply *dns.Msg) {
 	if u.Pf == nil || reply.Rcode != dns.RcodeSuccess {
 		return
 	}
 
-	pf := u.Pf.(*pfHandle)
+	handle := u.Pf.(*pfHandle)
 	for _, rr := range reply.Answer {
 		if rrt := rr.Header().Rrtype; rrt != dns.TypeA && rrt != dns.TypeAAAA {
 			continue
@@ -93,19 +91,19 @@ func AddIP(u *dnsredir.ReloadableUpstream, reply *dns.Msg) {
 
 		ss := strings.Split(rr.String(), "\t")
 		if len(ss) != 5 {
-			log.Warningf("Expected 5 entries, got %v: %q", len(ss), rr.String())
+			Log.Warningf("Expected 5 entries, got %v: %q", len(ss), rr.String())
 			continue
 		}
 
 		ip := net.ParseIP(ss[4])
 		if ip == nil {
-			log.Warningf("ipsetAddIP(): %q isn't a valid IP address", ss[4])
+			Log.Warningf("ipsetAddIP(): %q isn't a valid IP address", ss[4])
 			continue
 		}
 
-		for t := range pf.set {
-			if _, err := addAddr(pf.dev, t.name, t.anchor, ip); err != nil {
-				log.Errorf("pf.AddIP(): cannot add %v to %v: %v", ip, t, err)
+		for t := range handle.set {
+			if _, err := pf.AddAddr(handle.dev, t.Name, t.Anchor, ip); err != nil {
+				Log.Errorf("pf.AddIP(): cannot add %v to %v: %v", ip, t, err)
 			}
 		}
 	}

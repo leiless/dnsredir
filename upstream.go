@@ -13,7 +13,6 @@ import (
 	"github.com/coredns/coredns/plugin"
 	pkgtls "github.com/coredns/coredns/plugin/pkg/tls"
 	"github.com/coredns/coredns/plugin/pkg/transport"
-	"github.com/leiless/dnsredir/pf"
 	"github.com/miekg/dns"
 	"net"
 	"os"
@@ -424,7 +423,7 @@ func parseBlock(c *caddy.Controller, u *ReloadableUpstream) error {
 			return err
 		}
 	case "pf":
-		if err := pf.Parse(c, u); err != nil {
+		if err := pfParse(c, u); err != nil {
 			return err
 		}
 	case "no_ipv6":

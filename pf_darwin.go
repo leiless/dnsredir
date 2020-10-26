@@ -62,8 +62,10 @@ func pfSetup(u *reloadableUpstream) error {
 		handle.dev = dev
 		// Try to create the table at pf setup stage.
 		for t := range handle.set {
-			if _, err := pf.AddTable(handle.dev, t.Name, t.Anchor); err != nil {
+			if created, err := pf.AddTable(handle.dev, t.Name, t.Anchor); err != nil {
 				return err
+			} else {
+				log.Debugf("pf: %v created: %v", t.String(), created)
 			}
 		}
 		return nil
@@ -102,8 +104,10 @@ func pfAddIP(u *reloadableUpstream, reply *dns.Msg) {
 		}
 
 		for t := range handle.set {
-			if _, err := pf.AddAddr(handle.dev, t.Name, t.Anchor, ip); err != nil {
+			if added, err := pf.AddAddr(handle.dev, t.Name, t.Anchor, ip); err != nil {
 				log.Errorf("pf.AddIP(): cannot add %v to %v: %v", ip, t, err)
+			} else {
+				log.Debugf("pf: %v added: %v", ip.String(), added)
 			}
 		}
 	}

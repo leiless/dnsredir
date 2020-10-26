@@ -62,9 +62,10 @@ func ipsetShutdown(u *ReloadableUpstream) (err error) {
 
 // Taken from https://github.com/missdeer/ipset/blob/master/reverter.go#L32 with modification
 func ipsetAddIP(u *ReloadableUpstream, reply *dns.Msg) {
-	if u.ipset == nil {
+	if u.ipset == nil || reply.Rcode != dns.RcodeSuccess {
 		return
 	}
+
 	ipset := u.ipset.(*ipsetHandle)
 	for _, rr := range reply.Answer {
 		rrType := rr.Header().Rrtype

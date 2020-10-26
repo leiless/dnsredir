@@ -13,7 +13,7 @@ import (
 
 var once Once
 
-func pfParse(c *caddy.Controller, u *ReloadableUpstream) error {
+func pfParse(c *caddy.Controller, u *reloadableUpstream) error {
 	_ = u
 	once.Do(func() {
 		dir := c.Val()
@@ -22,16 +22,16 @@ func pfParse(c *caddy.Controller, u *ReloadableUpstream) error {
 	return nil
 }
 
-func pfSetup(u *ReloadableUpstream) error {
+func pfSetup(u *reloadableUpstream) error {
 	_ = u
 	return nil
 }
 
-func pfShutdown(u *ReloadableUpstream) error {
+func pfShutdown(u *reloadableUpstream) error {
 	_ = u
 	return nil
 }
 
-func pfAddIP(r *ReloadableUpstream, reply *dns.Msg) {
+func pfAddIP(r *reloadableUpstream, reply *dns.Msg) {
 	_, _ = r, reply
 }

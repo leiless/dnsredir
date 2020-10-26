@@ -17,7 +17,7 @@ type ipsetHandle struct {
 	conn *goipset.Conn
 }
 
-func parseIpset(c *caddy.Controller, u *ReloadableUpstream) error {
+func parseIpset(c *caddy.Controller, u *reloadableUpstream) error {
 	dir := c.Val()
 	names := c.RemainingArgs()
 	if len(names) == 0 {
@@ -36,7 +36,7 @@ func parseIpset(c *caddy.Controller, u *ReloadableUpstream) error {
 	return nil
 }
 
-func ipsetSetup(u *ReloadableUpstream) (err error) {
+func ipsetSetup(u *reloadableUpstream) (err error) {
 	// In case of plugin block doesn't have ipset option, which u.ipset is nil
 	// panic: interface conversion: interface {} is nil, not *dnsredir.ipsetHandle
 	if u.ipset == nil {
@@ -53,7 +53,7 @@ func ipsetSetup(u *ReloadableUpstream) (err error) {
 	return nil
 }
 
-func ipsetShutdown(u *ReloadableUpstream) (err error) {
+func ipsetShutdown(u *reloadableUpstream) (err error) {
 	if u.ipset == nil {
 		return nil
 	}
@@ -61,7 +61,7 @@ func ipsetShutdown(u *ReloadableUpstream) (err error) {
 }
 
 // Taken from https://github.com/missdeer/ipset/blob/master/reverter.go#L32 with modification
-func ipsetAddIP(u *ReloadableUpstream, reply *dns.Msg) {
+func ipsetAddIP(u *reloadableUpstream, reply *dns.Msg) {
 	if u.ipset == nil || reply.Rcode != dns.RcodeSuccess {
 		return
 	}

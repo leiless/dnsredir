@@ -22,7 +22,7 @@ import (
 	"time"
 )
 
-type ReloadableUpstream struct {
+type reloadableUpstream struct {
 	// Flag indicate match any request, i.e. the root zone "."
 	matchAny bool
 	*NameList
@@ -40,7 +40,7 @@ type ReloadableUpstream struct {
 
 // Check if given name in upstream name list
 // `name' is lower cased and without trailing dot(except for root zone)
-func (u *ReloadableUpstream) Match(name string) bool {
+func (u *reloadableUpstream) Match(name string) bool {
 	if u.matchAny {
 		if !plugin.Name(".").Matches(name) {
 			panic(fmt.Sprintf("Why %q doesn't match %q?!", name, "."))
@@ -64,7 +64,7 @@ func (u *ReloadableUpstream) Match(name string) bool {
 	return true
 }
 
-func (u *ReloadableUpstream) Start() error {
+func (u *reloadableUpstream) Start() error {
 	u.periodicUpdate(u.bootstrap)
 	u.HealthCheck.Start()
 	if err := ipsetSetup(u); err != nil {
@@ -73,7 +73,7 @@ func (u *ReloadableUpstream) Start() error {
 	return nil
 }
 
-func (u *ReloadableUpstream) Stop() error {
+func (u *reloadableUpstream) Stop() error {
 	close(u.stopPathReload)
 	close(u.stopUrlReload)
 	u.HealthCheck.Stop()
@@ -110,7 +110,7 @@ func protoToNetwork(proto string) string {
 }
 
 func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
-	u := &ReloadableUpstream{
+	u := &reloadableUpstream{
 		NameList: &NameList{
 			pathReload:     defaultPathReloadInterval,
 			stopPathReload: make(chan struct{}),
@@ -239,7 +239,7 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 	return u, nil
 }
 
-func parseFrom(c *caddy.Controller, u *ReloadableUpstream) error {
+func parseFrom(c *caddy.Controller, u *reloadableUpstream) error {
 	forms := c.RemainingArgs()
 	n := len(forms)
 	if n == 0 {
@@ -283,7 +283,7 @@ func parseFrom(c *caddy.Controller, u *ReloadableUpstream) error {
 	return nil
 }
 
-func parseBlock(c *caddy.Controller, u *ReloadableUpstream) error {
+func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 	switch dir := c.Val(); dir {
 	case "path_reload":
 		dur, err := parseDuration(c)
@@ -492,7 +492,7 @@ func parseDuration(c *caddy.Controller) (time.Duration, error) {
 	return dur, c.Err(err.Error())
 }
 
-func parseTo(c *caddy.Controller, u *ReloadableUpstream) error {
+func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 	args := c.RemainingArgs()
 	if len(args) == 0 {
 		return c.ArgErr()
@@ -521,7 +521,7 @@ func parseTo(c *caddy.Controller, u *ReloadableUpstream) error {
 	return nil
 }
 
-func parseBootstrap(c *caddy.Controller, u *ReloadableUpstream) error {
+func parseBootstrap(c *caddy.Controller, u *reloadableUpstream) error {
 	dir := c.Val()
 	args := c.RemainingArgs()
 	if len(args) == 0 {

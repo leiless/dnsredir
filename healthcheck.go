@@ -191,7 +191,7 @@ func (uh *UpstreamHost)IsDOH() bool {
 	return uh.proto == "https"
 }
 
-func (uh *UpstreamHost)InitDOH(u *ReloadableUpstream) {
+func (uh *UpstreamHost)InitDOH(u *reloadableUpstream) {
 	if !strings.HasSuffix(uh.proto, "doh") {
 		return
 	}

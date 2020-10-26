@@ -25,7 +25,7 @@ func splitNameAnchor(arg string) (string, string) {
 	return arg[:i], arg[i + 1:]
 }
 
-func pfParse(c *caddy.Controller, u *ReloadableUpstream) error {
+func pfParse(c *caddy.Controller, u *reloadableUpstream) error {
 	dir := c.Val()
 	list := c.RemainingArgs()
 	if len(list) == 0 {
@@ -48,7 +48,7 @@ func pfParse(c *caddy.Controller, u *ReloadableUpstream) error {
 	return nil
 }
 
-func pfSetup(u *ReloadableUpstream) error {
+func pfSetup(u *reloadableUpstream) error {
 	if u.Pf == nil {
 		return nil
 	}
@@ -70,7 +70,7 @@ func pfSetup(u *ReloadableUpstream) error {
 	}
 }
 
-func pfShutdown(u *ReloadableUpstream) error {
+func pfShutdown(u *reloadableUpstream) error {
 	if u.Pf == nil {
 		return nil
 	}
@@ -78,7 +78,7 @@ func pfShutdown(u *ReloadableUpstream) error {
 	return pf.CloseDevPf(handle.dev)
 }
 
-func pfAddIP(u *ReloadableUpstream, reply *dns.Msg) {
+func pfAddIP(u *reloadableUpstream, reply *dns.Msg) {
 	if u.Pf == nil || reply.Rcode != dns.RcodeSuccess {
 		return
 	}

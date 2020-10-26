@@ -71,7 +71,7 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 		log.Debugf("%q not found in name list, t: %v", name, t)
 		return plugin.NextOrFailure(r.Name(), r.Next, ctx, w, req)
 	}
-	upstream := upstream0.(*ReloadableUpstream)
+	upstream := upstream0.(*reloadableUpstream)
 	log.Debugf("%q in name list, t: %v", name, t)
 
 	var reply *dns.Msg
@@ -139,7 +139,7 @@ func (r *Dnsredir) ServeDNS(ctx context.Context, w dns.ResponseWriter, req *dns.
 	return dns.RcodeServerFailure, upstreamErr
 }
 
-func healthCheck(r *ReloadableUpstream, uh *UpstreamHost) {
+func healthCheck(r *reloadableUpstream, uh *UpstreamHost) {
 	// Skip unnecessary health checking
 	if r.checkInterval == 0 || r.maxFails == 0 {
 		return

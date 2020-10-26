@@ -15,7 +15,7 @@ func (e ErrnoError) strerror() string {
 	buf := C.malloc(size)
 	defer C.free(buf)
 	// We don't care the return value, since the buf will always be filled.
-	_ = C.strerror_r(C.int(int(e)), (*C.char)(buf), size)
+	_ = C.strerror_r(C.int(e), (*C.char)(buf), size)
 	return C.GoString((*C.char)(buf))
 }
 

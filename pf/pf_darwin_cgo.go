@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"unsafe"
 )
 
 const errorBufSize = uint(256)
@@ -63,7 +64,12 @@ func closeDevPf(dev int) error {
 // Return 	true, nil if added successfully
 //			false, nil if given name[:anchor] already exists
 func addTable(dev int, name, anchor string) (bool, error) {
-	rc := int(C.pf_add_table(C.int(dev), C.CString(name), C.CString(anchor)))
+	cname := C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
+	canchor := C.CString(anchor)
+	defer C.free(unsafe.Pointer(canchor))
+
+	rc := int(C.pf_add_table(C.int(dev), cname, canchor))
 	if rc < 0 {
 		return false, translateNegatedErrno(rc)
 	}
@@ -79,10 +85,18 @@ func addAddr(dev int, name, anchor string, ip net.IP) (bool, error) {
 	} else {
 		return false, os.ErrInvalid
 	}
+
+	cname := C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
+	canchor := C.CString(anchor)
+	defer C.free(unsafe.Pointer(canchor))
+	caddr := C.CBytes(addr)
+	defer C.free(caddr)
+
 	// see:
 	//	https://golang.org/cmd/cgo/#hdr-Go_references_to_C
 	//	https://stackoverflow.com/questions/35673161/convert-go-byte-to-a-c-char
-	rc := int(C.pf_add_addr(C.int(dev), C.CString(name), C.CString(anchor), C.CBytes(addr), C.ulong(len(addr))))
+	rc := int(C.pf_add_addr(C.int(dev), cname, canchor, caddr, C.ulong(len(addr))))
 	if rc < 0 {
 		return false, translateNegatedErrno(rc)
 	}

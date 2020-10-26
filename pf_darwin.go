@@ -31,13 +31,13 @@ func pfParse(c *caddy.Controller, u *reloadableUpstream) error {
 	if len(list) == 0 {
 		return c.ArgErr()
 	}
-	if u.Pf == nil {
-		u.Pf = &pfHandle{
+	if u.pf == nil {
+		u.pf = &pfHandle{
 			set: make(pf.TableSet),
 			dev: -1,
 		}
 	}
-	handle := u.Pf.(*pfHandle)
+	handle := u.pf.(*pfHandle)
 	for _, arg := range list {
 		name, anchor := splitNameAnchor(arg)
 		if err := handle.set.Add(name, anchor); err != nil && !os.IsExist(err) {
@@ -49,13 +49,13 @@ func pfParse(c *caddy.Controller, u *reloadableUpstream) error {
 }
 
 func pfSetup(u *reloadableUpstream) error {
-	if u.Pf == nil {
+	if u.pf == nil {
 		return nil
 	}
 	if os.Geteuid() != 0 {
 		log.Warningf("pf needs root user privilege to work")
 	}
-	handle := u.Pf.(*pfHandle)
+	handle := u.pf.(*pfHandle)
 	if dev, err := pf.OpenDevPf(os.O_WRONLY); err != nil {
 		return err
 	} else {
@@ -71,19 +71,19 @@ func pfSetup(u *reloadableUpstream) error {
 }
 
 func pfShutdown(u *reloadableUpstream) error {
-	if u.Pf == nil {
+	if u.pf == nil {
 		return nil
 	}
-	handle := u.Pf.(*pfHandle)
+	handle := u.pf.(*pfHandle)
 	return pf.CloseDevPf(handle.dev)
 }
 
 func pfAddIP(u *reloadableUpstream, reply *dns.Msg) {
-	if u.Pf == nil || reply.Rcode != dns.RcodeSuccess {
+	if u.pf == nil || reply.Rcode != dns.RcodeSuccess {
 		return
 	}
 
-	handle := u.Pf.(*pfHandle)
+	handle := u.pf.(*pfHandle)
 	for _, rr := range reply.Answer {
 		if rrt := rr.Header().Rrtype; rrt != dns.TypeA && rrt != dns.TypeAAAA {
 			continue

@@ -31,9 +31,9 @@ type reloadableUpstream struct {
 	*HealthCheck
 	// Bootstrap DNS in IP:Port combo
 	bootstrap []string
-	ipset interface{}
-	Pf interface{}
-	noIPv6 bool
+	ipset     interface{}
+	pf        interface{}
+	noIPv6    bool
 }
 
 // reloadableUpstream implements Upstream interface

@@ -1,3 +1,5 @@
+// +build darwin
+
 package pf
 
 // #cgo CFLAGS: -Wall -Wextra -Wno-unused-parameter

@@ -12,6 +12,13 @@ type table struct {
 	anchor string		// anchor can be empty
 }
 
+func (t *table) String() string {
+	if t.anchor != "" {
+		return fmt.Sprintf("%v:%v", t.name, t.anchor)
+	}
+	return t.name
+}
+
 // XXX: not thread safe
 type tableSet map[table]struct{}
 

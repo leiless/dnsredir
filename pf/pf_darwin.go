@@ -36,6 +36,7 @@ func Parse(c *caddy.Controller, u *dnsredir.ReloadableUpstream) error {
 	if u.Pf == nil {
 		u.Pf = &pfHandle{
 			set: make(tableSet),
+			dev: -1,
 		}
 	}
 	pf := u.Pf.(*pfHandle)
@@ -61,6 +62,12 @@ func Setup(u *dnsredir.ReloadableUpstream) error {
 		return err
 	} else {
 		pf.dev = dev
+		// Try to create the table at pf setup stage.
+		for t := range pf.set {
+			if _, err := addTable(pf.dev, t.name, t.anchor); err != nil {
+				return err
+			}
+		}
 		return nil
 	}
 }
@@ -77,6 +84,7 @@ func AddIP(u *dnsredir.ReloadableUpstream, reply *dns.Msg) {
 	if u.Pf == nil || reply.Rcode != dns.RcodeSuccess {
 		return
 	}
+
 	pf := u.Pf.(*pfHandle)
 	for _, rr := range reply.Answer {
 		if rrt := rr.Header().Rrtype; rrt != dns.TypeA && rrt != dns.TypeAAAA {
@@ -96,8 +104,9 @@ func AddIP(u *dnsredir.ReloadableUpstream, reply *dns.Msg) {
 		}
 
 		for t := range pf.set {
-			_ = t
-			// TODO: add IP
+			if _, err := addAddr(pf.dev, t.name, t.anchor, ip); err != nil {
+				log.Errorf("pf.AddIP(): cannot add %v to %v: %v", ip, t, err)
+			}
 		}
 	}
 }

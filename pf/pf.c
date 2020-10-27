@@ -3,9 +3,11 @@
  * License: MIT.
  */
 
+#include <assert.h>         // assert(3)
 #include <strings.h>        // bzero(3)
 #include <errno.h>          // errno
 #include <fcntl.h>          // open(2)
+#include <unistd.h>         // close(2)
 #include <sys/ioctl.h>      // ioctl(2)
 #include <arpa/inet.h>      // inet_net_pton(3)
 
@@ -13,10 +15,26 @@
 #include <net/pfvar.h>      // pf*
 #undef PRIVATE
 
-#define ASSERTF_DEF_ONCE
-#include "assertf.h"        // assert*
-
 #include "pf.h"
+
+/**
+ * Compile-time assertion  see: linux/arch/x86/boot/boot.h
+ *
+ * [sic modified]
+ * BUILD_BUG_ON - break compile if a condition is true.
+ * @cond: the condition which the compiler should know is false.
+ *
+ * If you have some code which relies on certain constants being true, or
+ * some other compile-time evaluated condition, you should use BUILD_BUG_ON() to
+ * detect if someone changes it unexpectedly.
+ */
+#ifndef BUILD_BUG_ON
+#ifdef DEBUG
+#define BUILD_BUG_ON(cond)      ((void) sizeof(char[1 - 2 * !!(cond)]))
+#else
+#define BUILD_BUG_ON(cond)      ((void) (cond))
+#endif
+#endif
 
 /**
  * Add IP/IP-CIDR addresses to a given table.
@@ -146,7 +164,7 @@ int pf_add_addr(int dev, const char *table_name, const char *anchor, const void 
 
     int nadd = 0;
     if (pfr_add_addrs(dev, &tbl, &addr, 1, &nadd, PFR_FLAG_ATOMIC) < 0) return -errno;
-    assert_ge(nadd, 0, %d);
+    assert(nadd >= 0);
     return nadd;
 }
 
@@ -167,7 +185,7 @@ int pf_add_table(int dev, const char *table_name, const char *anchor)
 
     int nadd = 0;
     if (pfr_add_tables(dev, &tbl, 1, &nadd, PFR_FLAG_ATOMIC) < 0) return -errno;
-    assert_ge(nadd, 0, %d);
+    assert(nadd >= 0);
     return nadd;
 }
 

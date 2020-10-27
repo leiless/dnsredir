@@ -40,7 +40,7 @@ func parseFlags(dir string, args *[]string) (pf.Flags, error) {
 			case "+v6_only":
 				flags.TurnOnV6Only()
 			default:
-				return 0, fmt.Errorf("%v: unrecognizable option: %v", dir, arg)
+				return 0, fmt.Errorf("%v: unrecognizable option: %q", dir, arg)
 			}
 		} else {
 			break

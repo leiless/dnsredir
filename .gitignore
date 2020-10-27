@@ -9,6 +9,5 @@ coredns
 go.sum
 bin/
 .idea/
-pf/net
-pf/libkern
+pf/darwin-xnu/
 

@@ -44,7 +44,7 @@ func pfParse(c *caddy.Controller, u *reloadableUpstream) error {
 			return err
 		}
 	}
-	log.Infof("%v: %v", dir, handle.set)
+	log.Infof("%v: %v", dir, handle.set.String())
 	return nil
 }
 

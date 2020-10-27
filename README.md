@@ -102,6 +102,7 @@ dnsredir FROM... {
     no_ipv6
 
     ipset SETNAME...
+    pf [+OPTION...] NAME[:ANCHOR]...
 }
 ```
 
@@ -167,11 +168,29 @@ Some of the options take a `DURATION` as argument, **zero time(i.e. `0`) duratio
 
 * `no_ipv6` specifies don't try to resolve `IPv6` addresses for DNS exchange in `bootstrap`, in other words, use `IPv4` only.
 
-* `ipset`(needs *root* user privilege) specifies resolved IP address from `FROM...` will be added to ipset `SETNAME...`.
+* `ipset`(needs *root* user privilege) specifies resolved IP addresses from `FROM...` will be added to ipset `SETNAME...`.
 
     Note that only `IPv4`, `IPv6` protocol families are supported, and this option **only effective** on Linux.
 
     `SETNAME...` must be present, otherwise add IP will be failed.
+
+* `pf`(needs *root* user privilege) specifies resolved IP addresses from `FROM...` will be added to the pf tables denoted by `NAME:[ANCHOR]...`
+
+    The pf table name is a combo of name and anchor, if your table have a optional anchor, the anchor should follow the name by a colon(i.e. `:`).
+
+    Optional options can be specified in the format: `+OPTION...`. Currently, supported options are:
+
+    * `+create` - Create the given pf table if it does not exist.
+
+    * `+v4_only` - Only add IPv4 addresses to the pf tables.
+
+    * `+v6_only` - Only add IPv6 addresses to the pf tables.
+
+    By default, IPv4 and IPv6 will all be added to the pf tables.
+
+    Note that options should come before the pf tables.
+
+    pf is generally available in BSD-derived systems, yet this sub-directive is **only effective** on macOS.
 
 ## Metrics
 

@@ -18,7 +18,7 @@ const (
 )
 
 func (f Flags) IsValid() bool {
-	if (f & tableFlagIPv4Only) != 0 && (f & tableFlagIPv6Only) != 0 {
+	if f.IsV4Only() && f.IsV6Only() {
 		return false
 	}
 	return f & ^(tableFlagLast - 1) == 0

@@ -3,11 +3,50 @@
 package pf
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strings"
 )
+
+type Flags uint
+
+const (
+	tableFlagCreateIfNotExist = Flags(1 << iota)
+	tableFlagIPv4Only
+	tableFlagIPv6Only
+	tableFlagLast
+)
+
+func (f Flags) IsValid() bool {
+	if (f & tableFlagIPv4Only) != 0 && (f & tableFlagIPv6Only) != 0 {
+		return false
+	}
+	return f & ^(tableFlagLast - 1) == 0
+}
+
+func (f *Flags) TurnOnCreateIfNotExist() {
+	*f |= tableFlagCreateIfNotExist
+}
+
+func (f *Flags) TurnOnV4Only() {
+	*f |= tableFlagIPv4Only
+}
+
+func (f *Flags) TurnOnV6Only() {
+	*f |= tableFlagIPv6Only
+}
+
+func (f Flags) IsCreateIfNotExist() bool {
+	return (f & tableFlagCreateIfNotExist) != 0
+}
+
+func (f Flags) IsV4Only() bool {
+	return (f & tableFlagIPv4Only) != 0
+}
+
+func (f Flags) IsV6Only() bool {
+	return (f & tableFlagIPv6Only) != 0
+}
 
 type table struct {
 	Name   string
@@ -22,7 +61,7 @@ func (t *table) String() string {
 }
 
 // XXX: not thread safe
-type TableSet map[table]struct{}
+type TableSet map[table]Flags
 
 // see: XNU #include <net/pfvar.h>
 const (
@@ -30,18 +69,12 @@ const (
 	maxAnchorNameSize = 1024
 )
 
-func (s *TableSet) Add(name string, anchorArg ...string) error {
+func (s *TableSet) Add(name, anchor string, flags Flags) error {
 	if name == "" || len(name) >= maxTableNameSize {
-		return errors.New("table name is empty or too long")
+		return fmt.Errorf("table name is empty or too long")
 	}
-	if len(anchorArg) > 1 {
-		return errors.New("at most one anchor name can be specified")
-	}
-	anchor := ""
-	if len(anchorArg) != 0 {
-		if anchor = anchorArg[0]; len(anchor) >= maxAnchorNameSize {
-			return errors.New("anchor name is too long")
-		}
+	if len(anchor) >= maxAnchorNameSize {
+		return fmt.Errorf("anchor name is too long")
 	}
 	t := table{
 		Name:   name,
@@ -50,7 +83,7 @@ func (s *TableSet) Add(name string, anchorArg ...string) error {
 	if _, found := (*s)[t]; found {
 		return os.ErrExist
 	}
-	(*s)[t] = struct{}{}
+	(*s)[t] = flags
 	return nil
 }
 

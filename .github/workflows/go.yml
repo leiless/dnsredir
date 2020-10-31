@@ -10,8 +10,8 @@ on:
 
 jobs:
 
-  build:
-    name: Build
+  build-on-linux:
+    name: Build on Linux
     runs-on: ubuntu-latest
     steps:
 
@@ -77,6 +77,77 @@ jobs:
         COREDNS_DIR=$HOME/coredns/coredns
         pushd $COREDNS_DIR
         make -j$(nproc)
+        mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
+        ls -l bin
+        popd
+
+  build-on-darwin:
+    name: Build on Darwin
+    runs-on: macos-latest
+    steps:
+
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.13
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Get dependencies
+      run: |
+        go get -v -t -d ./...
+        if [ -f Gopkg.toml ]; then
+            curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+            dep ensure
+        fi
+
+    - name: Prepare CoreDNS for dnsredir plugin
+      run: |
+        set -eufx
+        sysctl -n hw.ncpu
+        env
+        uname -a
+        go version
+        go env
+
+        DNSREDIR_DIR=$PWD
+        HEAD_COMMIT=$(git describe --dirty --always)
+        DNSREDIR_TAG=$(curl -sL https://api.github.com/repos/leiless/dnsredir/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
+
+        mkdir -p $HOME/coredns
+        COREDNS_URL=https://github.com/coredns/coredns.git
+        COREDNS_DIR=$HOME/coredns/coredns
+        COREDNS_TAG=$(curl -sL https://api.github.com/repos/coredns/coredns/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
+        git clone --branch $COREDNS_TAG --depth 1 $COREDNS_URL $COREDNS_DIR 2> /dev/null
+
+        pushd $COREDNS_DIR
+        mkdir -p bin
+        sed -i 's|forward:forward|dnsredir:dnsredir\nforward:forward|g' plugin.cfg
+        MOD_ADDR=github.com/coredns/coredns/plugin/dnsredir
+        sed -i "s|GITCOMMIT:=|CUSTOM_FLAGS=-X $MOD_ADDR.pluginVersion=$DNSREDIR_TAG -X $MOD_ADDR.pluginHeadCommit=$HEAD_COMMIT\\nGITCOMMIT:=|g" Makefile
+        sed -i 's|$(GITCOMMIT)|$(GITCOMMIT) $(CUSTOM_FLAGS)|g' Makefile
+        go generate coredns.go
+        sed -i 's|_ "dnsredir"|_ "github.com/leiless/dnsredir"|g' core/plugin/zplugin.go
+        git diff
+        git status
+        # ln -s $DNSREDIR_DIR plugin/$(basename $DNSREDIR_DIR)
+        popd
+
+        mkdir -p ~/go/pkg/mod/github.com/leiless
+        # Link leiless/dnsredir to latest master tree.
+        ln -s $DNSREDIR_DIR ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
+        ls -ld ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
+
+    - name: Build
+      env:
+        GOOS: darwin
+        GOARCH: amd64
+      run: |
+        set -eufx
+        COREDNS_DIR=$HOME/coredns/coredns
+        pushd $COREDNS_DIR
+        make -j$(sysctl -n hw.ncpu)
         mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
         ls -l bin
         popd

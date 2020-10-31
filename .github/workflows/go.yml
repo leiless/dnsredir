@@ -56,10 +56,11 @@ jobs:
         MOD_ADDR=github.com/coredns/coredns/plugin/dnsredir
         sed -i "s|GITCOMMIT:=|CUSTOM_FLAGS=-X $MOD_ADDR.pluginVersion=$DNSREDIR_TAG -X $MOD_ADDR.pluginHeadCommit=$HEAD_COMMIT\\nGITCOMMIT:=|g" Makefile
         sed -i 's|$(GITCOMMIT)|$(GITCOMMIT) $(CUSTOM_FLAGS)|g' Makefile
+        go generate coredns.go
+        sed -i 's|_ "dnsredir"|_ "github.com/leiless/dnsredir"|g' core/plugin/zplugin.go
         git diff
-        ln -s $DNSREDIR_DIR plugin/$(basename $DNSREDIR_DIR)
-        ls -ld plugin/$(basename $DNSREDIR_DIR)
-        file plugin/$(basename $DNSREDIR_DIR)
+        git status
+        # ln -s $DNSREDIR_DIR plugin/$(basename $DNSREDIR_DIR)
         popd
 
     - name: Build

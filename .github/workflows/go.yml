@@ -114,10 +114,8 @@ jobs:
         go version
         go env
 
-        brew update
-        brew install gnu-sed
         # [quote] GNU "sed" has been installed as "gsed".
-        sed=gsed
+        brew install gnu-sed
 
         DNSREDIR_DIR=$PWD
         HEAD_COMMIT=$(git describe --dirty --always)
@@ -131,12 +129,12 @@ jobs:
 
         pushd $COREDNS_DIR
         mkdir -p bin
-        sed -i 's|forward:forward|dnsredir:dnsredir\nforward:forward|g' plugin.cfg
+        gsed -i 's|forward:forward|dnsredir:dnsredir\nforward:forward|g' plugin.cfg
         MOD_ADDR=github.com/coredns/coredns/plugin/dnsredir
-        sed -i "s|GITCOMMIT:=|CUSTOM_FLAGS=-X $MOD_ADDR.pluginVersion=$DNSREDIR_TAG -X $MOD_ADDR.pluginHeadCommit=$HEAD_COMMIT\\nGITCOMMIT:=|g" Makefile
-        sed -i 's|$(GITCOMMIT)|$(GITCOMMIT) $(CUSTOM_FLAGS)|g' Makefile
+        gsed -i "s|GITCOMMIT:=|CUSTOM_FLAGS=-X $MOD_ADDR.pluginVersion=$DNSREDIR_TAG -X $MOD_ADDR.pluginHeadCommit=$HEAD_COMMIT\\nGITCOMMIT:=|g" Makefile
+        gsed -i 's|$(GITCOMMIT)|$(GITCOMMIT) $(CUSTOM_FLAGS)|g' Makefile
         go generate coredns.go
-        sed -i 's|_ "dnsredir"|_ "github.com/leiless/dnsredir"|g' core/plugin/zplugin.go
+        gsed -i 's|_ "dnsredir"|_ "github.com/leiless/dnsredir"|g' core/plugin/zplugin.go
         git diff
         git status
         # ln -s $DNSREDIR_DIR plugin/$(basename $DNSREDIR_DIR)

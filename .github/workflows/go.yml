@@ -120,6 +120,10 @@ jobs:
         DNSREDIR_DIR=$PWD
         HEAD_COMMIT=$(git describe --dirty --always)
         DNSREDIR_TAG=$(curl -sL https://api.github.com/repos/leiless/dnsredir/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
+        
+        pushd pf
+        ./download-pf-headers.sh
+        popd
 
         mkdir -p $HOME/coredns
         COREDNS_URL=https://github.com/coredns/coredns.git

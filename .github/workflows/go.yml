@@ -33,6 +33,7 @@ jobs:
 
     - name: Prepare
       run: |
+        set -x
         set -euf
         env
         uname -a
@@ -50,6 +51,7 @@ jobs:
         git clone --branch $COREDNS_TAG --depth 1 $COREDNS_URL $COREDNS_DIR 2> /dev/null
 
         pushd $COREDNS_DIR
+        mkdir -p bin
         sed -i 's|forward:forward|dnsredir:dnsredir\nforward:forward|g' plugin.cfg
         MOD_ADDR=github.com/coredns/coredns/plugin/dnsredir
         sed -i "s|GITCOMMIT:=|CUSTOM_FLAGS=-X $MOD_ADDR.pluginVersion=$DNSREDIR_TAG -X $MOD_ADDR.pluginHeadCommit=$HEAD_COMMIT\\nGITCOMMIT:=|g" Makefile
@@ -57,7 +59,13 @@ jobs:
         git diff
         ln -s $DNSREDIR_DIR plugin/$(basename $DNSREDIR_DIR)
         ls -ld plugin/$(basename $DNSREDIR_DIR)
+        file plugin/$(basename $DNSREDIR_DIR)
         popd
 
-    #- name: Build
+    - name: Build
       #run: go build -v .
+      run: |
+        pushd $COREDNS_DIR
+        make
+        mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
+        popd

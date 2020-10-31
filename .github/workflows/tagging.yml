@@ -6,6 +6,24 @@ on:
 
 jobs:
 
+  # see: https://github.com/actions/create-release
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: true
+          prerelease: true
+
   build-on-linux:
     name: Build on Linux
     runs-on: ubuntu-latest
@@ -125,13 +143,26 @@ jobs:
         mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
         popd
 
-    - name: Post build
+    - name: Upload files
       run: |
         set -eufx
         COREDNS_DIR=$HOME/coredns/coredns
         pushd $COREDNS_DIR
-        ls -l bin
+        ls -1 | xargs -I{} zip -q9 {}.zip {}
+        ls -1 | grep -v "\.zip$" | xargs rm
         popd
+
+    # see:
+    #   https://github.com/actions/upload-release-asset
+    #   htps://github.com/marketplace/actions/upload-a-release-asset
+    - name: Upload release assets
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ create-release.steps.create_release.outputs.upload_url }}
+        asset_path: $HOME/coredns/coredns/bin/*
+        asset_content_type: application/zip
 
   build-on-darwin:
     name: Build on Darwin

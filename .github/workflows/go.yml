@@ -31,5 +31,13 @@ jobs:
             dep ensure
         fi
 
+    - name: Test
+      run: |
+        echo $0
+        set -euf
+        uname -a
+        go version
+        go env
+
     - name: Build
       run: go build -v .

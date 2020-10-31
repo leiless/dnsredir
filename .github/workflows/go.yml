@@ -69,7 +69,9 @@ jobs:
         ls -ld ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
 
     - name: Build
-      #run: go build -v .
+      env:
+        GOOS: linux
+        GOARCH: amd64
       run: |
         set -eufx
         COREDNS_DIR=$HOME/coredns/coredns

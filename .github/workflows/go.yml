@@ -68,9 +68,64 @@ jobs:
         ln -s $DNSREDIR_DIR ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
         ls -ld ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
 
-    - name: Build
+    - name: Debug build
       env:
         GOOS: linux
+        GOARCH: amd64
+        # Disable code optimization
+        CGO_CFLAGS: -g -O0 -DDEBUG
+        CGO_CXXFLAGS: -g -O0 -DDEBUG
+      run: |
+        set -eufx
+        COREDNS_DIR=$HOME/coredns/coredns
+        pushd $COREDNS_DIR
+        make CGO_ENABLED=1 BUILDOPTS="-v -race" -j$(nproc)
+        mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH-debug
+        ls -l bin
+        popd
+
+    - name: Release build
+      env:
+        GOOS: linux
+        GOARCH: amd64
+      run: |
+        set -eufx
+        COREDNS_DIR=$HOME/coredns/coredns
+        pushd $COREDNS_DIR
+        make -j$(nproc)
+        mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
+        ls -l bin
+        popd
+
+    - name: Release build for ARM
+      env:
+        GOOS: linux
+        GOARCH: arm
+      run: |
+        set -eufx
+        COREDNS_DIR=$HOME/coredns/coredns
+        pushd $COREDNS_DIR
+        make -j$(nproc)
+        mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
+        ls -l bin
+        popd
+
+    - name: Release build for ARM64
+      env:
+        GOOS: linux
+        GOARCH: arm64
+      run: |
+        set -eufx
+        COREDNS_DIR=$HOME/coredns/coredns
+        pushd $COREDNS_DIR
+        make -j$(nproc)
+        mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
+        ls -l bin
+        popd
+
+    - name: Release build for Windows
+      env:
+        GOOS: windows
         GOARCH: amd64
       run: |
         set -eufx
@@ -153,7 +208,6 @@ jobs:
       env:
         GOOS: darwin
         GOARCH: amd64
-        # Disable code optimization
         CGO_CFLAGS: -g -O0 -DDEBUG
         CGO_CXXFLAGS: -g -O0 -DDEBUG
       run: |

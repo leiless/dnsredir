@@ -47,11 +47,11 @@ jobs:
         COREDNS_DIR=$HOME/coredns/coredns
         COREDNS_TAG=$(curl -sL https://api.github.com/repos/coredns/coredns/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
         git clone --branch $COREDNS_TAG --depth 1 $COREDNS_URL $COREDNS_DIR 2> /dev/null
-        
+
         pushd $COREDNS_DIR
         sed -i 's|forward:forward|dnsredir:dnsredir\\\\nforward:forward|g' plugin.cfg
         MOD_ADDR=github.com/coredns/coredns/plugin/dnsredir
-        sed -i "s|GITCOMMIT:=|CUSTOM_FLAGS=-X $MOD_ADDR.pluginVersion=$TAG -X $MOD_ADDR.pluginHeadCommit=$HEAD_COMMIT\\\\nGITCOMMIT:=|g" Makefile
+        sed -i "s|GITCOMMIT:=|CUSTOM_FLAGS=-X $MOD_ADDR.pluginVersion=$DNSREDIR_TAG -X $MOD_ADDR.pluginHeadCommit=$HEAD_COMMIT\\\\nGITCOMMIT:=|g" Makefile
         sed -i 's|$(GITCOMMIT)|$(GITCOMMIT) $(CUSTOM_FLAGS)|g' Makefile
         git diff
         popd

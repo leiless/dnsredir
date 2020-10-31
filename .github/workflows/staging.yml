@@ -1,4 +1,4 @@
-name: CoreDNS dnsredir CI
+name: CoreDNS dnsredir staging CI
 
 on:
   push:
@@ -9,7 +9,6 @@ on:
     branches: [ master ]
 
 jobs:
-
   build-on-linux:
     name: Build on Linux
     runs-on: ubuntu-latest

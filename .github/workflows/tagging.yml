@@ -150,6 +150,7 @@ jobs:
         pushd $COREDNS_DIR
         ls -1 | xargs -I{} zip -q9 {}.zip {}
         ls -1 | grep -v "\.zip$" | xargs rm
+        ls -l
         popd
 
     # see:
@@ -160,7 +161,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ create-release.steps.create_release.outputs.upload_url }}
+        upload_url: ${{ jobs.create-release.steps.create_release.outputs.upload_url }}
         asset_path: $HOME/coredns/coredns/bin/*
         asset_content_type: application/zip
 

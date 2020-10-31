@@ -31,10 +31,9 @@ jobs:
             dep ensure
         fi
 
-    - name: Prepare
+    - name: Prepare CoreDNS for dnsredir plugin
       run: |
-        set -x
-        set -euf
+        set -eufx
         nproc
         env
         uname -a
@@ -65,14 +64,17 @@ jobs:
         popd
 
         mkdir -p ~/go/pkg/mod/github.com/leiless
+        # Link leiless/dnsredir to latest master tree.
         ln -s $DNSREDIR_DIR ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
         ls -ld ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
 
     - name: Build
       #run: go build -v .
       run: |
+        set -eufx
         COREDNS_DIR=$HOME/coredns/coredns
         pushd $COREDNS_DIR
         make -j$(nproc)
         mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
+        ls -l bin
         popd

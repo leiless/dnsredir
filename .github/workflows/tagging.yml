@@ -148,8 +148,8 @@ jobs:
     - name: Upload files
       run: |
         set -eufx
-        COREDNS_DIR=$HOME/coredns/coredns
-        pushd $COREDNS_DIR
+        COREDNS_BIN=$HOME/coredns/coredns/bin
+        pushd $COREDNS_BIN
         ls -1 | xargs -I{} zip -q9 {}.zip {}
         ls -1 | grep -v "\.zip$" | xargs rm
         ls -l

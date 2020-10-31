@@ -33,11 +33,15 @@ jobs:
 
     - name: Test
       run: |
-        echo $0
         set -euf
+        set -x
+        env
+        curl -4L https://icanhazip.com
         uname -a
         go version
         go env
+        pwd
+        git describe --dirty --always
 
     - name: Build
       run: go build -v .

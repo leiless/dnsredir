@@ -63,7 +63,7 @@ jobs:
         git status
         # ln -s $DNSREDIR_DIR plugin/$(basename $DNSREDIR_DIR)
         popd
-
+        find ~ -type d -name "dnsredir@$DNSREDIR_TAG"
         sudo rm -rf ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
         ls -l ~/go/pkg/mod/github.com/leiless
         ln -s $DNSREDIR_DIR ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG

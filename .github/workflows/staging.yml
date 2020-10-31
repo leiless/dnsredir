@@ -34,8 +34,8 @@ jobs:
       run: |
         set -eufx
         nproc
-        env
         uname -a
+        env
         go version
         go env
 
@@ -50,7 +50,6 @@ jobs:
         git clone --branch $COREDNS_TAG --depth 1 $COREDNS_URL $COREDNS_DIR 2> /dev/null
 
         pushd $COREDNS_DIR
-        mkdir -p bin
         sed -i 's|forward:forward|dnsredir:dnsredir\nforward:forward|g' plugin.cfg
         MOD_ADDR=github.com/coredns/coredns/plugin/dnsredir
         sed -i "s|GITCOMMIT:=|CUSTOM_FLAGS=-X $MOD_ADDR.pluginVersion=$DNSREDIR_TAG -X $MOD_ADDR.pluginHeadCommit=$HEAD_COMMIT\\nGITCOMMIT:=|g" Makefile
@@ -59,13 +58,11 @@ jobs:
         sed -i 's|_ "dnsredir"|_ "github.com/leiless/dnsredir"|g' core/plugin/zplugin.go
         git diff
         git status
-        # ln -s $DNSREDIR_DIR plugin/$(basename $DNSREDIR_DIR)
         popd
 
         mkdir -p ~/go/pkg/mod/github.com/leiless
         # Link leiless/dnsredir to latest master tree.
         ln -s $DNSREDIR_DIR ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
-        ls -ld ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
 
     - name: Debug build
       env:
@@ -79,69 +76,12 @@ jobs:
         COREDNS_DIR=$HOME/coredns/coredns
         pushd $COREDNS_DIR
         make CGO_ENABLED=1 BUILDOPTS="-v -race" -j$(nproc)
-        mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH-debug
-        ls -l bin
-        popd
-
-    - name: Release build
-      env:
-        GOOS: linux
-        GOARCH: amd64
-      run: |
-        set -eufx
-        COREDNS_DIR=$HOME/coredns/coredns
-        pushd $COREDNS_DIR
-        make -j$(nproc)
-        mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
-        ls -l bin
-        popd
-
-    - name: Release build for ARM
-      env:
-        GOOS: linux
-        GOARCH: arm
-      run: |
-        set -eufx
-        COREDNS_DIR=$HOME/coredns/coredns
-        pushd $COREDNS_DIR
-        make -j$(nproc)
-        mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
-        ls -l bin
-        popd
-
-    - name: Release build for ARM64
-      env:
-        GOOS: linux
-        GOARCH: arm64
-      run: |
-        set -eufx
-        COREDNS_DIR=$HOME/coredns/coredns
-        pushd $COREDNS_DIR
-        make -j$(nproc)
-        mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
-        ls -l bin
-        popd
-
-    - name: Release build for Windows
-      env:
-        GOOS: windows
-        GOARCH: amd64
-      run: |
-        set -eufx
-        COREDNS_DIR=$HOME/coredns/coredns
-        pushd $COREDNS_DIR
-        make -j$(nproc)
-        mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
-        ls -l bin
         popd
 
   build-on-darwin:
     name: Build on Darwin
     runs-on: macos-latest
     steps:
-
-    #- name: Setup Homebrew
-      #uses: "artemnovichkov/action-homebrew@master"
 
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
@@ -163,8 +103,9 @@ jobs:
       run: |
         set -eufx
         sysctl -n hw.ncpu
-        env
+        sw_vers
         uname -a
+        env
         go version
         go env
 
@@ -186,7 +127,6 @@ jobs:
         git clone --branch $COREDNS_TAG --depth 1 $COREDNS_URL $COREDNS_DIR 2> /dev/null
 
         pushd $COREDNS_DIR
-        mkdir -p bin
         gsed -i 's|forward:forward|dnsredir:dnsredir\nforward:forward|g' plugin.cfg
         MOD_ADDR=github.com/coredns/coredns/plugin/dnsredir
         gsed -i "s|GITCOMMIT:=|CUSTOM_FLAGS=-X $MOD_ADDR.pluginVersion=$DNSREDIR_TAG -X $MOD_ADDR.pluginHeadCommit=$HEAD_COMMIT\\nGITCOMMIT:=|g" Makefile
@@ -195,13 +135,11 @@ jobs:
         gsed -i 's|_ "dnsredir"|_ "github.com/leiless/dnsredir"|g' core/plugin/zplugin.go
         git diff
         git status
-        # ln -s $DNSREDIR_DIR plugin/$(basename $DNSREDIR_DIR)
         popd
 
         mkdir -p ~/go/pkg/mod/github.com/leiless
         # Link leiless/dnsredir to latest master tree.
         ln -s $DNSREDIR_DIR ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
-        ls -ld ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
 
     - name: Debug build
       env:
@@ -214,21 +152,4 @@ jobs:
         COREDNS_DIR=$HOME/coredns/coredns
         pushd $COREDNS_DIR
         make CGO_ENABLED=1 BUILDOPTS="-v -race" -j$(sysctl -n hw.ncpu)
-        mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH-debug
-        ls -l bin
-        popd
-
-    - name: Release build
-      env:
-        GOOS: darwin
-        GOARCH: amd64
-        CGO_CFLAGS: -O2
-        CGO_CXXFLAGS: -O2
-      run: |
-        set -eufx
-        COREDNS_DIR=$HOME/coredns/coredns
-        pushd $COREDNS_DIR
-        make CGO_ENABLED=1 BUILDOPTS="-v -race" -j$(sysctl -n hw.ncpu)
-        mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
-        ls -l bin
         popd

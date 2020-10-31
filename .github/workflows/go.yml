@@ -64,12 +64,7 @@ jobs:
         # ln -s $DNSREDIR_DIR plugin/$(basename $DNSREDIR_DIR)
         popd
 
-        ls -l ~/go
-        ls -l ~/go/pkg
-        ls -l ~/go/pkg/mod
-        ls -l ~/go/pkg/mod/github.com
-        sudo rm -rf ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
-        ls -l ~/go/pkg/mod/github.com/leiless
+        mkdir -p ~/go/pkg/mod/github.com/leiless
         ln -s $DNSREDIR_DIR ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
         ls -ld ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
 

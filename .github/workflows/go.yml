@@ -86,6 +86,9 @@ jobs:
     runs-on: macos-latest
     steps:
 
+    #- name: Setup Homebrew
+      #uses: "artemnovichkov/action-homebrew@master"
+
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
@@ -145,6 +148,7 @@ jobs:
         GOARCH: amd64
       run: |
         set -eufx
+        which brew || echo brew not found!
         COREDNS_DIR=$HOME/coredns/coredns
         pushd $COREDNS_DIR
         make -j$(sysctl -n hw.ncpu)

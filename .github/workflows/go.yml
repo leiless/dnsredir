@@ -39,6 +39,7 @@ jobs:
         go version
         go env
 
+        DNSREDIR_DIR=$PWD
         HEAD_COMMIT=$(git describe --dirty --always)
         DNSREDIR_TAG=$(curl -sL https://api.github.com/repos/leiless/dnsredir/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
 
@@ -54,6 +55,8 @@ jobs:
         sed -i "s|GITCOMMIT:=|CUSTOM_FLAGS=-X $MOD_ADDR.pluginVersion=$DNSREDIR_TAG -X $MOD_ADDR.pluginHeadCommit=$HEAD_COMMIT\\nGITCOMMIT:=|g" Makefile
         sed -i 's|$(GITCOMMIT)|$(GITCOMMIT) $(CUSTOM_FLAGS)|g' Makefile
         git diff
+        ln -s $DNSREDIR_DIR plugin/$(basename $DNSREDIR_DIR)
+        ls -ld plugin/$(basename $DNSREDIR_DIR)
         popd
 
     #- name: Build

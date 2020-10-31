@@ -46,7 +46,7 @@ jobs:
 
         mkdir -p $HOME/coredns
         COREDNS_URL=https://github.com/coredns/coredns.git
-        export COREDNS_DIR=$HOME/coredns/coredns
+        COREDNS_DIR=$HOME/coredns/coredns
         COREDNS_TAG=$(curl -sL https://api.github.com/repos/coredns/coredns/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
         git clone --branch $COREDNS_TAG --depth 1 $COREDNS_URL $COREDNS_DIR 2> /dev/null
 
@@ -65,7 +65,7 @@ jobs:
     - name: Build
       #run: go build -v .
       run: |
-        pwd
+        COREDNS_DIR=$HOME/coredns/coredns
         pushd $COREDNS_DIR
         make
         mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH

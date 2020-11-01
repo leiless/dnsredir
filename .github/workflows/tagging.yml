@@ -126,7 +126,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: $HOME/coredns/coredns/bin
+        asset_path: ../../coredns/coredns/bin
         asset_name: bin
         asset_content_type: inode/directory
 

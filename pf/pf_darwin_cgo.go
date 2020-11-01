@@ -14,9 +14,19 @@ import (
 )
 
 // User should reply on the error number instead of the description.
-func translateNegatedErrno(errno int) error {
+func translateNegatedErrno(errno int, allowZeroArg ...bool) error {
+	if len(allowZeroArg) > 1 {
+		panic(fmt.Sprintf("at most one allow zero flag, got %v", len(allowZeroArg)))
+	}
+	allowZero := false
+	if len(allowZeroArg) == 1 && allowZeroArg[0] {
+		allowZero = true
+	}
 	if errno == 0 {
-		return nil
+		if allowZero {
+			return nil
+		}
+		panic(fmt.Sprintf("got zero errno, but it should never happen."))
 	}
 	if errno > 0 {
 		panic(fmt.Sprintf("expected a negated errno value, got: %v", errno))
@@ -33,7 +43,7 @@ func OpenDevPf(oflag int) (int, error) {
 }
 
 func CloseDevPf(dev int) error {
-	return translateNegatedErrno(int(C.close_dev_pf(C.int(dev))))
+	return translateNegatedErrno(int(C.close_dev_pf(C.int(dev))), true)
 }
 
 // Return 	true, nil if added successfully

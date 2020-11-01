@@ -203,7 +203,7 @@ jobs:
       run: |
         set -eufx
         ls -l bin
-        cat shasum256.txt
+        cat bin/shasum256.txt
 
   build-on-darwin:
     name: Build on Darwin
@@ -343,4 +343,4 @@ jobs:
       run: |
         set -eufx
         ls -l bin
-        cat shasum256.txt
+        cat bin/shasum256.txt

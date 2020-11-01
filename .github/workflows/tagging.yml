@@ -115,6 +115,7 @@ jobs:
         set -eufx
         pushd bin
         ls -1 | xargs -I{} zip -q {}.zip {}
+        ls -l
         popd
 
     # see:
@@ -123,13 +124,11 @@ jobs:
     - name: Upload release assets
       uses: actions/upload-release-asset@v1
       env:
-        GOOS: darwin
-        GOARCH: amd64
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: bin/coredns_dnsredir-$GOOS-$GOARCH-debug.zip
-        asset_name: coredns_dnsredir-$GOOS-$GOARCH-debug.zip
+        asset_path: bin/coredns_dnsredir-darwin-amd64-debug.zip
+        asset_name: coredns_dnsredir-darwin-amd64-debug.zip
         asset_content_type: application/zip
 
     - name: Post build

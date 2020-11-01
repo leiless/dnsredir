@@ -78,7 +78,6 @@ jobs:
         git clone --branch $COREDNS_TAG --depth 1 $COREDNS_URL $COREDNS_DIR 2> /dev/null
 
         pushd $COREDNS_DIR
-        mkdir -p bin
         gsed -i 's|forward:forward|dnsredir:dnsredir\nforward:forward|g' plugin.cfg
         MOD_ADDR=github.com/coredns/coredns/plugin/dnsredir
         gsed -i "s|GITCOMMIT:=|CUSTOM_FLAGS=-X $MOD_ADDR.pluginVersion=$DNSREDIR_TAG -X $MOD_ADDR.pluginHeadCommit=$HEAD_COMMIT\\nGITCOMMIT:=|g" Makefile
@@ -101,20 +100,21 @@ jobs:
         CGO_CXXFLAGS: -g -O0 -DDEBUG
       run: |
         set -eufx
+
+        DNSREDIR_BIN=$PWD/bin
+        mkdir -p $DNSREDIR_BIN
+
         COREDNS_DIR=$HOME/coredns/coredns
         pushd $COREDNS_DIR
         make CGO_ENABLED=1 BUILDOPTS="-v -race" -j$(sysctl -n hw.ncpu)
-        mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH-debug
+        mv coredns $DNSREDIR_BIN/coredns_dnsredir-$GOOS-$GOARCH-debug
         popd
 
     - name: Create zip files
       run: |
         set -eufx
-        COREDNS_BIN=$HOME/coredns/coredns/bin
-        pushd $COREDNS_BIN
+        pushd bin
         ls -1 | xargs -I{} zip -q {}.zip {}
-        ls -1 | grep -v "\.zip$" | xargs rm
-        ls -l
         popd
 
     # see:
@@ -123,17 +123,16 @@ jobs:
     - name: Upload release assets
       uses: actions/upload-release-asset@v1
       env:
+        GOOS: darwin
+        GOARCH: amd64
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ../../coredns/coredns/bin
-        asset_name: bin
-        asset_content_type: inode/directory
+        asset_path: bin/coredns_dnsredir-$GOOS-$GOARCH-debug.zip
+        asset_name: coredns_dnsredir-$GOOS-$GOARCH-debug.zip
+        asset_content_type: application/zip
 
     - name: Post build
       run: |
         set -eufx
-        COREDNS_DIR=$HOME/coredns/coredns
-        pushd $COREDNS_DIR
         ls -l bin
-        popd

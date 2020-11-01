@@ -126,9 +126,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: $HOME/coredns/coredns/bin/*.zip
-        asset_name: foobar.zip
-        asset_content_type: application/zip
+        asset_path: $HOME/coredns/coredns/bin
+        asset_name: bin
 
     - name: Post build
       run: |

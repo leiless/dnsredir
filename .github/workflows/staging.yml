@@ -145,8 +145,8 @@ jobs:
       env:
         GOOS: darwin
         GOARCH: amd64
-        #CGO_CFLAGS: -g -O0 -DDEBUG
-        #CGO_CXXFLAGS: -g -O0 -DDEBUG
+        CGO_CFLAGS: -g -O0 -DDEBUG -Idarwin-xnu
+        CGO_CXXFLAGS: -g -O0 -DDEBUG -Idarwin-xnu
       run: |
         set -eufx
 
@@ -155,9 +155,6 @@ jobs:
         pushd pf
         gcc -Wall -c pf.c -Idarwin-xnu
         popd
-
-        ls -l ~/go/pkg/mod/github.com/leiless
-        pwd
 
         COREDNS_DIR=$HOME/coredns/coredns
         pushd $COREDNS_DIR

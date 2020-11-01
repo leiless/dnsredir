@@ -1,4 +1,4 @@
-name: CoreDNS dnsredir CI on tagging
+name: CoreDNS dnsredir release-build CI
 
 on:
   push:

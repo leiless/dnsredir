@@ -189,16 +189,6 @@ jobs:
         asset_name: coredns_dnsredir-windows-amd64.zip
         asset_content_type: application/zip
 
-    - name: Upload shasum256.txt
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: bin/shasum256.txt
-        asset_name: shasum256.txt
-        asset_content_type: text/plain
-
     - name: Post build
       run: |
         set -eufx
@@ -328,16 +318,6 @@ jobs:
         asset_path: bin/coredns_dnsredir-darwin-amd64.zip
         asset_name: coredns_dnsredir-darwin-amd64.zip
         asset_content_type: application/zip
-
-    - name: Upload shasum256.txt
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: bin/shasum256.txt
-        asset_name: shasum256.txt
-        asset_content_type: text/plain
 
     - name: Post build
       run: |

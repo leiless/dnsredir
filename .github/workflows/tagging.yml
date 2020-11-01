@@ -30,6 +30,7 @@ jobs:
 
   build-on-linux:
     name: Build on Linux
+    needs: create-release
     runs-on: ubuntu-latest
     steps:
 
@@ -202,6 +203,7 @@ jobs:
       run: |
         set -eufx
         ls -l bin
+        cat shasum256.txt
 
   build-on-darwin:
     name: Build on Darwin
@@ -341,3 +343,4 @@ jobs:
       run: |
         set -eufx
         ls -l bin
+        cat shasum256.txt

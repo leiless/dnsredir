@@ -156,6 +156,9 @@ jobs:
         gcc -Wall -c pf.c -Idarwin-xnu
         popd
 
+        ls -l ~/go/pkg/mod/github.com/leiless
+        pwd
+
         COREDNS_DIR=$HOME/coredns/coredns
         pushd $COREDNS_DIR
         make CGO_ENABLED=1 BUILDOPTS="-v" -j$(sysctl -n hw.ncpu)

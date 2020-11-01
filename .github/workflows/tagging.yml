@@ -30,6 +30,7 @@ jobs:
 
   build-on-darwin:
     name: Build on Darwin
+    needs: create-release
     runs-on: macos-latest
     steps:
 

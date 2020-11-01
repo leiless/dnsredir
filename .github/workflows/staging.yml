@@ -149,6 +149,13 @@ jobs:
         CGO_CXXFLAGS: -g -O0 -DDEBUG
       run: |
         set -eufx
+
+        brew install tree
+        tree pf
+        pushd pf
+        gcc -Wall -c pf.c -Idarwin-xnu
+        popd
+
         COREDNS_DIR=$HOME/coredns/coredns
         pushd $COREDNS_DIR
         make CGO_ENABLED=1 BUILDOPTS="-v -race" -j$(sysctl -n hw.ncpu)

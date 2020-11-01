@@ -25,7 +25,6 @@ jobs:
         with:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
-          draft: true
           prerelease: true
 
   build-on-linux:
@@ -143,7 +142,6 @@ jobs:
         pushd bin
         ls -1 | xargs -I{} zip -q {}.zip {}
         ls -1 | grep "\.zip$" | xargs shasum -a 256 > shasum256.txt
-        ls -l
         popd
 
     # see:
@@ -293,7 +291,6 @@ jobs:
         pushd bin
         ls -1 | xargs -I{} zip -q {}.zip {}
         ls -1 | grep "\.zip$" | xargs shasum -a 256 > shasum256.txt
-        ls -l
         popd
 
     # see:

@@ -1,4 +1,4 @@
-name: CoreDNS dnsredir staging CI
+name: CoreDNS dnsredir non-release-build CI
 
 on:
   push:
@@ -73,8 +73,7 @@ jobs:
         CGO_CXXFLAGS: -g -O0 -DDEBUG
       run: |
         set -eufx
-        COREDNS_DIR=$HOME/coredns/coredns
-        pushd $COREDNS_DIR
+        pushd $HOME/coredns/coredns
         make CGO_ENABLED=1 BUILDOPTS="-v -race" -j$(nproc)
         popd
 
@@ -149,7 +148,6 @@ jobs:
         CGO_CXXFLAGS: -g -O0 -DDEBUG
       run: |
         set -eufx
-        COREDNS_DIR=$HOME/coredns/coredns
-        pushd $COREDNS_DIR
+        pushd $HOME/coredns/coredns
         make CGO_ENABLED=1 BUILDOPTS="-v -race" -j$(sysctl -n hw.ncpu)
         popd

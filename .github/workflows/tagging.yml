@@ -112,7 +112,7 @@ jobs:
         set -eufx
         COREDNS_BIN=$HOME/coredns/coredns/bin
         pushd $COREDNS_BIN
-        ls -1 | xargs -I{} zip -q9 {}.zip {}
+        ls -1 | xargs -I{} zip -q {}.zip {}
         ls -1 | grep -v "\.zip$" | xargs rm
         ls -l
         popd
@@ -128,6 +128,7 @@ jobs:
         upload_url: ${{ needs.create-release.outputs.upload_url }}
         asset_path: $HOME/coredns/coredns/bin
         asset_name: bin
+        asset_content_type: inode/directory
 
     - name: Post build
       run: |

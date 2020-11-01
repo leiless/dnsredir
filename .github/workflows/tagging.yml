@@ -249,8 +249,6 @@ jobs:
       env:
         GOOS: darwin
         GOARCH: amd64
-        CGO_CFLAGS: -O2
-        CGO_CXXFLAGS: -O2
       run: |
         set -eufx
         COREDNS_DIR=$HOME/coredns/coredns

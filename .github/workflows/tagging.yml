@@ -2,7 +2,7 @@ name: CoreDNS dnsredir CI on tagging
 
 on:
   push:
-    tags: +
+    tags: v*
   workflow_dispatch:
     branches: [ master ]
 

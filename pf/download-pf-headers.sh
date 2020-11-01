@@ -9,9 +9,9 @@ if [ "$(uname -s)" != "Darwin" ]; then
 fi
 
 cd "$(dirname "$0")"
-DIR=darwin-xnu
+DIR=/usr/local/include
 
-echo Downloading pf headers...
+echo Downloading pf headers into /usr/local/include ...
 
 mkdir -p "$DIR/net"
 curl -sL -o "$DIR/net/pfvar.h" https://raw.githubusercontent.com/apple/darwin-xnu/master/bsd/net/pfvar.h

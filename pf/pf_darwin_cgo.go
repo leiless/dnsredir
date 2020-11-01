@@ -2,7 +2,7 @@
 
 package pf
 
-// #cgo CFLAGS: -Wall -Wextra -Wno-unused-parameter -Idarwin-xnu
+// #cgo CFLAGS: -Wall -Wextra -Wno-unused-parameter
 // #include <stdlib.h>		// free(3)
 // #include "pf.h"
 import "C"

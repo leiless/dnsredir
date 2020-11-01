@@ -71,6 +71,8 @@ jobs:
         ./download-pf-headers.sh
         popd
 
+        mkdir bin
+
         mkdir -p $HOME/coredns
         COREDNS_URL=https://github.com/coredns/coredns.git
         COREDNS_DIR=$HOME/coredns/coredns
@@ -102,7 +104,6 @@ jobs:
         set -eufx
 
         DNSREDIR_BIN=$PWD/bin
-        mkdir -p $DNSREDIR_BIN
 
         COREDNS_DIR=$HOME/coredns/coredns
         pushd $COREDNS_DIR
@@ -110,7 +111,22 @@ jobs:
         mv coredns $DNSREDIR_BIN/coredns_dnsredir-$GOOS-$GOARCH-debug
         popd
 
-    - name: Create zip files
+    - name: Release build
+      env:
+        GOOS: darwin
+        GOARCH: amd64
+      run: |
+        set -eufx
+
+        DNSREDIR_BIN=$PWD/bin
+
+        COREDNS_DIR=$HOME/coredns/coredns
+        pushd $COREDNS_DIR
+        make CGO_ENABLED=1 BUILDOPTS="-v -race" -j$(sysctl -n hw.ncpu)
+        mv coredns $DNSREDIR_BIN/coredns_dnsredir-$GOOS-$GOARCH
+        popd
+
+    - name: Prepare files for upload
       run: |
         set -eufx
         pushd bin
@@ -122,7 +138,7 @@ jobs:
     # see:
     #   https://github.com/actions/upload-release-asset
     #   htps://github.com/marketplace/actions/upload-a-release-asset
-    - name: Upload release assets
+    - name: Upload coredns_dnsredir-darwin-amd64-debug.zip
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -130,6 +146,16 @@ jobs:
         upload_url: ${{ needs.create-release.outputs.upload_url }}
         asset_path: bin/coredns_dnsredir-darwin-amd64-debug.zip
         asset_name: coredns_dnsredir-darwin-amd64-debug.zip
+        asset_content_type: application/zip
+
+    - name: Upload coredns_dnsredir-darwin-amd64.zip
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: bin/coredns_dnsredir-darwin-amd64.zip
+        asset_name: coredns_dnsredir-darwin-amd64.zip
         asset_content_type: application/zip
 
     - name: Upload shasum256.txt

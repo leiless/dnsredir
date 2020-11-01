@@ -145,8 +145,8 @@ jobs:
       env:
         GOOS: darwin
         GOARCH: amd64
-        CGO_CFLAGS: -g -O0 -DDEBUG -Idarwin-xnu
-        CGO_CXXFLAGS: -g -O0 -DDEBUG -Idarwin-xnu
+        CGO_CFLAGS: -g -O0 -DDEBUG
+        CGO_CXXFLAGS: -g -O0 -DDEBUG
       run: |
         set -eufx
 
@@ -158,5 +158,5 @@ jobs:
 
         COREDNS_DIR=$HOME/coredns/coredns
         pushd $COREDNS_DIR
-        make CGO_ENABLED=1 BUILDOPTS="-v" -j$(sysctl -n hw.ncpu)
+        make CGO_ENABLED=1 BUILDOPTS="-v -race" -j$(sysctl -n hw.ncpu)
         popd

@@ -83,6 +83,8 @@ func pfParse(c *caddy.Controller, u *reloadableUpstream) error {
 	return nil
 }
 
+var pfOnce Once
+
 func pfSetup(u *reloadableUpstream) error {
 	if u.pf == nil {
 		return nil
@@ -94,6 +96,14 @@ func pfSetup(u *reloadableUpstream) error {
 	if dev, err := pf.OpenDevPf(os.O_WRONLY); err != nil {
 		return err
 	} else {
+		pfOnce.Do(func() {
+			if enabled, err := pf.IsEnabled(dev); err != nil {
+				log.Errorf("Cannot check if pf enabled: %v", err)
+			} else if !enabled {
+				log.Warningf("pf is not enabled, changes to pf won't take effect immediately.")
+			}
+		})
+
 		handle.dev = dev
 		// Try to create tables at pf setup stage.
 		for tbl, flags := range handle.set {

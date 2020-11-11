@@ -46,6 +46,14 @@ func CloseDevPf(dev int) error {
 	return translateNegatedErrno(int(C.close_dev_pf(C.int(dev))), true)
 }
 
+func IsEnabled(dev int) (bool, error) {
+	ret := int(C.pf_is_enabled(C.int(dev)))
+	if ret < 0 {
+		return false, translateNegatedErrno(ret)
+	}
+	return ret != 0, nil
+}
+
 // Return 	true, nil if added successfully
 //			false, nil if given name[:anchor] already exists
 func AddTable(dev int, name, anchor string) (bool, error) {

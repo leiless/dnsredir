@@ -34,16 +34,16 @@ func translateNegatedErrno(errno int, allowZeroArg ...bool) error {
 	return ErrnoError(-errno)	// Rectify errno
 }
 
-func OpenDevPf(oflag int) (int, error) {
-	fd := int(C.open_dev_pf(C.int(oflag)))
+func Open(oflag int) (int, error) {
+	fd := int(C.pf_open(C.int(oflag)))
 	if fd < 0 {
 		return 0, translateNegatedErrno(fd)
 	}
 	return fd, nil
 }
 
-func CloseDevPf(dev int) error {
-	return translateNegatedErrno(int(C.close_dev_pf(C.int(dev))), true)
+func Close(dev int) error {
+	return translateNegatedErrno(int(C.pf_close(C.int(dev))), true)
 }
 
 func IsEnabled(dev int) (bool, error) {

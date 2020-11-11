@@ -93,7 +93,7 @@ func pfSetup(u *reloadableUpstream) error {
 		log.Warningf("pf needs root user privilege to work")
 	}
 	handle := u.pf.(*pfHandle)
-	if dev, err := pf.OpenDevPf(os.O_WRONLY); err != nil {
+	if dev, err := pf.Open(os.O_WRONLY); err != nil {
 		return err
 	} else {
 		pfOnce.Do(func() {
@@ -125,7 +125,7 @@ func pfShutdown(u *reloadableUpstream) error {
 		return nil
 	}
 	handle := u.pf.(*pfHandle)
-	return pf.CloseDevPf(handle.dev)
+	return pf.Close(handle.dev)
 }
 
 func pfAddIP(u *reloadableUpstream, reply *dns.Msg) {

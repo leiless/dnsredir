@@ -37,6 +37,33 @@
 #endif
 
 /**
+ * @return      Negated errno if failed to open /dev/pf
+ */
+int pf_open(int oflag)
+{
+    int fd = open("/dev/pf", oflag);
+    if (fd < 0) return -errno;
+    return fd;
+}
+
+int pf_close(int dev)
+{
+    return close(dev) < 0 ? -errno : 0;
+}
+
+/**
+ * @return      1 if pf is enabled, 0 if disabled.
+ *              Negated errno if failed to get pf status.
+ */
+int pf_is_enabled(int dev)
+{
+    struct pf_status st;
+    bzero(&st, sizeof(st));
+    if (ioctl(dev, DIOCGETSTATUS, &st) < 0) return -errno;
+    return st.running != 0;
+}
+
+/**
  * Add IP/IP-CIDR addresses to a given table.
  *
  * @param dev       File descriptor to the /dev/pf
@@ -187,31 +214,4 @@ int pf_add_table(int dev, const char *table_name, const char *anchor)
     if (pfr_add_tables(dev, &tbl, 1, &nadd, PFR_FLAG_ATOMIC) < 0) return -errno;
     assert(nadd >= 0);
     return nadd;
-}
-
-/**
- * @return      1 if pf is enabled, 0 if disabled.
- *              Negated errno if failed to get pf status.
- */
-int pf_is_enabled(int dev)
-{
-    struct pf_status st;
-    bzero(&st, sizeof(st));
-    if (ioctl(dev, DIOCGETSTATUS, &st) < 0) return -errno;
-    return st.running != 0;
-}
-
-/**
- * @return      Negated errno if failed to open /dev/pf
- */
-int open_dev_pf(int oflag)
-{
-    int fd = open("/dev/pf", oflag);
-    if (fd < 0) return -errno;
-    return fd;
-}
-
-int close_dev_pf(int dev)
-{
-    return close(dev) < 0 ? -errno : 0;
 }

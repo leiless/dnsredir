@@ -47,11 +47,11 @@ func Close(dev int) error {
 }
 
 func IsEnabled(dev int) (bool, error) {
-	ret := int(C.pf_is_enabled(C.int(dev)))
-	if ret < 0 {
-		return false, translateNegatedErrno(ret)
+	rc := int(C.pf_is_enabled(C.int(dev)))
+	if rc < 0 {
+		return false, translateNegatedErrno(rc)
 	}
-	return ret != 0, nil
+	return rc != 0, nil
 }
 
 // Return 	true, nil if added successfully

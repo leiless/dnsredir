@@ -1,11 +1,9 @@
 package dnsredir
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"github.com/coredns/coredns/plugin"
-	"golang.org/x/net/html"
 	"hash/fnv"
 	"io"
 	"io/ioutil"
@@ -20,14 +18,14 @@ import (
 const pluginName = "dnsredir"
 
 var (
-	pluginVersion = "?"
+	pluginVersion    = "?"
 	pluginHeadCommit = "?"
 )
 
 var userAgent = fmt.Sprintf("coredns-%v %v %v", pluginName, pluginVersion, pluginHeadCommit)
 
 const (
-	mimeTypeDohAny           = "?/?"	// Dummy MIME type
+	mimeTypeDohAny           = "?/?" // Dummy MIME type
 	mimeTypeJson             = "application/json"
 	mimeTypeDnsJson          = "application/dns-json"
 	mimeTypeDnsMessage       = "application/dns-message"
@@ -81,7 +79,7 @@ func isDomainName(s string) bool {
 			}
 		}
 
-		if seg[0] == '-' || seg[n - 1] == '-' {
+		if seg[0] == '-' || seg[n-1] == '-' {
 			return false
 		}
 	}
@@ -119,7 +117,7 @@ func SplitByByte(s string, c byte) (string, string) {
 
 func isContentType(contentType string, h *http.Header) bool {
 	t := h.Get("Content-Type")
-	return t == contentType || strings.Contains(t, contentType + ";")
+	return t == contentType || strings.Contains(t, contentType+";")
 }
 
 // bootstrap: Bootstrap DNS to resolve domain names(empty array to use system defaults)
@@ -141,7 +139,7 @@ func getUrlContent(url, contentType string, bootstrap []string, timeout time.Dur
 			},
 		}
 		dialer := &net.Dialer{
-			Timeout: timeout,
+			Timeout:  timeout,
 			Resolver: resolver,
 		}
 		// see: http.DefaultTransport
@@ -166,8 +164,8 @@ func getUrlContent(url, contentType string, bootstrap []string, timeout time.Dur
 	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:80.0) Gecko/20100101 Firefox/80.0")
 
 	c := &http.Client{
-		Transport: transport,	// [sic] If nil, DefaultTransport is used.
-		Timeout:   timeout,		// Q: Should be omit this field if transport isn't nil?
+		Transport: transport, // [sic] If nil, DefaultTransport is used.
+		Timeout:   timeout,   // Q: Should be omit this field if transport isn't nil?
 	}
 	resp, err := c.Do(req)
 	if err != nil {
@@ -184,7 +182,7 @@ func getUrlContent(url, contentType string, bootstrap []string, timeout time.Dur
 		// Dirty patch to fix t.cn not redirecting problem
 		// see: https://github.com/leiless/dnsredir/issues/4
 		if strings.HasPrefix(u, "https://t.cn/") && isContentType("text/html", &resp.Header) {
-			if url, err := tcnFix(url, resp.Body); err != nil {
+			if url, err := tcnFix(url, resp.Header); err != nil {
 				return "", err
 			} else {
 				return getUrlContent(url, contentType, bootstrap, timeout)
@@ -203,40 +201,13 @@ func getUrlContent(url, contentType string, bootstrap []string, timeout time.Dur
 	return string(content), nil
 }
 
-func tcnFix(url string, r io.Reader) (string, error) {
-	b, err := ioutil.ReadAll(r)
-	if err != nil {
-		return "", err
+func tcnFix(url string, h http.Header) (string, error) {
+	const LocationKey = "Location"
+	location := h.Get(LocationKey)
+	if location != "" {
+		return location, nil
 	}
-
-	h, err := html.Parse(bytes.NewReader(b))
-
-	var fixFunc func(*html.Node) (string, bool)
-	fixFunc = func(n *html.Node) (string, bool) {
-		if n.Type == html.ElementNode && n.Data == "p" {
-			for _, a := range n.Attr {
-				if a.Key =="class" && a.Val == "link" {
-					if n.FirstChild != nil {
-						if u := strings.ToLower(n.FirstChild.Data); strings.HasPrefix(u, "https://") {
-							return n.FirstChild.Data, true
-						}
-					}
-					break
-				}
-			}
-		}
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			if url, found := fixFunc(c); found {
-				return url, true
-			}
-		}
-		return "", false
-	}
-
-	if url, found := fixFunc(h); found {
-		return url, nil
-	}
-	return "", fmt.Errorf("cannot fix t.cn not redirecting problem, page source of %v may changed", url)
+	return "", fmt.Errorf("cannot fix t.cn redirect, %q header key not found in %v", LocationKey, url)
 }
 
 func stringHash(str string) uint64 {
@@ -260,4 +231,3 @@ func hostPortIsIpPort(hostport string) bool {
 	i := strings.IndexByte(host, '%')
 	return i > 0 && net.ParseIP(host[:i]) != nil
 }
-

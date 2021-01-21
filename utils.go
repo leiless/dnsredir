@@ -178,18 +178,10 @@ func getUrlContent(url, contentType string, bootstrap []string, timeout time.Dur
 	}
 
 	if len(contentType) != 0 && !isContentType(contentType, &resp.Header) {
-		u := strings.ToLower(url)
-		// Dirty patch to fix t.cn not redirecting problem
-		// see: https://github.com/leiless/dnsredir/issues/4
-		if strings.HasPrefix(u, "https://t.cn/") && isContentType("text/html", &resp.Header) {
-			if url, err := tcnFix(url, resp.Header); err != nil {
-				return "", err
-			} else {
-				return getUrlContent(url, contentType, bootstrap, timeout)
-			}
+		if url, err := fixUrl(url, resp.Header); err != nil {
+			return "", err
 		} else {
-			s := "Content-Type"
-			return "", fmt.Errorf("bad %v, expect: %q got: %q", s, contentType, resp.Header.Get(s))
+			return getUrlContent(url, contentType, bootstrap, timeout)
 		}
 	}
 
@@ -201,13 +193,13 @@ func getUrlContent(url, contentType string, bootstrap []string, timeout time.Dur
 	return string(content), nil
 }
 
-func tcnFix(url string, h http.Header) (string, error) {
+func fixUrl(url string, h http.Header) (string, error) {
 	const LocationKey = "Location"
 	location := h.Get(LocationKey)
 	if location != "" {
 		return location, nil
 	}
-	return "", fmt.Errorf("cannot fix t.cn redirect, %q header key not found in %v", LocationKey, url)
+	return "", fmt.Errorf("%q header key not found in %v", LocationKey, url)
 }
 
 func stringHash(str string) uint64 {

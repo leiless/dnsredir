@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -125,7 +126,7 @@ func isContentType(contentType string, h *http.Header) bool {
 // see:
 //	https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
 //	https://medium.com/@nate510/don-t-use-go-s-default-http-client-4804cb19f779
-func getUrlContent(url, contentType string, bootstrap []string, timeout time.Duration) (string, error) {
+func getUrlContent(theUrl, contentType string, bootstrap []string, timeout time.Duration) (string, error) {
 	var transport http.RoundTripper
 
 	if len(bootstrap) != 0 {
@@ -156,7 +157,7 @@ func getUrlContent(url, contentType string, bootstrap []string, timeout time.Dur
 		// Fallback to use system default resolvers, which located at /etc/resolv.conf
 	}
 
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequest(http.MethodGet, theUrl, nil)
 	if err != nil {
 		return "", err
 	}
@@ -178,10 +179,10 @@ func getUrlContent(url, contentType string, bootstrap []string, timeout time.Dur
 	}
 
 	if len(contentType) != 0 && !isContentType(contentType, &resp.Header) {
-		if url, err := fixUrl(url, resp.Header); err != nil {
+		if theUrl, err = fixUrl(theUrl, resp.Header); err != nil {
 			return "", err
 		} else {
-			return getUrlContent(url, contentType, bootstrap, timeout)
+			return getUrlContent(theUrl, contentType, bootstrap, timeout)
 		}
 	}
 
@@ -193,13 +194,16 @@ func getUrlContent(url, contentType string, bootstrap []string, timeout time.Dur
 	return string(content), nil
 }
 
-func fixUrl(url string, h http.Header) (string, error) {
+func fixUrl(theUrl string, h http.Header) (string, error) {
 	const LocationKey = "Location"
 	location := h.Get(LocationKey)
 	if location != "" {
+		if _, err := url.Parse(theUrl); err != nil {
+			return "", fmt.Errorf("fixUrl(): url.Parse(): %w", err)
+		}
 		return location, nil
 	}
-	return "", fmt.Errorf("%q header key not found in %v", LocationKey, url)
+	return "", fmt.Errorf("%q header key not found in %v", LocationKey, theUrl)
 }
 
 func stringHash(str string) uint64 {

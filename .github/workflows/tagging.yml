@@ -77,7 +77,7 @@ jobs:
         go generate coredns.go
         git diff
         git status
-        go get .
+        go get
         popd
 
     - name: Debug build
@@ -254,7 +254,9 @@ jobs:
         go generate coredns.go
         git diff
         git status
-        go get .
+        go get
+        # Temp fix: https://github.com/leiless/dnsredir/runs/1848396928
+        go get github.com/coredns/coredns/core/plugin
         popd
 
     - name: Debug build

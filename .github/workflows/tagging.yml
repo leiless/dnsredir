@@ -61,6 +61,10 @@ jobs:
 
         mkdir bin
 
+        mkdir -p ~/go/pkg/mod/github.com/leiless
+        # Link leiless/dnsredir to latest master tree.
+        ln -s $DNSREDIR_DIR ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
+
         COREDNS_URL=https://github.com/coredns/coredns.git
         COREDNS_DIR=$HOME/coredns
         COREDNS_TAG=$(curl -sL https://api.github.com/repos/coredns/coredns/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
@@ -73,11 +77,8 @@ jobs:
         go generate coredns.go
         git diff
         git status
+        go get .
         popd
-
-        mkdir -p ~/go/pkg/mod/github.com/leiless
-        # Link leiless/dnsredir to latest master tree.
-        ln -s $DNSREDIR_DIR ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
 
     - name: Debug build
       env:
@@ -236,6 +237,10 @@ jobs:
 
         mkdir bin
 
+        mkdir -p ~/go/pkg/mod/github.com/leiless
+        # Link leiless/dnsredir to latest master tree.
+        ln -s $DNSREDIR_DIR ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
+
         mkdir -p $HOME/coredns
         COREDNS_URL=https://github.com/coredns/coredns.git
         COREDNS_DIR=$HOME/coredns
@@ -249,11 +254,8 @@ jobs:
         go generate coredns.go
         git diff
         git status
+        go get .
         popd
-
-        mkdir -p ~/go/pkg/mod/github.com/leiless
-        # Link leiless/dnsredir to latest master tree.
-        ln -s $DNSREDIR_DIR ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
 
     - name: Debug build
       env:

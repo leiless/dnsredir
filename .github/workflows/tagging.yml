@@ -201,9 +201,9 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: ^1.13
-        #go-version: ^1.16.0-rc1
-        #stable: false
+        #go-version: ^1.13
+        go-version: ^1.16.0-rc1
+        stable: false
 
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
@@ -242,7 +242,6 @@ jobs:
         # Link leiless/dnsredir to latest master tree.
         ln -s $DNSREDIR_DIR ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
 
-        mkdir -p $HOME/coredns
         COREDNS_URL=https://github.com/coredns/coredns.git
         COREDNS_DIR=$HOME/coredns
         COREDNS_TAG=$(curl -sL https://api.github.com/repos/coredns/coredns/releases/latest | grep '"tag_name":' | cut -d'"' -f4)

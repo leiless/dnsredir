@@ -58,7 +58,7 @@ jobs:
         git clone --branch $COREDNS_TAG --depth 1 $COREDNS_URL $COREDNS_DIR 2> /dev/null
 
         pushd $COREDNS_DIR
-        sed -i 's|forward:forward|dnsredir:$REPO_ADDR\nforward:forward|g' plugin.cfg
+        sed -i "s|forward:forward|dnsredir:$REPO_ADDR\nforward:forward|g" plugin.cfg
         sed -i "s|GITCOMMIT:=|CUSTOM_FLAGS=-X $REPO_ADDR.pluginVersion=$DNSREDIR_TAG -X $REPO_ADDR.pluginHeadCommit=$HEAD_COMMIT\\nGITCOMMIT:=|g" Makefile
         sed -i 's|$(GITCOMMIT)|$(GITCOMMIT) $(CUSTOM_FLAGS)|g' Makefile
         go generate coredns.go

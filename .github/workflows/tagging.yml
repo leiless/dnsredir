@@ -282,6 +282,19 @@ jobs:
         mv coredns $DNSREDIR_BIN/coredns_dnsredir-$GOOS-$GOARCH
         popd
 
+    - name: Release build for ARM64
+      env:
+        GOOS: darwin
+        GOARCH: arm64
+      run: |
+        set -eufx
+        DNSREDIR_BIN=$PWD/bin
+        COREDNS_DIR=$HOME/coredns
+        pushd $COREDNS_DIR
+        make CGO_ENABLED=1 -j$(sysctl -n hw.ncpu)
+        mv coredns $DNSREDIR_BIN/coredns_dnsredir-$GOOS-$GOARCH
+        popd
+
     - name: Prepare files for upload
       run: |
         set -eufx
@@ -311,6 +324,16 @@ jobs:
         upload_url: ${{ needs.create-release.outputs.upload_url }}
         asset_path: bin/coredns_dnsredir-darwin-amd64.zip
         asset_name: coredns_dnsredir-darwin-amd64.zip
+        asset_content_type: application/zip
+
+    - name: Upload coredns_dnsredir-darwin-arm64.zip
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: bin/coredns_dnsredir-darwin-arm64.zip
+        asset_name: coredns_dnsredir-darwin-arm64.zip
         asset_content_type: application/zip
 
     - name: Post build

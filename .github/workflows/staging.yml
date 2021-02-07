@@ -47,6 +47,7 @@ jobs:
         go env
 
         DNSREDIR_DIR=$PWD
+        REPO_ADDR=$(git remote get-url origin | sed -e 's/^https:\/\///' -e 's/\.git//')
         HEAD_COMMIT=$(git describe --dirty --always)
         DNSREDIR_TAG=$(curl -sL https://api.github.com/repos/leiless/dnsredir/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
 
@@ -57,12 +58,10 @@ jobs:
         git clone --branch $COREDNS_TAG --depth 1 $COREDNS_URL $COREDNS_DIR 2> /dev/null
 
         pushd $COREDNS_DIR
-        sed -i 's|forward:forward|dnsredir:dnsredir\nforward:forward|g' plugin.cfg
-        MOD_ADDR=github.com/coredns/coredns/plugin/dnsredir
-        sed -i "s|GITCOMMIT:=|CUSTOM_FLAGS=-X $MOD_ADDR.pluginVersion=$DNSREDIR_TAG -X $MOD_ADDR.pluginHeadCommit=$HEAD_COMMIT\\nGITCOMMIT:=|g" Makefile
+        sed -i 's|forward:forward|dnsredir:$REPO_ADDR\nforward:forward|g' plugin.cfg
+        sed -i "s|GITCOMMIT:=|CUSTOM_FLAGS=-X $REPO_ADDR.pluginVersion=$DNSREDIR_TAG -X $REPO_ADDR.pluginHeadCommit=$HEAD_COMMIT\\nGITCOMMIT:=|g" Makefile
         sed -i 's|$(GITCOMMIT)|$(GITCOMMIT) $(CUSTOM_FLAGS)|g' Makefile
         go generate coredns.go
-        sed -i 's|_ "dnsredir"|_ "github.com/leiless/dnsredir"|g' core/plugin/zplugin.go
         git diff
         git status
         popd

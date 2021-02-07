@@ -201,8 +201,9 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: ^1.16.0-rc1
-        stable: false
+        go-version: ^1.13
+        #go-version: ^1.16.0-rc1
+        #stable: false
 
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
@@ -255,8 +256,6 @@ jobs:
         git diff
         git status
         go get
-        # Temp fix: https://github.com/leiless/dnsredir/runs/1848396928
-        go get github.com/coredns/coredns/core/plugin
         popd
 
     - name: Debug build

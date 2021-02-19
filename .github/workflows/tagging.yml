@@ -201,8 +201,8 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: ^1.13
-        #go-version: ^1.16.0-rc1
+        #go-version: ^1.13
+        go-version: ^1.16
         #stable: false
 
     - name: Check out code into the Go module directory
@@ -260,7 +260,8 @@ jobs:
     - name: Debug build
       env:
         GOOS: darwin
-        GOARCH: amd64
+        #GOARCH: amd64
+        GOARCH: arm64
         CGO_CFLAGS: -g -O0 -DDEBUG
         CGO_CXXFLAGS: -g -O0 -DDEBUG
       run: |

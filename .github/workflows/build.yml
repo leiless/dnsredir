@@ -66,6 +66,8 @@ jobs:
           git status
           # see: https://github.com/golang/go/issues/44129
           go get -t .
+          go mod tidy
+          git status
           #go get
           popd
 

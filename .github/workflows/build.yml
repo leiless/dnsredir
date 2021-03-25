@@ -19,7 +19,7 @@ on:
 
 jobs:
   build-on-linux:
-    if: 'false'
+    #if: 'false'
     name: Build on Linux
     runs-on: ubuntu-latest
     steps:
@@ -125,6 +125,19 @@ jobs:
           mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
           popd
 
+      - name: Release build ${{ env.GOOS }}-${{ env.GOARCH }}
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GOOS: windows
+          GOARCH: amd64
+        run: |
+          set -eufx
+          COREDNS_DIR=coredns
+          pushd $COREDNS_DIR
+          make BUILDOPTS="-mod=mod" -j$(nproc)
+          mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
+          popd
+
       - name: Packaging
         if: startsWith(github.ref, 'refs/tags/')
         run: |
@@ -148,7 +161,7 @@ jobs:
             coredns/bin/*.zip.shasum256
 
   build-on-darwin:
-    #if: 'false'
+    if: 'false'
     name: Build on Darwin
     runs-on: macos-latest
     steps:

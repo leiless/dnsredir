@@ -146,7 +146,7 @@ jobs:
       - name: Debug build
         env:
           GOOS: darwin
-          GOARCH: amd64
+          GOARCH: arm64
           CGO_CFLAGS: -g -O0 -DDEBUG
           CGO_CXXFLAGS: -g -O0 -DDEBUG
         run: |

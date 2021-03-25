@@ -122,6 +122,27 @@ jobs:
           mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
           popd
 
+      - name: Packaging
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          set -eufx
+          COREDNS_DIR=$HOME/coredns
+          pushd $COREDNS_DIR/bin
+          ls -1 | xargs -I{} bash -c "zip -qr9 {}.zip {} && shasum -a 256 {}.zip > {}.zip.shasum256 && rm {}"
+          popd
+
+      - name: Upload files
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          prerelease: true
+          fail_on_unmatched_files: true
+          files: |
+            ~/coredns/bin/*.zip
+            ~/coredns/bin/*.zip.shasum256
+
   build-on-darwin:
     name: Build on Darwin
     runs-on: macos-latest

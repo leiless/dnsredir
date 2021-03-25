@@ -206,6 +206,9 @@ jobs:
           xcode-select -p
           xcodebuild -version
 
+          # BSD sed sucks!
+          brew install gnu-sed
+
           DNSREDIR_DIR=$PWD
           REPO_ADDR=$(git remote get-url origin | sed -e 's/^https:\/\///' -e 's/\.git//')
           HEAD_COMMIT=$(git describe --dirty --always)
@@ -225,9 +228,9 @@ jobs:
           ln -s $DNSREDIR_DIR ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
 
           pushd $COREDNS_DIR
-          sed -i '' "s|forward:forward|dnsredir:$REPO_ADDR\nforward:forward|g" plugin.cfg
-          sed -i '' "s|GITCOMMIT:=|CUSTOM_FLAGS=-X $REPO_ADDR.pluginVersion=$DNSREDIR_TAG -X $REPO_ADDR.pluginHeadCommit=$HEAD_COMMIT\nGITCOMMIT:=|g" Makefile
-          sed -i '' 's|$(GITCOMMIT)|$(GITCOMMIT) $(CUSTOM_FLAGS)|g' Makefile
+          gsed -i "s|forward:forward|dnsredir:$REPO_ADDR\nforward:forward|g" plugin.cfg
+          gsed -i "s|GITCOMMIT:=|CUSTOM_FLAGS=-X $REPO_ADDR.pluginVersion=$DNSREDIR_TAG -X $REPO_ADDR.pluginHeadCommit=$HEAD_COMMIT\nGITCOMMIT:=|g" Makefile
+          gsed -i 's|$(GITCOMMIT)|$(GITCOMMIT) $(CUSTOM_FLAGS)|g' Makefile
           go generate coredns.go
           git diff
           git status

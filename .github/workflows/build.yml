@@ -82,5 +82,5 @@ jobs:
           set -eufx
           COREDNS_DIR=$HOME/coredns
           pushd $COREDNS_DIR
-          make CGO_ENABLED=1 BUILDOPTS="-v -race" -j$(nproc)
+          make CGO_ENABLED=1 BUILDOPTS="-mod=mod -v -race" -j$(nproc)
           popd

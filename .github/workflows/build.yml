@@ -201,7 +201,7 @@ jobs:
           popd
 
           COREDNS_URL=https://github.com/coredns/coredns.git
-          COREDNS_DIR=$HOME/coredns
+          COREDNS_DIR=coredns
           COREDNS_TAG=$(curl -sL https://api.github.com/repos/coredns/coredns/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
           git clone --branch $COREDNS_TAG --depth 1 $COREDNS_URL $COREDNS_DIR 2> /dev/null
 
@@ -227,7 +227,7 @@ jobs:
           CGO_CXXFLAGS: -g -O0 -DDEBUG
         run: |
           set -eufx
-          COREDNS_DIR=$HOME/coredns
+          COREDNS_DIR=coredns
           pushd $COREDNS_DIR
           make CGO_ENABLED=1 BUILDOPTS="-v -race" -j$(sysctl -n hw.ncpu)
           popd
@@ -239,7 +239,7 @@ jobs:
           GOARCH: amd64
         run: |
           set -eufx
-          COREDNS_DIR=$HOME/coredns
+          COREDNS_DIR=coredns
           pushd $COREDNS_DIR
           mkdir bin
           mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH-debug
@@ -252,7 +252,7 @@ jobs:
           GOARCH: amd64
         run: |
           set -eufx
-          COREDNS_DIR=$HOME/coredns
+          COREDNS_DIR=coredns
           pushd $COREDNS_DIR
           make CGO_ENABLED=1 -j$(sysctl -n hw.ncpu)
           mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
@@ -265,7 +265,7 @@ jobs:
           GOARCH: arm64
         run: |
           set -eufx
-          COREDNS_DIR=$HOME/coredns
+          COREDNS_DIR=coredns
           pushd $COREDNS_DIR
           make CGO_ENABLED=1 -j$(sysctl -n hw.ncpu)
           mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH

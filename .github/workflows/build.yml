@@ -144,6 +144,7 @@ jobs:
             ~/coredns/bin/*.zip.shasum256
 
   build-on-darwin:
+    if: startsWith(github.ref, 'disabled')
     name: Build on Darwin
     runs-on: macos-latest
     steps:

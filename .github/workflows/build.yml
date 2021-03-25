@@ -70,7 +70,7 @@ jobs:
           go get
           popd
 
-      - name: Debug build (amd64)
+      - name: Debug build ${{ env.GOOS }}-${{ env.GOARCH }}
         env:
           GOOS: linux
           GOARCH: amd64
@@ -86,7 +86,7 @@ jobs:
           make CGO_ENABLED=1 BUILDOPTS="-mod=mod -race" -j$(nproc)
           popd
 
-      - name: Debug build for release (amd64)
+      - name: Debug build for release ${{ env.GOOS }}-${{ env.GOARCH }}
         if: startsWith(github.ref, 'refs/tags/')
         env:
           GOOS: linux
@@ -99,7 +99,7 @@ jobs:
           mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH-debug
           popd
 
-      - name: Release build (amd64)
+      - name: Release build ${{ env.GOOS }}-${{ env.GOARCH }}
         if: startsWith(github.ref, 'refs/tags/')
         env:
           GOOS: linux
@@ -112,7 +112,7 @@ jobs:
           mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
           popd
 
-      - name: Release build (arm64)
+      - name: Release build ${{ env.GOOS }}-${{ env.GOARCH }}
         if: startsWith(github.ref, 'refs/tags/')
         env:
           GOOS: linux
@@ -233,7 +233,7 @@ jobs:
           go get
           popd
 
-      - name: Debug build (amd64)
+      - name: Debug build ${{ env.GOOS }}-${{ env.GOARCH }}
         env:
           GOOS: darwin
           GOARCH: amd64
@@ -246,7 +246,7 @@ jobs:
           make CGO_ENABLED=1 BUILDOPTS="-race" -j$(sysctl -n hw.ncpu)
           popd
 
-      - name: Debug build for release (amd64)
+      - name: Debug build for release ${{ env.GOOS }}-${{ env.GOARCH }}
         if: startsWith(github.ref, 'refs/tags/')
         env:
           GOOS: darwin
@@ -259,7 +259,7 @@ jobs:
           mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH-debug
           popd
 
-      - name: Release build (amd64)
+      - name: Release build ${{ env.GOOS }}-${{ env.GOARCH }}
         if: startsWith(github.ref, 'refs/tags/')
         env:
           GOOS: darwin
@@ -272,7 +272,7 @@ jobs:
           mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
           popd
 
-      - name: Release build (arm64)
+      - name: Release build ${{ env.GOOS }}-${{ env.GOARCH }}
         if: startsWith(github.ref, 'refs/tags/')
         env:
           GOOS: darwin

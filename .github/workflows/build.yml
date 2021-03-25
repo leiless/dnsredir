@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
     branches: [ master ]
   release:
-    types: [ created, edited ]
+    types: [ created ]
 
 jobs:
   build-on-linux:

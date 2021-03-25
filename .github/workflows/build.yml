@@ -83,7 +83,7 @@ jobs:
           pushd $COREDNS_DIR
           # Temporary fix to the 'missing go.sum entry for module providing package ...' bug
           # see: https://github.com/golang/go/issues/44129#issuecomment-806400315
-          make CGO_ENABLED=1 BUILDOPTS="-mod=mod -v -race" -j$(nproc)
+          make CGO_ENABLED=1 BUILDOPTS="-mod=mod -race" -j$(nproc)
           popd
 
       - name: Debug build for release (amd64)
@@ -243,7 +243,7 @@ jobs:
           set -eufx
           COREDNS_DIR=coredns
           pushd $COREDNS_DIR
-          make CGO_ENABLED=1 BUILDOPTS="-v -race" -j$(sysctl -n hw.ncpu)
+          make CGO_ENABLED=1 BUILDOPTS="-race" -j$(sysctl -n hw.ncpu)
           popd
 
       - name: Debug build for release (amd64)

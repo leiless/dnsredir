@@ -14,6 +14,8 @@ func ipsetParse(c *caddy.Controller, u *reloadableUpstream) error {
 	_ = u
 	ipsetOnce.Do(func() {
 		dir := c.Val()
+		// #9 Consume remaining arguments to fix Corefile parse error
+		_ = c.RemainingArgs()
 		log.Warningf("%v is not available on %v", dir, runtime.GOOS)
 	})
 	return nil

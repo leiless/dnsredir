@@ -131,6 +131,7 @@ jobs:
           COREDNS_DIR=$HOME/coredns
           pushd $COREDNS_DIR/bin
           ls -1 | xargs -I{} bash -c "zip -qr9 {}.zip {} && shasum -a 256 {}.zip > {}.zip.shasum256 && rm {}"
+          ls -l
           popd
 
       - name: Upload files

@@ -19,7 +19,7 @@ on:
 
 jobs:
   build-on-linux:
-    if: 'false'
+    #if: 'false'
     name: Build on Linux
     runs-on: ubuntu-latest
     steps:

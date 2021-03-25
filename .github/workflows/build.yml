@@ -64,10 +64,6 @@ jobs:
           go generate coredns.go
           git diff
           git status
-          # see: https://github.com/golang/go/issues/44129
-          #go get -t .
-          #go mod tidy
-          #git status
           go get
           popd
 
@@ -82,5 +78,7 @@ jobs:
           set -eufx
           COREDNS_DIR=$HOME/coredns
           pushd $COREDNS_DIR
+          # Temporary fix to the 'missing go.sum entry for module providing package ...' bug
+          # see: https://github.com/golang/go/issues/44129#issuecomment-806400315
           make CGO_ENABLED=1 BUILDOPTS="-mod=mod -v -race" -j$(nproc)
           popd

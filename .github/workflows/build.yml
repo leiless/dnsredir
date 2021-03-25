@@ -142,6 +142,17 @@ jobs:
               dep ensure
           fi
 
+      - name: Hack macOS 10.x to allow arm64 build support
+        run: |
+          if [ "$(sw_vers -productVersion | cut -d'.' -f1)" = 10 ]; then
+            pushd /Library/Developer/CommandLineTools/SDKs
+            sudo rm MacOSX.sdk
+            sudo ln -s MacOSX11.1.sdk MacOSX.sdk
+            sudo rm -rf MacOSX10.15.sdk
+            ls -l
+            popd
+          fi
+
       - name: Prepare CoreDNS for dnsredir plugin
         run: |
           set -eufx
@@ -183,7 +194,7 @@ jobs:
           go get
           popd
 
-      - name: Debug build
+      - name: Debug build (amd64)
         env:
           GOOS: darwin
           GOARCH: amd64
@@ -191,18 +202,46 @@ jobs:
           CGO_CXXFLAGS: -g -O0 -DDEBUG
         run: |
           set -eufx
-
-          # Hack macOS 10.x to allow arm64* build support
-          if [ "$(sw_vers -productVersion | cut -d'.' -f1)" = 10 ]; then
-            pushd /Library/Developer/CommandLineTools/SDKs
-            sudo rm MacOSX.sdk
-            sudo ln -s MacOSX11.1.sdk MacOSX.sdk
-            sudo rm -rf MacOSX10.15.sdk
-            ls -l
-            popd
-          fi
-
           COREDNS_DIR=$HOME/coredns
           pushd $COREDNS_DIR
           make CGO_ENABLED=1 BUILDOPTS="-v -race" -j$(sysctl -n hw.ncpu)
+          popd
+
+      - name: Debug build for release (amd64)
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GOOS: darwin
+          GOARCH: amd64
+        run: |
+          set -eufx
+          COREDNS_DIR=$HOME/coredns
+          pushd $COREDNS_DIR
+          mkdir bin
+          mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH-debug
+          popd
+
+      - name: Release build (amd64)
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GOOS: darwin
+          GOARCH: amd64
+        run: |
+          set -eufx
+          COREDNS_DIR=$HOME/coredns
+          pushd $COREDNS_DIR
+          make CGO_ENABLED=1 -j$(sysctl -n hw.ncpu)
+          mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
+          popd
+
+      - name: Release build (arm64)
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GOOS: darwin
+          GOARCH: arm64
+        run: |
+          set -eufx
+          COREDNS_DIR=$HOME/coredns
+          pushd $COREDNS_DIR
+          make CGO_ENABLED=1 -j$(sysctl -n hw.ncpu)
+          mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
           popd

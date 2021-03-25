@@ -161,7 +161,7 @@ jobs:
             coredns/bin/*.zip.shasum256
 
   build-on-darwin:
-    if: 'false'
+    #if: 'false'
     name: Build on Darwin
     runs-on: macos-latest
     steps:

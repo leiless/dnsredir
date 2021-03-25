@@ -1,4 +1,4 @@
-name: Non-release build CI
+name: coredns-dnsredir auto build
 
 on:
   push:
@@ -20,137 +20,136 @@ jobs:
     name: Build on Linux
     runs-on: ubuntu-latest
     steps:
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.13
 
-    - name: Set up Go 1.x
-      uses: actions/setup-go@v2
-      with:
-        go-version: ^1.13
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
 
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v2
+      - name: Get dependencies
+        run: |
+          go get -v -t -d ./...
+          if [ -f Gopkg.toml ]; then
+              curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+              dep ensure
+          fi
 
-    - name: Get dependencies
-      run: |
-        go get -v -t -d ./...
-        if [ -f Gopkg.toml ]; then
-            curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-            dep ensure
-        fi
+      - name: Prepare CoreDNS for dnsredir plugin
+        run: |
+          set -eufx
+          nproc
+          uname -a
+          env
 
-    - name: Prepare CoreDNS for dnsredir plugin
-      run: |
-        set -eufx
-        nproc
-        uname -a
-        env
+          DNSREDIR_DIR=$PWD
+          REPO_ADDR=$(git remote get-url origin | sed -e 's/^https:\/\///' -e 's/\.git//')
+          HEAD_COMMIT=$(git describe --dirty --always)
+          DNSREDIR_TAG=$(curl -sL https://api.github.com/repos/leiless/dnsredir/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
 
-        DNSREDIR_DIR=$PWD
-        REPO_ADDR=$(git remote get-url origin | sed -e 's/^https:\/\///' -e 's/\.git//')
-        HEAD_COMMIT=$(git describe --dirty --always)
-        DNSREDIR_TAG=$(curl -sL https://api.github.com/repos/leiless/dnsredir/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
+          COREDNS_URL=https://github.com/coredns/coredns.git
+          COREDNS_DIR=$HOME/coredns
+          COREDNS_TAG=$(curl -sL https://api.github.com/repos/coredns/coredns/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
+          git clone --branch $COREDNS_TAG --depth 1 $COREDNS_URL $COREDNS_DIR 2> /dev/null
 
-        COREDNS_URL=https://github.com/coredns/coredns.git
-        COREDNS_DIR=$HOME/coredns
-        COREDNS_TAG=$(curl -sL https://api.github.com/repos/coredns/coredns/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
-        git clone --branch $COREDNS_TAG --depth 1 $COREDNS_URL $COREDNS_DIR 2> /dev/null
+          mkdir -p ~/go/pkg/mod/github.com/leiless
+          # Link leiless/dnsredir to latest master tree.
+          ln -s $DNSREDIR_DIR ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
 
-        mkdir -p ~/go/pkg/mod/github.com/leiless
-        # Link leiless/dnsredir to latest master tree.
-        ln -s $DNSREDIR_DIR ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
+          pushd $COREDNS_DIR
+          sed -i "s|forward:forward|dnsredir:$REPO_ADDR\nforward:forward|g" plugin.cfg
+          sed -i "s|GITCOMMIT:=|CUSTOM_FLAGS=-X $REPO_ADDR.pluginVersion=$DNSREDIR_TAG -X $REPO_ADDR.pluginHeadCommit=$HEAD_COMMIT\\nGITCOMMIT:=|g" Makefile
+          sed -i 's|$(GITCOMMIT)|$(GITCOMMIT) $(CUSTOM_FLAGS)|g' Makefile
+          go generate coredns.go
+          git diff
+          git status
+          go get
+          popd
 
-        pushd $COREDNS_DIR
-        sed -i "s|forward:forward|dnsredir:$REPO_ADDR\nforward:forward|g" plugin.cfg
-        sed -i "s|GITCOMMIT:=|CUSTOM_FLAGS=-X $REPO_ADDR.pluginVersion=$DNSREDIR_TAG -X $REPO_ADDR.pluginHeadCommit=$HEAD_COMMIT\\nGITCOMMIT:=|g" Makefile
-        sed -i 's|$(GITCOMMIT)|$(GITCOMMIT) $(CUSTOM_FLAGS)|g' Makefile
-        go generate coredns.go
-        git diff
-        git status
-        go get
-        popd
-
-    - name: Debug build
-      env:
-        GOOS: linux
-        GOARCH: amd64
-        # Disable code optimization
-        CGO_CFLAGS: -g -O0 -DDEBUG
-        CGO_CXXFLAGS: -g -O0 -DDEBUG
-      run: |
-        set -eufx
-        COREDNS_DIR=$HOME/coredns
-        pushd $COREDNS_DIR
-        make CGO_ENABLED=1 BUILDOPTS="-v -race" -j$(nproc)
-        popd
+      - name: Debug build
+        env:
+          GOOS: linux
+          GOARCH: amd64
+          # Disable code optimization
+          CGO_CFLAGS: -g -O0 -DDEBUG
+          CGO_CXXFLAGS: -g -O0 -DDEBUG
+        run: |
+          set -eufx
+          COREDNS_DIR=$HOME/coredns
+          pushd $COREDNS_DIR
+          make CGO_ENABLED=1 BUILDOPTS="-v -race" -j$(nproc)
+          popd
 
   build-on-darwin:
     name: Build on Darwin
     runs-on: macos-latest
     steps:
 
-    - name: Set up Go 1.x
-      uses: actions/setup-go@v2
-      with:
-        go-version: ^1.13
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.13
 
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v2
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
 
-    - name: Get dependencies
-      run: |
-        go get -v -t -d ./...
-        if [ -f Gopkg.toml ]; then
-            curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-            dep ensure
-        fi
+      - name: Get dependencies
+        run: |
+          go get -v -t -d ./...
+          if [ -f Gopkg.toml ]; then
+              curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+              dep ensure
+          fi
 
-    - name: Prepare CoreDNS for dnsredir plugin
-      run: |
-        set -eufx
-        sysctl -n hw.ncpu
-        sw_vers
-        uname -a
-        env
+      - name: Prepare CoreDNS for dnsredir plugin
+        run: |
+          set -eufx
+          sysctl -n hw.ncpu
+          sw_vers
+          uname -a
+          env
 
-        # [quote] GNU "sed" has been installed as "gsed".
-        brew install gnu-sed
+          # [quote] GNU "sed" has been installed as "gsed".
+          brew install gnu-sed
 
-        DNSREDIR_DIR=$PWD
-        REPO_ADDR=$(git remote get-url origin | sed -e 's/^https:\/\///' -e 's/\.git//')
-        HEAD_COMMIT=$(git describe --dirty --always)
-        DNSREDIR_TAG=$(curl -sL https://api.github.com/repos/leiless/dnsredir/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
+          DNSREDIR_DIR=$PWD
+          REPO_ADDR=$(git remote get-url origin | sed -e 's/^https:\/\///' -e 's/\.git//')
+          HEAD_COMMIT=$(git describe --dirty --always)
+          DNSREDIR_TAG=$(curl -sL https://api.github.com/repos/leiless/dnsredir/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
 
-        pushd pf
-        ./download-pf-headers.sh
-        popd
+          pushd pf
+          ./download-pf-headers.sh
+          popd
 
-        COREDNS_URL=https://github.com/coredns/coredns.git
-        COREDNS_DIR=$HOME/coredns
-        COREDNS_TAG=$(curl -sL https://api.github.com/repos/coredns/coredns/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
-        git clone --branch $COREDNS_TAG --depth 1 $COREDNS_URL $COREDNS_DIR 2> /dev/null
+          COREDNS_URL=https://github.com/coredns/coredns.git
+          COREDNS_DIR=$HOME/coredns
+          COREDNS_TAG=$(curl -sL https://api.github.com/repos/coredns/coredns/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
+          git clone --branch $COREDNS_TAG --depth 1 $COREDNS_URL $COREDNS_DIR 2> /dev/null
 
-        mkdir -p ~/go/pkg/mod/github.com/leiless
-        # Link leiless/dnsredir to latest master tree.
-        ln -s $DNSREDIR_DIR ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
+          mkdir -p ~/go/pkg/mod/github.com/leiless
+          # Link leiless/dnsredir to latest master tree.
+          ln -s $DNSREDIR_DIR ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
 
-        pushd $COREDNS_DIR
-        gsed -i "s|forward:forward|dnsredir:$REPO_ADDR\nforward:forward|g" plugin.cfg
-        gsed -i "s|GITCOMMIT:=|CUSTOM_FLAGS=-X $REPO_ADDR.pluginVersion=$DNSREDIR_TAG -X $REPO_ADDR.pluginHeadCommit=$HEAD_COMMIT\\nGITCOMMIT:=|g" Makefile
-        gsed -i 's|$(GITCOMMIT)|$(GITCOMMIT) $(CUSTOM_FLAGS)|g' Makefile
-        go generate coredns.go
-        git diff
-        git status
-        go get
-        popd
+          pushd $COREDNS_DIR
+          gsed -i "s|forward:forward|dnsredir:$REPO_ADDR\nforward:forward|g" plugin.cfg
+          gsed -i "s|GITCOMMIT:=|CUSTOM_FLAGS=-X $REPO_ADDR.pluginVersion=$DNSREDIR_TAG -X $REPO_ADDR.pluginHeadCommit=$HEAD_COMMIT\\nGITCOMMIT:=|g" Makefile
+          gsed -i 's|$(GITCOMMIT)|$(GITCOMMIT) $(CUSTOM_FLAGS)|g' Makefile
+          go generate coredns.go
+          git diff
+          git status
+          go get
+          popd
 
-    - name: Debug build
-      env:
-        GOOS: darwin
-        GOARCH: amd64
-        CGO_CFLAGS: -g -O0 -DDEBUG
-        CGO_CXXFLAGS: -g -O0 -DDEBUG
-      run: |
-        set -eufx
-        COREDNS_DIR=$HOME/coredns
-        pushd $COREDNS_DIR
-        make CGO_ENABLED=1 BUILDOPTS="-v -race" -j$(sysctl -n hw.ncpu)
-        popd
+      - name: Debug build
+        env:
+          GOOS: darwin
+          GOARCH: amd64
+          CGO_CFLAGS: -g -O0 -DDEBUG
+          CGO_CXXFLAGS: -g -O0 -DDEBUG
+        run: |
+          set -eufx
+          COREDNS_DIR=$HOME/coredns
+          pushd $COREDNS_DIR
+          make CGO_ENABLED=1 BUILDOPTS="-v -race" -j$(sysctl -n hw.ncpu)
+          popd

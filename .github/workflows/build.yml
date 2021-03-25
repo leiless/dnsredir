@@ -64,7 +64,9 @@ jobs:
           go generate coredns.go
           git diff
           git status
-          go get
+          # see: https://github.com/golang/go/issues/44129
+          go get -t .
+          #go get
           popd
 
       - name: Debug build
@@ -85,11 +87,10 @@ jobs:
     name: Build on Darwin
     runs-on: macos-latest
     steps:
-
       - name: Set up Go 1.x
         uses: actions/setup-go@v2
         with:
-          go-version: ^1.16
+          go-version: ^1.13
 
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2

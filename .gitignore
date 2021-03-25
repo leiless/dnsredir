@@ -5,7 +5,7 @@
 *.swp
 Corefile
 .DS_Store
-coredns
+coredns/
 go.sum
 bin/
 .idea/

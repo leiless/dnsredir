@@ -1,6 +1,6 @@
 # dnsredir
 
-[![coredns-dnsredir auto build](https://github.com/leiless/dnsredir/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/leiless/dnsredir/actions/workflows/build.yml)
+[![coredns-dnsredir auto build](https://github.com/leiless/dnsredir/actions/workflows/build.yml/badge.svg)](https://github.com/leiless/dnsredir/actions/workflows/build.yml)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20macOS-cc6600.svg)](release)
 [![Corefile](https://img.shields.io/badge/try-Corefile-bb33ff)](https://git.io/JJZ3N)
 [![License](https://img.shields.io/badge/license-Apache%202-blue)](LICENSE)

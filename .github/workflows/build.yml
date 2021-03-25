@@ -206,9 +206,6 @@ jobs:
           xcode-select -p
           xcodebuild -version
 
-          # BSD sed sucks!
-          brew install gnu-sed
-
           DNSREDIR_DIR=$PWD
           REPO_ADDR=$(git remote get-url origin | sed -e 's/^https:\/\///' -e 's/\.git//')
           HEAD_COMMIT=$(git describe --dirty --always)
@@ -226,6 +223,9 @@ jobs:
           mkdir -p ~/go/pkg/mod/github.com/leiless
           # Link leiless/dnsredir to latest master tree.
           ln -s $DNSREDIR_DIR ~/go/pkg/mod/github.com/leiless/dnsredir@$DNSREDIR_TAG
+
+          # BSD sed sucks!
+          brew install gnu-sed
 
           pushd $COREDNS_DIR
           gsed -i "s|forward:forward|dnsredir:$REPO_ADDR\nforward:forward|g" plugin.cfg

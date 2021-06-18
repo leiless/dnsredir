@@ -133,7 +133,7 @@ func (d *domainSet) Match(child string) bool {
 const (
 	NameItemTypePath = iota
 	NameItemTypeUrl
-	NameItemTypeLast	// Dummy
+	NameItemTypeLast // Dummy
 )
 
 type NameItem struct {
@@ -144,11 +144,11 @@ type NameItem struct {
 
 	whichType int
 
-	path string
+	path  string
 	mtime time.Time
-	size int64
+	size  int64
 
-	url string
+	url         string
 	contentHash uint64
 }
 
@@ -165,8 +165,8 @@ func NewNameItemsWithForms(forms []string) ([]*NameItem, error) {
 				return nil, errors.New(fmt.Sprintf("Unsupport URL %q", from))
 			}
 			items[i] = &NameItem{
-				whichType: 	NameItemTypeUrl,
-				url: 		from,
+				whichType: NameItemTypeUrl,
+				url:       from,
 			}
 		} else {
 			items[i] = &NameItem{
@@ -184,12 +184,12 @@ type NameList struct {
 
 	// All name items shared the same reload duration
 
-	pathReload     	time.Duration
-	stopPathReload 	chan struct{}
+	pathReload     time.Duration
+	stopPathReload chan struct{}
 
-	urlReload		time.Duration
-	urlReadTimeout	time.Duration
-	stopUrlReload 	chan struct{}
+	urlReload      time.Duration
+	urlReadTimeout time.Duration
+	stopUrlReload  chan struct{}
 }
 
 // Assume `child' is lower cased and without trailing dot
@@ -384,7 +384,7 @@ func (n *NameList) updateItemFromUrl(item *NameItem, bootstrap []string) bool {
 	}
 	t4 := time.Since(t3)
 	log.Debugf("Fetched %v, time spent: %v %v, added: %v / %v, hash: %#x",
-				item.url, t2, t4, names.Len(), totalLines, contentHash1)
+		item.url, t2, t4, names.Len(), totalLines, contentHash1)
 
 	item.Lock()
 	item.names = names
@@ -396,7 +396,7 @@ func (n *NameList) updateItemFromUrl(item *NameItem, bootstrap []string) bool {
 
 // Initial name list population needs a working DNS upstream
 //	thus we need to fallback to it(if any) in case of population failure
-func (n *NameList)initialUpdateFromUrl(item *NameItem, bootstrap []string) {
+func (n *NameList) initialUpdateFromUrl(item *NameItem, bootstrap []string) {
 	go func() {
 		// Fast retry in case of unstable network
 		retryIntervals := []time.Duration{
@@ -416,4 +416,3 @@ func (n *NameList)initialUpdateFromUrl(item *NameItem, bootstrap []string) {
 		}
 	}()
 }
-

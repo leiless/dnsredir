@@ -6,7 +6,7 @@ import (
 )
 
 func TestHostPort(T *testing.T) {
-	var servers = []string {
+	var servers = []string{
 		"127.0.0.1",
 		"127.0.0.1:5353",
 		"2001:db8:85a3::8a2e:370:7334",
@@ -57,7 +57,7 @@ func TestHostPort(T *testing.T) {
 	for i, host := range hosts {
 		s := servers[i]
 		if strings.Contains(s, "://") {
-			s = s[strings.Index(s, "://") + len("://"):]
+			s = s[strings.Index(s, "://")+len("://"):]
 		}
 
 		// If host contain a TLS server name
@@ -79,4 +79,3 @@ func TestHostPort(T *testing.T) {
 		}
 	}
 }
-

@@ -80,4 +80,3 @@ func (uh *UpstreamHost) ietfDnsParseResponse(state *request.Request, resp *http.
 	}
 	return reply, nil
 }
-

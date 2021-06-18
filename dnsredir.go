@@ -153,7 +153,7 @@ func healthCheck(r *reloadableUpstream, uh *UpstreamHost) {
 		// Failure count may go negative here, should be rectified by HC eventually
 		atomic.AddInt32(&uh.fails, -1)
 		// Kick off health check on every failureCheck failure
-		if fails % failureCheck == 0 {
+		if fails%failureCheck == 0 {
 			_ = uh.Check()
 		}
 	}(uh)
@@ -189,13 +189,12 @@ func (r *Dnsredir) match(server, name string) (Upstream, time.Duration) {
 }
 
 var (
-	errNoHealthy = errors.New("no healthy upstream host")
+	errNoHealthy        = errors.New("no healthy upstream host")
 	errCachedConnClosed = errors.New("cached connection was closed by peer")
 )
 
 const (
-	defaultTimeout = 15 * time.Second
+	defaultTimeout     = 15 * time.Second
 	defaultFailTimeout = 2000 * time.Millisecond
-	failureCheck = 3
+	failureCheck       = 3
 )
-

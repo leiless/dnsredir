@@ -10,4 +10,3 @@ var checkDownFunc = func(u *reloadableUpstream) UpstreamHostDownFunc {
 		return fails >= u.maxFails && u.maxFails > 0
 	}
 }
-

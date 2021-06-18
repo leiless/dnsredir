@@ -121,4 +121,3 @@ func fixEmptyNames(respJSON *jsonDNS.Response) {
 		}
 	}
 }
-

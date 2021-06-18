@@ -1,7 +1,5 @@
 #
-# Partially taken from:
-#   https://github.com/m13253/dns-over-https/blob/master/systemd/doh-client.service
-#   https://www.shellhacks.com/systemd-service-file-example/
+# CoreDNS dnsredir systemd config file
 #
 
 [Unit]

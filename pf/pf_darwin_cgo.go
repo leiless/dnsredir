@@ -31,7 +31,7 @@ func translateNegatedErrno(errno int, allowZeroArg ...bool) error {
 	if errno > 0 {
 		panic(fmt.Sprintf("expected a negated errno value, got: %v", errno))
 	}
-	return ErrnoError(-errno)	// Rectify errno
+	return ErrnoError(-errno) // Rectify errno
 }
 
 func Open(oflag int) (int, error) {

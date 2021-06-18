@@ -21,7 +21,7 @@ func (f Flags) IsValid() bool {
 	if f.IsV4Only() && f.IsV6Only() {
 		return false
 	}
-	return f & ^(tableFlagLast - 1) == 0
+	return f & ^(tableFlagLast-1) == 0
 }
 
 func (f *Flags) TurnOnCreateIfNotExist() {

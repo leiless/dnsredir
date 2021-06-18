@@ -26,7 +26,7 @@ type reloadableUpstream struct {
 	// Flag indicate match any request, i.e. the root zone "."
 	matchAny bool
 	*NameList
-	inline domainSet
+	inline  domainSet
 	ignored domainSet
 	*HealthCheck
 	// Bootstrap DNS in IP:Port combo
@@ -125,14 +125,14 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 			stopUrlReload:  make(chan struct{}),
 		},
 		ignored: make(domainSet),
-		inline: make(domainSet),
+		inline:  make(domainSet),
 		HealthCheck: &HealthCheck{
 			stop:          make(chan struct{}),
 			maxFails:      defaultMaxFails,
 			checkInterval: defaultHcInterval,
 			transport: &Transport{
-				expire: defaultConnExpire,
-				tlsConfig: new(tls.Config),
+				expire:           defaultConnExpire,
+				tlsConfig:        new(tls.Config),
 				recursionDesired: true,
 			},
 		},
@@ -440,7 +440,7 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		u.noIPv6 = true
 		log.Infof("%v: %v", dir, u.noIPv6)
 	default:
-		if len(c.RemainingArgs()) != 0 ||!u.inline.Add(dir) {
+		if len(c.RemainingArgs()) != 0 || !u.inline.Add(dir) {
 			return c.Errf("unknown property: %q", dir)
 		}
 		if u.ignored.Len() != 0 {
@@ -516,7 +516,7 @@ func parseTo(c *caddy.Controller, u *reloadableUpstream) error {
 		uh := &UpstreamHost{
 			proto: trans,
 			// Not an error, host and tls server name will be separated later
-			addr: addr,
+			addr:     addr,
 			downFunc: checkDownFunc(u),
 		}
 		u.hosts = append(u.hosts, uh)
@@ -547,7 +547,7 @@ func parseBootstrap(c *caddy.Controller, u *reloadableUpstream) error {
 		} else {
 			if port, err := strconv.Atoi(port); err != nil || port <= 0 {
 				if err == nil {
-					err =  fmt.Errorf("non-positive port %v", port)
+					err = fmt.Errorf("non-positive port %v", port)
 				}
 				return c.Errf("%v: %v", dir, err)
 			}
@@ -558,7 +558,7 @@ func parseBootstrap(c *caddy.Controller, u *reloadableUpstream) error {
 				panic(fmt.Sprintf("Why %q doesn't have close bracket?!", host))
 			}
 			// Strip the brackets
-			host = host[1:len(host)-1]
+			host = host[1 : len(host)-1]
 		}
 
 		// XXX: Doesn't support IPv6 with zone
@@ -584,20 +584,20 @@ func parseBootstrap(c *caddy.Controller, u *reloadableUpstream) error {
 }
 
 const (
-	defaultMaxFails       = 3
+	defaultMaxFails = 3
 
 	defaultPathReloadInterval = 2 * time.Second
 	defaultUrlReloadInterval  = 30 * time.Minute
-	defaultUrlReadTimeout = 30 * time.Second
+	defaultUrlReadTimeout     = 30 * time.Second
 
-	defaultHcInterval     = 2000 * time.Millisecond
-	defaultHcTimeout      = 5000 * time.Millisecond
+	defaultHcInterval = 2000 * time.Millisecond
+	defaultHcTimeout  = 5000 * time.Millisecond
 )
 
 const (
 	minPathReloadInterval = 1 * time.Second
 	minUrlReloadInterval  = 15 * time.Second
-	minUrlReadTimeout = 3 * time.Second
+	minUrlReadTimeout     = 3 * time.Second
 
 	minHcInterval     = 1 * time.Second
 	minExpireInterval = 1 * time.Second

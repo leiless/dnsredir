@@ -14,7 +14,7 @@ const (
 	typeUdp transportType = iota
 	typeTcp
 	typeTls
-	typeTotalCount	// Dummy type
+	typeTotalCount // Dummy type
 )
 
 func stringToTransportType(s string) transportType {
@@ -48,4 +48,3 @@ func (t *Transport) transportTypeFromConn(pc *persistConn) transportType {
 	}
 	return typeTls
 }
-

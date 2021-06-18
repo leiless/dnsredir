@@ -59,4 +59,3 @@ func TestStringToDomain(t *testing.T) {
 		}
 	}
 }
-

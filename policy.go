@@ -11,10 +11,10 @@ import (
 
 // SupportedPolicies is the collection of policies registered
 var SupportedPolicies = map[string]Policy{
-	"random": &Random{},
+	"random":      &Random{},
 	"round_robin": &RoundRobin{},
-	"sequential": &Sequential{},
-	"spray": &Spray{},
+	"sequential":  &Sequential{},
+	"spray":       &Spray{},
 }
 
 // Policy decides how a host will be selected from a pool.
@@ -69,7 +69,7 @@ func (r *RoundRobin) Select(pool UpstreamHostPool) *UpstreamHost {
 	host := pool[selection]
 	// Move forward to next one if the currently selected host is down
 	for i := uint32(1); host.Down() && i < poolLen; i++ {
-		host = pool[(selection + i) % poolLen]
+		host = pool[(selection+i)%poolLen]
 	}
 	if host.Down() {
 		// All hosts are down, we should return nil to honor Spray.Select()
@@ -109,4 +109,3 @@ func (s *Spray) Select(pool UpstreamHostPool) *UpstreamHost {
 	log.Warningf("All hosts reported as down, spraying to target: %s", randHost.Name())
 	return randHost
 }
-

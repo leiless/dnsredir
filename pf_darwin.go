@@ -14,7 +14,7 @@ import (
 
 type pfHandle struct {
 	set pf.TableSet
-	dev int		// File descriptor to the /dev/pf
+	dev int // File descriptor to the /dev/pf
 }
 
 // arg in format of NAME[:ANCHOR]
@@ -23,7 +23,7 @@ func splitNameAnchor(arg string) (string, string) {
 	if i < 0 {
 		return arg, ""
 	}
-	return arg[:i], arg[i + 1:]
+	return arg[:i], arg[i+1:]
 }
 
 func parseFlags(dir string, args *[]string) (pf.Flags, error) {

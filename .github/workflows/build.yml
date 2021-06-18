@@ -97,7 +97,7 @@ jobs:
           COREDNS_DIR=coredns
           pushd $COREDNS_DIR
           mkdir bin
-          mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH-debug
+          mv coredns bin/coredns-dnsredir-$GOOS-$GOARCH-debug
           popd
 
       - name: Release build ${{ env.GOOS }}-${{ env.GOARCH }}
@@ -110,7 +110,7 @@ jobs:
           COREDNS_DIR=coredns
           pushd $COREDNS_DIR
           make BUILDOPTS="-mod=mod" -j$(nproc)
-          mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
+          mv coredns bin/coredns-dnsredir-$GOOS-$GOARCH
           popd
 
       - name: Release build ${{ env.GOOS }}-${{ env.GOARCH }}
@@ -123,7 +123,7 @@ jobs:
           COREDNS_DIR=coredns
           pushd $COREDNS_DIR
           make BUILDOPTS="-mod=mod" -j$(nproc)
-          mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
+          mv coredns bin/coredns-dnsredir-$GOOS-$GOARCH
           popd
 
       - name: Release build ${{ env.GOOS }}-${{ env.GOARCH }}
@@ -136,7 +136,7 @@ jobs:
           COREDNS_DIR=coredns
           pushd $COREDNS_DIR
           make BUILDOPTS="-mod=mod" -j$(nproc)
-          mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH.exe
+          mv coredns bin/coredns-dnsredir-$GOOS-$GOARCH.exe
           popd
 
       - name: Packaging
@@ -261,7 +261,7 @@ jobs:
           COREDNS_DIR=coredns
           pushd $COREDNS_DIR
           mkdir bin
-          mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH-debug
+          mv coredns bin/coredns-dnsredir-$GOOS-$GOARCH-debug
           popd
 
       - name: Release build ${{ env.GOOS }}-${{ env.GOARCH }}
@@ -274,7 +274,7 @@ jobs:
           COREDNS_DIR=coredns
           pushd $COREDNS_DIR
           make CGO_ENABLED=1 -j$(sysctl -n hw.ncpu)
-          mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
+          mv coredns bin/coredns-dnsredir-$GOOS-$GOARCH
           popd
 
       - name: Release build ${{ env.GOOS }}-${{ env.GOARCH }}
@@ -287,7 +287,7 @@ jobs:
           COREDNS_DIR=coredns
           pushd $COREDNS_DIR
           make CGO_ENABLED=1 -j$(sysctl -n hw.ncpu)
-          mv coredns bin/coredns_dnsredir-$GOOS-$GOARCH
+          mv coredns bin/coredns-dnsredir-$GOOS-$GOARCH
           popd
 
       - name: Packaging

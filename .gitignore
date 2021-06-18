@@ -6,7 +6,6 @@
 Corefile
 .DS_Store
 coredns/
-go.sum
 bin/
 .idea/
 pf/darwin-xnu/

@@ -34,28 +34,28 @@ func (pc *persistConn) String() string {
 // Inspired from coredns/plugin/forward/persistent.go
 // addr isn't sealed into this struct since it's a high-level item
 type Transport struct {
-	avgDialTime int64				// Cumulative moving average dial time in ns(i.e. time.Duration)
+	avgDialTime int64 // Cumulative moving average dial time in ns(i.e. time.Duration)
 
-	recursionDesired bool			// RD flag
-	expire		time.Duration		// [sic] After this duration a connection is expired
-	tlsConfig	*tls.Config
+	recursionDesired bool          // RD flag
+	expire           time.Duration // [sic] After this duration a connection is expired
+	tlsConfig        *tls.Config
 
-	conns       [typeTotalCount][]*persistConn	// Buckets for udp, tcp and tcp-tls
-	dial  		chan string
-	yield 		chan *persistConn
-	ret   		chan *persistConn
-	stop  		chan struct{}
+	conns [typeTotalCount][]*persistConn // Buckets for udp, tcp and tcp-tls
+	dial  chan string
+	yield chan *persistConn
+	ret   chan *persistConn
+	stop  chan struct{}
 }
 
 func newTransport() *Transport {
 	return &Transport{
 		avgDialTime: int64(minDialTimeout),
-		expire:		defaultConnExpire,
-		conns:     	[typeTotalCount][]*persistConn{},
-		dial:      	make(chan string),
-		yield:     	make(chan *persistConn),
-		ret:       	make(chan *persistConn),
-		stop:      	make(chan struct{}),
+		expire:      defaultConnExpire,
+		conns:       [typeTotalCount][]*persistConn{},
+		dial:        make(chan string),
+		yield:       make(chan *persistConn),
+		ret:         make(chan *persistConn),
+		stop:        make(chan struct{}),
 	}
 }
 
@@ -64,7 +64,7 @@ func (t *Transport) connManager() {
 
 	for {
 		select {
-		case proto := <- t.dial:
+		case proto := <-t.dial:
 			transType := stringToTransportType(proto)
 			// Take the last used conn - complexity O(1)
 			if stack := t.conns[transType]; len(stack) > 0 {
@@ -166,32 +166,32 @@ type UpstreamHostDownFunc func(*UpstreamHost) bool
 
 // UpstreamHost represents a single upstream DNS server
 type UpstreamHost struct {
-	proto string					// DNS protocol, i.e. "udp", "tcp", etc.
-	addr string						// IP:PORT
+	proto string // DNS protocol, i.e. "udp", "tcp", etc.
+	addr  string // IP:PORT
 
-	fails int32						// Fail count
-	downFunc UpstreamHostDownFunc	// This function should be side-effect safe
+	fails    int32                // Fail count
+	downFunc UpstreamHostDownFunc // This function should be side-effect safe
 
-	c *dns.Client					// DNS client used for health check
+	c *dns.Client // DNS client used for health check
 
 	// Transport settings related to this upstream host
 	// Currently, it's the same as HealthCheck.transport since Caddy doesn't over nested blocks
 	// XXX: We may support per-upstream specific transport once Caddy supported nesting blocks in future
 	transport *Transport
 
-	httpClient *http.Client
+	httpClient         *http.Client
 	requestContentType string
 }
 
-func (uh *UpstreamHost)Name() string {
+func (uh *UpstreamHost) Name() string {
 	return uh.proto + "://" + uh.addr
 }
 
-func (uh *UpstreamHost)IsDOH() bool {
+func (uh *UpstreamHost) IsDOH() bool {
 	return uh.proto == "https"
 }
 
-func (uh *UpstreamHost)InitDOH(u *reloadableUpstream) {
+func (uh *UpstreamHost) InitDOH(u *reloadableUpstream) {
 	if !strings.HasSuffix(uh.proto, "doh") {
 		return
 	}
@@ -214,11 +214,11 @@ func (uh *UpstreamHost)InitDOH(u *reloadableUpstream) {
 	dialer := &net.Dialer{
 		Timeout:   8 * time.Second,
 		KeepAlive: 30 * time.Second,
-		Resolver: resolver,
+		Resolver:  resolver,
 	}
 	httpTransport := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: dialer.DialContext,
+		Proxy:                 http.ProxyFromEnvironment,
+		DialContext:           dialer.DialContext,
 		ForceAttemptHTTP2:     true,
 		MaxIdleConns:          100,
 		MaxIdleConnsPerHost:   5,
@@ -251,8 +251,8 @@ func (uh *UpstreamHost)InitDOH(u *reloadableUpstream) {
 	}
 	uh.proto = "https"
 	uh.httpClient = &http.Client{
-		Transport:     httpTransport,
-		Jar:           cookieJar,
+		Transport: httpTransport,
+		Jar:       cookieJar,
 	}
 }
 
@@ -267,7 +267,7 @@ func limitDialTimeout(currentAvg *int64, minValue, maxValue time.Duration) time.
 	if rt < minValue {
 		return minValue
 	}
-	if rt < maxValue / 2 {
+	if rt < maxValue/2 {
 		return rt * 2
 	}
 	return maxValue
@@ -280,7 +280,7 @@ func (t *Transport) dialTimeout() time.Duration {
 func (t *Transport) updateDialTimeout(newDialTime time.Duration) {
 	oldDialTime := time.Duration(atomic.LoadInt64(&t.avgDialTime))
 	dt := int64(newDialTime - oldDialTime)
-	atomic.AddInt64(&t.avgDialTime, dt / cumulativeAvgWeight)
+	atomic.AddInt64(&t.avgDialTime, dt/cumulativeAvgWeight)
 }
 
 func dialTimeout0(network, address string, tlsConfig *tls.Config, timeout time.Duration, bootstrap []string, noIPv6 bool) (*dns.Conn, error) {
@@ -309,7 +309,7 @@ func dialTimeout0(network, address string, tlsConfig *tls.Config, timeout time.D
 	}
 
 	dialer := &net.Dialer{
-		Timeout: timeout,
+		Timeout:  timeout,
 		Resolver: resolver,
 	}
 	client := dns.Client{Net: network, Dialer: dialer, TLSConfig: tlsConfig}
@@ -341,7 +341,7 @@ func (uh *UpstreamHost) Dial(proto string, bootstrap []string, noIPv6 bool) (*pe
 	}
 
 	uh.transport.dial <- proto
-	pc := <- uh.transport.ret
+	pc := <-uh.transport.ret
 	if pc != nil {
 		return pc, true, nil
 	}
@@ -361,13 +361,13 @@ func (uh *UpstreamHost) Dial(proto string, bootstrap []string, noIPv6 bool) (*pe
 	if err != nil {
 		return nil, false, err
 	}
-	return &persistConn{c:conn}, false, err
+	return &persistConn{c: conn}, false, err
 }
 
 func (uh *UpstreamHost) dohExchange(ctx context.Context, state *request.Request) (*dns.Msg, error) {
 	var (
 		resp *http.Response
-		err error
+		err  error
 	)
 
 	requestContentType := uh.requestContentType
@@ -552,15 +552,15 @@ type HealthCheck struct {
 	wg   sync.WaitGroup // Wait until all running goroutines to stop
 	stop chan struct{}  // Signal health check worker to stop
 
-	hosts UpstreamHostPool
+	hosts  UpstreamHostPool
 	policy Policy
-	spray Policy
+	spray  Policy
 
 	// [PENDING]
 	//failTimeout time.Duration	// Single health check timeout
 
-	maxFails int32				// Maximum fail count considered as down
-	checkInterval time.Duration	// Health check interval
+	maxFails      int32         // Maximum fail count considered as down
+	checkInterval time.Duration // Health check interval
 
 	// A global transport since Caddy doesn't support over nested blocks
 	transport *Transport
@@ -660,12 +660,11 @@ func (hc *HealthCheck) Select() *UpstreamHost {
 
 const (
 	defaultConnExpire = 15 * time.Second
-	minDialTimeout = 1 * time.Second
+	minDialTimeout    = 1 * time.Second
 	// Relatively short dial timeout, so we can retry with other upstreams
-	maxDialTimeout = 5 * time.Second
+	maxDialTimeout      = 5 * time.Second
 	cumulativeAvgWeight = 4
 
 	maxWriteTimeout = 2 * time.Second
-	maxReadTimeout = 2 * time.Second
+	maxReadTimeout  = 2 * time.Second
 )
-

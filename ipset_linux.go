@@ -13,7 +13,7 @@ import (
 )
 
 type ipsetHandle struct {
-	set StringSet
+	set  StringSet
 	conn *goipset.Conn
 }
 
@@ -109,4 +109,3 @@ func ipsetAddIP(u *reloadableUpstream, reply *dns.Msg) {
 		}
 	}
 }
-

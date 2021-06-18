@@ -15,9 +15,9 @@ var (
 	NameLookupDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: plugin.Namespace,
 		Subsystem: pluginName,
-		Name: "name_lookup_duration_ms",
-		Buckets: nameLookupBuckets,
-		Help: "Histogram of the time(in milliseconds) each name lookup took.",
+		Name:      "name_lookup_duration_ms",
+		Buckets:   nameLookupBuckets,
+		Help:      "Histogram of the time(in milliseconds) each name lookup took.",
 	}, []string{"server", "matched"})
 
 	requestBuckets = []float64{
@@ -26,39 +26,38 @@ var (
 	RequestDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: plugin.Namespace,
 		Subsystem: pluginName,
-		Name: "request_duration_ms",
-		Buckets: requestBuckets,
-		Help: "Histogram of the time(in milliseconds) each request took.",
+		Name:      "request_duration_ms",
+		Buckets:   requestBuckets,
+		Help:      "Histogram of the time(in milliseconds) each request took.",
 	}, []string{"server", "to"})
 
 	RequestCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: plugin.Namespace,
 		Subsystem: pluginName,
-		Name: "request_count_total",
-		Help: "Counter of requests made per upstream.",
+		Name:      "request_count_total",
+		Help:      "Counter of requests made per upstream.",
 	}, []string{"server", "to"})
 
 	RcodeCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: plugin.Namespace,
 		Subsystem: pluginName,
-		Name: "response_rcode_count_total",
-		Help: "Rcode counter of requests made per upstream.",
+		Name:      "response_rcode_count_total",
+		Help:      "Rcode counter of requests made per upstream.",
 	}, []string{"server", "to", "rcode"})
 
 	// XXX: currently server not embedded into hc failure count label
 	HealthCheckFailureCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: plugin.Namespace,
 		Subsystem: pluginName,
-		Name: "hc_failure_count_total",
-		Help: "Counter of the number of failed healthchecks.",
+		Name:      "hc_failure_count_total",
+		Help:      "Counter of the number of failed healthchecks.",
 	}, []string{"to"})
 
-	/// XXX: Ditto.
+	// XXX: Ditto.
 	HealthCheckAllDownCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: plugin.Namespace,
 		Subsystem: pluginName,
-		Name: "hc_all_down_count_total",
-		Help: "Counter of the number of complete failures of the healthchecks.",
+		Name:      "hc_all_down_count_total",
+		Help:      "Counter of the number of complete failures of the healthchecks.",
 	}, []string{"to"})
 )
-

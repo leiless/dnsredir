@@ -9,20 +9,20 @@ import (
 )
 
 const (
-	defaultProto = ""	// Alias to UDP
-	udpProto = "udp"
-	tcpProto = "tcp"
-	tcpTlsProto = "tcp-tls"
+	defaultProto = "" // Alias to UDP
+	udpProto     = "udp"
+	tcpProto     = "tcp"
+	tcpTlsProto  = "tcp-tls"
 
 	ms = time.Millisecond
-	s = time.Second
+	s  = time.Second
 )
 
 type testCaseSend struct {
-	addr string
-	proto string
-	timeout time.Duration
-	shouldErr bool
+	addr        string
+	proto       string
+	timeout     time.Duration
+	shouldErr   bool
 	expectedErr string
 }
 
@@ -54,7 +54,7 @@ func (t *testCaseSend) Pass(err error) bool {
 }
 
 func TestSend(t *testing.T) {
-	tests := []testCaseSend {
+	tests := []testCaseSend{
 		// Positive
 		{"8.8.8.8:53", udpProto, 1 * s, false, ""},
 		{"8.8.4.4:53", tcpProto, 1 * s, false, ""},
@@ -74,7 +74,7 @@ func TestSend(t *testing.T) {
 		uh := &UpstreamHost{
 			addr: test.addr,
 			c: &dns.Client{
-				Net: test.proto,
+				Net:     test.proto,
 				Timeout: test.timeout,
 			},
 			transport: newTransport(),
@@ -85,4 +85,3 @@ func TestSend(t *testing.T) {
 		}
 	}
 }
-

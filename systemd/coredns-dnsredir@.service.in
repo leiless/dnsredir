@@ -1,14 +1,16 @@
 #
-# CoreDNS dnsredir systemd config file
+# CoreDNS dnsredir systemd service file
 #
 
 [Unit]
 Description=CoreDNS dnsredir __TAG_OR_COMMIT__
+Documentation=https://github.com/leiless/dnsredir
 Documentation=https://leiless.github.io/dnsredir/
-Before=nss-lookup.target
+Documentation=https://git.io/JJZ3N
 After=network.target
+Before=nss-lookup.target
 Wants=nss-lookup.target
-Conflicts=systemd-resolved.service
+Conflicts=systemd-resolved.target
 
 [Service]
 Type=simple

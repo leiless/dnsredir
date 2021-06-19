@@ -20,6 +20,8 @@ LimitNOFILE=262144
 Restart=always
 RestartSec=5
 User=nobody
+# For debugging
+#StandardError=journal
 
 [Install]
 WantedBy=multi-user.target

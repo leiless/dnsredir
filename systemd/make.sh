@@ -28,10 +28,16 @@ uninstall_files() {
     sudo systemctl daemon-reload || true
 }
 
+clean_files() {
+    set -x
+    set +f
+    rm -f *.service
+}
+
 usage() {
 cat << EOL
 Usage:
-    $(basename "$0") install | uninstall
+    $(basename "$0") install | uninstall | clean
 
 EOL
     exit 1
@@ -46,6 +52,8 @@ if [ "$CMD" == "install" ]; then
     install_files
 elif [ "$CMD" == "uninstall" ]; then
     uninstall_files
+elif [ "$CMD" == "clean" ]; then
+    clean_files
 else
     usage
 fi

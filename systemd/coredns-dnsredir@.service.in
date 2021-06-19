@@ -3,7 +3,7 @@
 #
 
 [Unit]
-Description=CoreDNS dnsredir
+Description=CoreDNS dnsredir __TAG_OR_COMMIT__
 Documentation=https://leiless.github.io/dnsredir/
 Before=nss-lookup.target
 After=network.target

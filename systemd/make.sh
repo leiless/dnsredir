@@ -31,7 +31,7 @@ uninstall_files() {
 clean_files() {
     set -x
     set +f
-    rm -f *.service
+    rm -f -- *.service
 }
 
 usage() {

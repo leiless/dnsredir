@@ -16,7 +16,7 @@ install_files() {
     set -x
     cp $INPUT "$FILE1"
     # https://stackoverflow.com/questions/1593188/how-to-programmatically-determine-whether-the-git-checkout-is-a-tag-and-if-so-w/1593246#1593246
-    TAG_OR_COMMIT=$(git name-rev --name-only --tags HEAD | sed "s/^undefined$/$(git describe --dirty --always)/")
+    TAG_OR_COMMIT=$(git name-rev --name-only --tags HEAD | sed "s/^undefined$/commit:$(git describe --dirty --always)/")
     sed -i "s/__TAG_OR_COMMIT__/$TAG_OR_COMMIT/g" "$FILE1"
     cp "$FILE1" "$FILE2"
     sed -i 's/%i/Corefile/g' "$FILE2"

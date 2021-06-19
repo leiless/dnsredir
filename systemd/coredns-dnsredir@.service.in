@@ -20,7 +20,6 @@ LimitNOFILE=262144
 Restart=always
 RestartSec=5
 User=nobody
-Group=nobody
 
 [Install]
 WantedBy=multi-user.target

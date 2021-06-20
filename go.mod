@@ -9,6 +9,6 @@ require (
 	github.com/m13253/dns-over-https v1.4.2
 	github.com/miekg/dns v1.1.42
 	github.com/prometheus/client_golang v1.10.0
-	github.com/ti-mo/netfilter v0.4.0
+	github.com/ti-mo/netfilter v0.4.0 // indirect
 	golang.org/x/net v0.0.0-20210503060351-7fd8e65b6420
 )

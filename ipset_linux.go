@@ -6,10 +6,15 @@ import (
 	"github.com/coredns/caddy"
 	goipset "github.com/digineo/go-ipset/v2"
 	"github.com/miekg/dns"
-	"github.com/ti-mo/netfilter"
 	"net"
 	"os"
 	"strings"
+)
+
+const (
+	nfProtoUnspec = 0
+	nfProtoIpv4   = 2
+	nfProtoIpv6   = 10
 )
 
 type ipsetHandle struct {
@@ -46,7 +51,7 @@ func ipsetSetup(u *reloadableUpstream) (err error) {
 		log.Warningf("ipset needs root user privilege to work")
 	}
 	ipset := u.ipset.(*ipsetHandle)
-	ipset.conn, err = goipset.Dial(netfilter.ProtoUnspec, nil)
+	ipset.conn, err = goipset.Dial(nfProtoUnspec, nil)
 	if err != nil {
 		return err
 	}
@@ -93,9 +98,9 @@ func ipsetAddIP(u *reloadableUpstream, reply *dns.Msg) {
 			}
 
 			var typeMatch bool
-			if uint(p.Family.Value) == uint(netfilter.ProtoIPv4) {
+			if uint(p.Family.Value) == uint(nfProtoIpv4) {
 				typeMatch = rrType == dns.TypeA
-			} else if uint(p.Family.Value) == uint(netfilter.ProtoIPv6) {
+			} else if uint(p.Family.Value) == uint(nfProtoIpv6) {
 				typeMatch = rrType == dns.TypeAAAA
 			}
 			if !typeMatch {

@@ -42,11 +42,11 @@ func GetDefaultRoute() (*Info, error) {
 	}()
 
 	req := netlink.Message{
+		// Package netlink will automatically set header fields which are set to zero
 		Header: netlink.Header{
 			Length: uint32(nlmsghdrSizeof + rtmsgSizeof),
 			Type:   rtnetlinkRtmGetRoute,
-			// Package netlink will automatically set header fields which are set to zero
-			Flags: netlink.Request | netlink.Dump,
+			Flags:  netlink.Request | netlink.Dump,
 		},
 	}
 

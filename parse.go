@@ -81,13 +81,12 @@ func HostPort(servers []string) ([]string, error) {
 				panic(fmt.Sprintf("Unknown transport %q", trans))
 			}
 			list = append(list, s)
-			continue
+		} else {
+			if _, ok := stringToDomain(addr); !ok && net.ParseIP(stripZoneAndTlsName(addr)) == nil {
+				return nil, fmt.Errorf("#2 not a domain name or an IP address: %q", host)
+			}
+			list = append(list, trans+"://"+host)
 		}
-
-		if _, ok := stringToDomain(addr); !ok && net.ParseIP(stripZoneAndTlsName(addr)) == nil {
-			return nil, fmt.Errorf("#2 not a domain name or an IP address: %q", host)
-		}
-		list = append(list, trans+"://"+host)
 	}
 	return list, nil
 }

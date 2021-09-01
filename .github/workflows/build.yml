@@ -194,6 +194,8 @@ jobs:
           fi
 
       - name: Prepare CoreDNS for dnsredir plugin
+        env:
+            BYPASS_GH_API_RATE_LIMIT: ${{ secrets.BYPASS_GH_API_RATE_LIMIT }}
         run: |
           set -eufxo pipefail
           whoami
@@ -206,9 +208,7 @@ jobs:
           xcode-select -p
           xcodebuild -version
 
-          env | grep -i github || true
-          env | grep -i leiless || true
-          curl -4vL -u leiless:$BYPASS_GH_API_RATE_LIMIT https://api.github.com/repos/coredns/coredns/releases/latest
+          curl -4vL -u $GITHUB_ACTOR:$BYPASS_GH_API_RATE_LIMIT https://api.github.com/repos/coredns/coredns/releases/latest
           exit 1
 
           DNSREDIR_DIR=$PWD

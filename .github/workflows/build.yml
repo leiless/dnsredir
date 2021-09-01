@@ -206,6 +206,11 @@ jobs:
           xcode-select -p
           xcodebuild -version
 
+          env | grep -i github || true
+          env | grep -i leiless || true
+          curl -4vL -u leiless:$BYPASS_GH_API_RATE_LIMIT https://api.github.com/repos/coredns/coredns/releases/latest
+          exit 1
+
           DNSREDIR_DIR=$PWD
           REPO_ADDR=$(git remote get-url origin | sed -e 's/^https:\/\///' -e 's/\.git//')
           HEAD_COMMIT=$(git describe --dirty --always)
@@ -222,12 +227,6 @@ jobs:
           COREDNS_URL=https://github.com/coredns/coredns.git
           COREDNS_DIR=coredns
           #COREDNSTAG=$(curl -sL https://api.github.com/repos/coredns/coredns/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
-
-          env | grep -i github || true
-          env | grep -i leiless || true
-          curl -4vL -u leiless:$BYPASS_GH_API_RATE_LIMIT https://api.github.com/repos/coredns/coredns/releases/latest
-          exit 1
-
           # Ditto.
           COREDNS_TAG=$(wget -qO- https://api.github.com/repos/coredns/coredns/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
           git clone --branch $COREDNS_TAG --depth 1 $COREDNS_URL $COREDNS_DIR 2> /dev/null

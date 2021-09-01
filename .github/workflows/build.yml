@@ -223,6 +223,7 @@ jobs:
           COREDNS_DIR=coredns
           #COREDNS_TAG=$(curl -sL https://api.github.com/repos/coredns/coredns/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
           # Ditto.
+          sleep 30
           COREDNS_TAG=$(wget -qO- https://api.github.com/repos/coredns/coredns/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
           git clone --branch $COREDNS_TAG --depth 1 $COREDNS_URL $COREDNS_DIR 2> /dev/null
 

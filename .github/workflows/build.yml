@@ -213,7 +213,7 @@ jobs:
           # Error: Process completed with exit code 129.
           # https://github.com/leiless/dnsredir/runs/3479450493?check_suite_focus=true
           #DNSREDIR_TAG=$(curl -sL https://api.github.com/repos/leiless/dnsredir/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
-          DNSREDIR_TAG=$(wget -qO- https://api.github.com/repos/coredns/coredns/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
+          DNSREDIR_TAG=$(wget -qO- https://api.github.com/repos/leiless/dnsredir/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
 
           pushd pf
           ./download-pf-headers.sh
@@ -221,7 +221,9 @@ jobs:
 
           COREDNS_URL=https://github.com/coredns/coredns.git
           COREDNS_DIR=coredns
-          COREDNS_TAG=$(curl -sL https://api.github.com/repos/coredns/coredns/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
+          #COREDNS_TAG=$(curl -sL https://api.github.com/repos/coredns/coredns/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
+          # Ditto.
+          COREDNS_TAG=$(wget -qO- https://api.github.com/repos/coredns/coredns/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
           git clone --branch $COREDNS_TAG --depth 1 $COREDNS_URL $COREDNS_DIR 2> /dev/null
 
           mkdir -p ~/go/pkg/mod/github.com/leiless

@@ -223,8 +223,10 @@ jobs:
           COREDNS_DIR=coredns
           #COREDNSTAG=$(curl -sL https://api.github.com/repos/coredns/coredns/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
 
-          #curl -4vL https://api.github.com/repos/coredns/coredns/releases/latest
-          #exit 1
+          env | grep -i github
+          env | grep -i leiless
+          curl -4vL -u leiless:$BYPASS_GH_API_RATE_LIMIT https://api.github.com/repos/coredns/coredns/releases/latest
+          exit 1
 
           # Ditto.
           COREDNS_TAG=$(wget -qO- https://api.github.com/repos/coredns/coredns/releases/latest | grep '"tag_name":' | cut -d'"' -f4)

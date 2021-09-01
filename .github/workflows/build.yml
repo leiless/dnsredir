@@ -209,7 +209,11 @@ jobs:
           DNSREDIR_DIR=$PWD
           REPO_ADDR=$(git remote get-url origin | sed -e 's/^https:\/\///' -e 's/\.git//')
           HEAD_COMMIT=$(git describe --dirty --always)
-          DNSREDIR_TAG=$(curl -sL https://api.github.com/repos/leiless/dnsredir/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
+          # curl in GitHub action macos-latest image seems have problem
+          # Error: Process completed with exit code 129.
+          # https://github.com/leiless/dnsredir/runs/3479450493?check_suite_focus=true
+          #DNSREDIR_TAG=$(curl -sL https://api.github.com/repos/leiless/dnsredir/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
+          DNSREDIR_TAG=$(wget -qO- https://api.github.com/repos/coredns/coredns/releases/latest | grep '"tag_name":' | cut -d'"' -f4)
 
           pushd pf
           ./download-pf-headers.sh

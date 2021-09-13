@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/coredns/coredns/request"
-	"github.com/m13253/dns-over-https/json-dns"
+	"github.com/m13253/dns-over-https/v2/json-dns"
 	"github.com/miekg/dns"
 	"io/ioutil"
 	"net/http"
@@ -78,7 +78,7 @@ func (uh *UpstreamHost) jsonDnsParseResponse(state *request.Request, resp *http.
 		return nil, err
 	}
 
-	var respJSON jsonDNS.Response
+	var respJSON jsondns.Response
 	err = json.Unmarshal(body, &respJSON)
 	if err != nil {
 		return nil, err
@@ -101,15 +101,15 @@ func (uh *UpstreamHost) jsonDnsParseResponse(state *request.Request, resp *http.
 	if udpSize < dns.MinMsgSize {
 		udpSize = dns.MinMsgSize
 	}
-	reply := jsonDNS.PrepareReply(state.Req)
-	reply = jsonDNS.Unmarshal(reply, &respJSON, uint16(udpSize), 0)
+	reply := jsondns.PrepareReply(state.Req)
+	reply = jsondns.Unmarshal(reply, &respJSON, uint16(udpSize), 0)
 	return reply, nil
 }
 
 // [#2] Fix DNS response empty []RR.Name in DOH JSON API
 // Additional section won't be rectified
 // see: https://stackoverflow.com/questions/52136176/what-is-additional-section-in-dns-and-how-it-works
-func fixEmptyNames(respJSON *jsonDNS.Response) {
+func fixEmptyNames(respJSON *jsondns.Response) {
 	for i := range respJSON.Answer {
 		if respJSON.Answer[i].Name == "" {
 			respJSON.Answer[i].Name = "."

@@ -3,7 +3,7 @@ module github.com/leiless/dnsredir
 go 1.13
 
 require (
-	github.com/coredns/caddy v1.1.0
+	github.com/coredns/caddy v1.1.1
 	github.com/coredns/coredns v1.8.4
 	github.com/digineo/go-ipset/v2 v2.2.1
 	github.com/m13253/dns-over-https/v2 v2.3.0

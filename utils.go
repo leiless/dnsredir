@@ -166,7 +166,7 @@ func getUrlContent(theUrl, contentType string, bootstrap []string, timeout time.
 
 	c := &http.Client{
 		Transport: transport, // [sic] If nil, DefaultTransport is used.
-		Timeout:   timeout,   // Q: Should be omit this field if transport isn't nil?
+		Timeout:   timeout,   // Q: Should we omit this field if transport isn't nil?
 	}
 	resp, err := c.Do(req)
 	if err != nil {

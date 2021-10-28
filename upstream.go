@@ -588,7 +588,7 @@ const (
 
 	defaultPathReloadInterval = 2 * time.Second
 	defaultUrlReloadInterval  = 30 * time.Minute
-	defaultUrlReadTimeout     = 30 * time.Second
+	defaultUrlReadTimeout     = 15 * time.Second
 
 	defaultHcInterval = 2000 * time.Millisecond
 	defaultHcTimeout  = 5000 * time.Millisecond

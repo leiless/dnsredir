@@ -253,6 +253,7 @@ func (uh *UpstreamHost) InitDOH(u *reloadableUpstream) {
 	uh.httpClient = &http.Client{
 		Transport: httpTransport,
 		Jar:       cookieJar,
+		Timeout:   10 * time.Second,
 	}
 }
 

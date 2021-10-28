@@ -10,19 +10,17 @@ Documentation=https://git.io/JJZ3N
 After=network.target
 Before=nss-lookup.target
 Wants=nss-lookup.target
-Conflicts=systemd-resolved.target
 
 [Service]
 Type=simple
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 ExecStart=/usr/local/bin/coredns-dnsredir -conf /etc/coredns-dnsredir/%i
 LimitNOFILE=131072
-Restart=always
-RestartSec=5
+Restart=on-failure
+RestartSec=3
 User=nobody
 # For debugging
 #StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
-Alias=dnsredir.service

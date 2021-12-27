@@ -34,6 +34,7 @@ type reloadableUpstream struct {
 	ipset     interface{}
 	pf        interface{}
 	noIPv6    bool
+	maxRetry  int32
 }
 
 // reloadableUpstream implements Upstream interface
@@ -124,8 +125,9 @@ func newReloadableUpstream(c *caddy.Controller) (Upstream, error) {
 			urlReadTimeout: defaultUrlReadTimeout,
 			stopUrlReload:  make(chan struct{}),
 		},
-		ignored: make(domainSet),
-		inline:  make(domainSet),
+		ignored:  make(domainSet),
+		inline:   make(domainSet),
+		maxRetry: defaultMaxRetry,
 		HealthCheck: &HealthCheck{
 			stop:          make(chan struct{}),
 			maxFails:      defaultMaxFails,
@@ -362,6 +364,13 @@ func parseBlock(c *caddy.Controller, u *reloadableUpstream) error {
 		}
 		u.maxFails = n
 		log.Infof("%v: %v", dir, n)
+	case "max_retry":
+		n, err := parseInt32(c)
+		if err != nil {
+			return err
+		}
+		u.maxRetry = n
+		log.Infof("%v: %v", dir, n)
 	case "health_check":
 		args := c.RemainingArgs()
 		n := len(args)
@@ -585,6 +594,7 @@ func parseBootstrap(c *caddy.Controller, u *reloadableUpstream) error {
 
 const (
 	defaultMaxFails = 3
+	defaultMaxRetry = 10
 
 	defaultPathReloadInterval = 2 * time.Second
 	defaultUrlReloadInterval  = 30 * time.Minute

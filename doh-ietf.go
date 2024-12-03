@@ -17,7 +17,6 @@ import (
 )
 
 func (uh *UpstreamHost) ietfDnsExchange(ctx context.Context, state *request.Request, requestContentType string) (*http.Response, error) {
-	fmt.Printf("Jim ietfDnsExchange 1\n")
 	r := state.Req
 	reqId := r.Id
 	// [sic]
@@ -34,7 +33,6 @@ func (uh *UpstreamHost) ietfDnsExchange(ctx context.Context, state *request.Requ
 
 	reqBase64 := base64.RawURLEncoding.EncodeToString(reqBytes)
 	reqURL := fmt.Sprintf("%v?ct=%v&dns=%v", uh.Name(), requestContentType, reqBase64)
-	fmt.Printf("Jim ietfDnsExchange reqURL: %v\n", reqURL)
 
 	var req *http.Request
 	// see:
@@ -81,6 +79,5 @@ func (uh *UpstreamHost) ietfDnsParseResponse(state *request.Request, resp *http.
 		// Correct previously zeroed-out DNS request ID
 		reply.Id = state.Req.Id
 	}
-	fmt.Printf("Jim doh-ietf reply: %+v\n", reply)
 	return reply, nil
 }

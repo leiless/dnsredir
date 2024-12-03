@@ -252,7 +252,6 @@ func (uh *UpstreamHost) InitDOH(u *reloadableUpstream) {
 	default:
 		panic(fmt.Sprintf("Unknown DOH protocol %q", uh.proto))
 	}
-	fmt.Printf("Jim InitDOH uh.proto: %v\n", uh.proto)
 	if uh.proto == "ietf-http-doh" {
 		uh.proto = "http"
 	} else {
@@ -375,14 +374,12 @@ func (uh *UpstreamHost) Dial(proto string, bootstrap []string, noIPv6 bool) (*pe
 }
 
 func (uh *UpstreamHost) dohExchange(ctx context.Context, state *request.Request) (*dns.Msg, error) {
-	fmt.Printf("Jim dohExchange 1\n")
 	var (
 		resp *http.Response
 		err  error
 	)
 
 	requestContentType := uh.requestContentType
-	fmt.Printf("Jim dohExchange requestContentType: %v\n", requestContentType)
 	if requestContentType == mimeTypeDohAny {
 		// The DOH upstream host support both JSON and RFC-8484, randomly choose one.
 		if rand.Intn(2) == 0 {
@@ -404,8 +401,6 @@ func (uh *UpstreamHost) dohExchange(ctx context.Context, state *request.Request)
 		return nil, err
 	}
 	defer Close(resp.Body)
-
-	fmt.Printf("Jim dohExchange resp: %+v\n", resp)
 
 	contentType := strings.SplitN(resp.Header.Get("Content-Type"), ";", 2)[0]
 	switch contentType {

@@ -104,7 +104,6 @@ func (uh *UpstreamHost) jsonDnsParseResponse(state *request.Request, resp *http.
 	}
 	reply := jsondns.PrepareReply(state.Req)
 	reply = jsondns.Unmarshal(reply, &respJSON, uint16(udpSize), 0)
-	fmt.Printf("Jim doh-json reply: %+v\n", reply)
 	return reply, nil
 }
 

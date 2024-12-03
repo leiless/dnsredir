@@ -2,10 +2,11 @@ package dnsredir
 
 import (
 	"fmt"
-	"github.com/coredns/coredns/plugin/pkg/transport"
 	"net"
 	"net/url"
 	"strings"
+
+	"github.com/coredns/coredns/plugin/pkg/transport"
 )
 
 // Strips trailing IP zone and/or TLS server name
@@ -28,6 +29,7 @@ var knownTrans = []string{
 	"tls",
 	"json-doh",
 	"ietf-doh",
+	"ietf-http-doh",
 	"doh",
 }
 
@@ -74,6 +76,8 @@ func HostPort(servers []string) ([]string, error) {
 			case "json-doh":
 				fallthrough
 			case "ietf-doh":
+				fallthrough
+			case "ietf-http-doh":
 				fallthrough
 			case "doh":
 				s = h

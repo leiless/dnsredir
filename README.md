@@ -59,6 +59,9 @@ dnsredir FROM... {
 
     `ietf-doh://URL` use IETF([RFC 8484](https://tools.ietf.org/html/rfc8484)) `DNS over HTTPS` for DNS query.
 
+    `ietf-http-doh://URL` use IETF([RFC 8484](https://tools.ietf.org/html/rfc8484)) `DNS over HTTP` for DNS query.
+
+    `doh://URL` randomly choose JSON or IETF `DNS over HTTPS` for DNS query, make sure the upstream host support both of type.
     `doh://URL` randomly choose JSON or IETF `DNS over HTTPS` for DNS query, make sure the upstream host support both of type.
 
     Example:
@@ -77,6 +80,7 @@ dnsredir FROM... {
     json-doh://1.1.1.1/dns-query
     json-doh://dns.google/resolve
     ietf-doh://dns.quad9.net/dns-query
+    ietf-http-doh://dns.quad9.net/dns-query
     ```
 
 An expanded syntax can be utilized to unleash of the power of `dnsredir` plugin:

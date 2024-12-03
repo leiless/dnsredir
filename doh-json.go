@@ -8,13 +8,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/coredns/coredns/request"
-	"github.com/m13253/dns-over-https/v2/json-dns"
-	"github.com/miekg/dns"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
+
+	"github.com/coredns/coredns/request"
+	jsondns "github.com/m13253/dns-over-https/v2/json-dns"
+	"github.com/miekg/dns"
 )
 
 func (uh *UpstreamHost) jsonDnsExchange(ctx context.Context, state *request.Request, requestContentType string) (*http.Response, error) {
@@ -103,6 +104,7 @@ func (uh *UpstreamHost) jsonDnsParseResponse(state *request.Request, resp *http.
 	}
 	reply := jsondns.PrepareReply(state.Req)
 	reply = jsondns.Unmarshal(reply, &respJSON, uint16(udpSize), 0)
+	fmt.Printf("Jim doh-json reply: %+v\n", reply)
 	return reply, nil
 }
 

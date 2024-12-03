@@ -5,8 +5,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/coredns/coredns/request"
-	"github.com/miekg/dns"
 	"io"
 	"math/rand"
 	"net"
@@ -17,6 +15,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/coredns/coredns/request"
+	"github.com/miekg/dns"
 )
 
 // A persistConn hold the dns.Conn and the last used time(time.Time struct)
@@ -188,7 +189,7 @@ func (uh *UpstreamHost) Name() string {
 }
 
 func (uh *UpstreamHost) IsDOH() bool {
-	return uh.proto == "https"
+	return uh.proto == "https" || uh.proto == "http"
 }
 
 func (uh *UpstreamHost) InitDOH(u *reloadableUpstream) {
@@ -244,12 +245,19 @@ func (uh *UpstreamHost) InitDOH(u *reloadableUpstream) {
 		uh.requestContentType = mimeTypeDnsJson
 	case "ietf-doh":
 		uh.requestContentType = mimeTypeDnsMessage
+	case "ietf-http-doh":
+		uh.requestContentType = mimeTypeDnsMessage
 	case "doh":
 		uh.requestContentType = mimeTypeDohAny
 	default:
 		panic(fmt.Sprintf("Unknown DOH protocol %q", uh.proto))
 	}
-	uh.proto = "https"
+	fmt.Printf("Jim InitDOH uh.proto: %v\n", uh.proto)
+	if uh.proto == "ietf-http-doh" {
+		uh.proto = "http"
+	} else {
+		uh.proto = "https"
+	}
 	uh.httpClient = &http.Client{
 		Transport: httpTransport,
 		Jar:       cookieJar,
@@ -333,6 +341,7 @@ func dialTimeout(network, address string, timeout time.Duration, bootstrap []str
 }
 
 // Return:
+//
 //	#0	Persistent connection
 //	#1	true if it's a cached connection
 //	#2	error(if any)
@@ -366,12 +375,14 @@ func (uh *UpstreamHost) Dial(proto string, bootstrap []string, noIPv6 bool) (*pe
 }
 
 func (uh *UpstreamHost) dohExchange(ctx context.Context, state *request.Request) (*dns.Msg, error) {
+	fmt.Printf("Jim dohExchange 1\n")
 	var (
 		resp *http.Response
 		err  error
 	)
 
 	requestContentType := uh.requestContentType
+	fmt.Printf("Jim dohExchange requestContentType: %v\n", requestContentType)
 	if requestContentType == mimeTypeDohAny {
 		// The DOH upstream host support both JSON and RFC-8484, randomly choose one.
 		if rand.Intn(2) == 0 {
@@ -393,6 +404,8 @@ func (uh *UpstreamHost) dohExchange(ctx context.Context, state *request.Request)
 		return nil, err
 	}
 	defer Close(resp.Body)
+
+	fmt.Printf("Jim dohExchange resp: %+v\n", resp)
 
 	contentType := strings.SplitN(resp.Header.Get("Content-Type"), ";", 2)[0]
 	switch contentType {
@@ -470,7 +483,8 @@ func (uh *UpstreamHost) Exchange(ctx context.Context, state *request.Request, bo
 
 // For health check we send to . IN NS +norec message to the upstream.
 // Dial timeouts and empty replies are considered fails
-// 	basically anything else constitutes a healthy upstream.
+//
+//	basically anything else constitutes a healthy upstream.
 func (uh *UpstreamHost) Check() error {
 	if err, rtt := uh.send(); err != nil {
 		HealthCheckFailureCount.WithLabelValues(uh.Name()).Inc()
@@ -534,7 +548,8 @@ type UpstreamHostPool []*UpstreamHost
 
 // Down checks whether the upstream host is down or not
 // Down will try to use uh.downFunc first, and will fallback
-// 	to some default criteria if necessary.
+//
+//	to some default criteria if necessary.
 func (uh *UpstreamHost) Down() bool {
 	if uh.downFunc == nil {
 		log.Warningf("Upstream host %v have no downFunc, fallback to default", uh.Name())

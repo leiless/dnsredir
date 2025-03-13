@@ -11,5 +11,5 @@ require (
 	github.com/miekg/dns v1.1.58
 	github.com/prometheus/client_golang v1.17.0
 	github.com/ti-mo/netfilter v0.4.0 // indirect
-	golang.org/x/net v0.23.0
+	golang.org/x/net v0.36.0
 )
